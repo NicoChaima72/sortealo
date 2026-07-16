@@ -1,29 +1,64 @@
-# Create T3 App
+# libros-iselk
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+> Codename del repo — el nombre comercial de la plataforma está pendiente (decisión abierta #4).
 
-## What's next? How do I make an app with this?
+**SaaS multi-tenant de tiendas con sorteo.** Organizadores crean su cuenta, configuran su Tienda sobre una plantilla (logo, colores, textos), suben productos digitales (MVP: PDF), montan un sorteo promocional y venden — cada tienda en su propio **subdominio**, cobrando con **su propia cuenta de Flow.cl** (BYO-Flow: la plataforma nunca mueve dinero de terceros).
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+Nació como el encargo de una tienda de e-books para una autora del fandom ARMY (Chile) y pivoteó a plataforma el 2026-07-16 ([ADR-0005](docs/adr/0005-pivote-saas-multi-tenant-tenantid-db-compartida.md)). La autora es el **tenant #1 / piloto**.
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+## Stack
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+T3: **Next.js 14** (pages router) · **tRPC 11** · **NextAuth 4** (Google OAuth para Organizadores) · **Prisma 5** + **PostgreSQL** · **shadcn/ui** + **Tailwind**. Storage de PDFs: **Cloudflare R2** ([ADR-0009](docs/adr/0009-storage-pdfs-cloudflare-r2.md)). Correo transaccional: **Resend** ([ADR-0010](docs/adr/0010-correo-transaccional-resend.md)).
 
-## Learn More
+### Arquitectura por capas
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+```
+routers tRPC (adapters finos, 3-5 líneas)        src/server/api/routers/
+  └─ runDomain() seam (DomainError → TRPCError)  src/server/api/runDomain.ts
+       └─ use cases (la lógica de negocio)       src/server/domain/<modulo>/
+            └─ services (adapters externos:      src/server/services/
+               Flow, R2, Resend, LLM — factory
+               con config explícita, sin env adentro)
+```
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+Los endpoints Next clásicos (p. ej. el webhook de Flow) siguen el patrón **núcleo testeable + wrapper**: el núcleo puro recibe deps inyectadas; el wrapper lee env y cabla adapters. Detalle en [`docs/agents/backend-conventions.md`](docs/agents/backend-conventions.md).
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+### Invariantes innegociables
 
-## How do I deploy this?
+- **Tenancy**: todo dato del dominio comercial lleva `tenantId`; toda query se filtra por el tenant resuelto **server-side** (subdominio o sesión), nunca por input del cliente. Uniques compuestos con `tenantId`.
+- **Dinero**: `Decimal`, nunca `Float`; operaciones que mueven plata en `prisma.$transaction`; formato UI con `Intl.NumberFormat` (CLP).
+- **Pagos**: confirmación server-side contra la API de Flow con las credenciales del tenant dueño de la orden; webhook idempotente ([ADR-0001](docs/adr/0001-pasarela-flow-confirmacion-server-side.md)/[0006](docs/adr/0006-byo-flow-credenciales-por-tenant-ruteo-webhook.md)).
+- **PDFs**: jamás enlace público — bucket privado con paths per-tenant + URL prefirmada con expiración, autorizada por el `Entitlement` de una orden pagada ([ADR-0002](docs/adr/0002-entrega-pdf-storage-privado-url-firmada.md)).
+- **Secretos de tenant** (`FlowCredential`): cifrados at-rest; nunca en claro en DB, logs ni respuestas.
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+## Desarrollo
+
+```bash
+npm install
+cp .env.example .env        # completar DATABASE_URL, keys — ver comentarios
+npm run db:push             # sincroniza el schema (sin migraciones versionadas hasta F10)
+npm run dev                 # ⚠️ UNA sola instancia — dos next dev corrompen .next
+```
+
+- Apex `http://localhost:3000` → zona plataforma / panel.
+- Storefronts en `http://<slug>.localhost:3000` (los browsers resuelven `*.localhost` sin DNS); los slugs de prueba los crean los seeds de `scripts/`.
+- Gates: `npm run check` = types + lint + vitest.
+
+## Mapa de documentación
+
+| Qué | Dónde |
+|---|---|
+| Instrucciones para agentes / reglas de oro | [`CLAUDE.md`](CLAUDE.md) |
+| Vocabulario del dominio (Tienda/`Tenant`, Organizador, `Product`…) | [`CONTEXT.md`](CONTEXT.md) |
+| Decisiones de arquitectura (ADR 0001–0010) | [`docs/adr/`](docs/adr/) |
+| Decisiones aún abiertas (#3–#6) | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) |
+| Roadmap vigente (10 fases; hito piloto = F07) | [`tasks/26-07-16-saas-roadmap.md`](tasks/26-07-16-saas-roadmap.md) |
+| Índice de tareas activas | [`tasks/INDEX.md`](tasks/INDEX.md) |
+| Convenciones por capa | [`docs/agents/`](docs/agents/) |
+| Línea gráfica (marca pendiente; theming per-tenant) | [`docs/design.md`](docs/design.md) |
+
+El trabajo no trivial fluye por el harness de subagentes (`planner`/`domain-planner` → `feature-implementer` → `feature-tester`, con satélites `schema-guardian`, `backend-reviewer`, `frontend-reviewer`, `change-set-reviewer`) — ver `CLAUDE.md` § Harness.
+
+## Legal
+
+Cada Organizador responde por su propia operación: Inicio de Actividades SII, boleta, IVA y las **bases legales de su sorteo**. La plataforma exige aceptación de ToS, exige bases antes de publicar un sorteo y muestra un disclaimer al comprador ([ADR-0008](docs/adr/0008-responsabilidad-legal-del-sorteo-del-organizador.md)). Validación por abogado pendiente antes del go-live público (F10).

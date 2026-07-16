@@ -6,15 +6,13 @@ Convenciones del backend de libros-iselk: Next.js 14 (pages router) + tRPC 11 + 
 
 ## Auth
 
-- NextAuth 4 con un **provider OAuth** para el panel admin (`src/server/auth.ts`). El panel es **mono-usuario** (la autora); no hay cuentas de comprador en el MVP (la identidad del comprador es su correo — ver `docs/adr/0004-...`).
-- **Allowlist del admin**: solo los emails permitidos entran al panel (restricción en el callback `signIn`, idealmente reforzada a nivel del proveedor OAuth). Todo lo que cuelga detrás de auth es la operación de la autora.
+- NextAuth 4 con **Google OAuth** para el panel admin (`src/server/auth.ts`). El panel es **mono-usuario** (la autora); no hay cuentas de comprador en el MVP (la identidad del comprador es su correo — ver `docs/adr/0004-...`).
+- **Allowlist del admin**: la env var `ADMIN_ALLOWLIST` (CSV de emails) define quién entra. La política pura vive en `src/server/authPolicy.ts` (`parsearAllowlist` normaliza a lowercase+trim y descarta vacíos; `emailEnLista` compara normalizado, fail-closed) y `auth.ts` la inyecta en el callback `signIn`. **Fail-closed**: sin email o email fuera de la lista ⇒ no hay sesión; allowlist vacía ⇒ nadie entra. El gate corre **antes** de que el `PrismaAdapter` persista `User`/`Account`/`Session` (verificado contra la fuente de next-auth 4), así que un email rechazado no deja rastro. Devuelve `"/login?error=AccessDenied"` para aterrizar al rechazado en `/login` (necesario porque `pages.error` no está seteado). Reforzable a nivel del proveedor OAuth (test users en Google Cloud). Todo lo que cuelga detrás de auth es la operación de la autora.
 - La sesión se obtiene server-side con `getServerAuthSession` (wrapper sobre `getServerSession` que ya evita importar `authOptions` en cada archivo). Nunca reimplementar `getServerSession` en otro lado.
 
 ### Guard de páginas server-side (pages router)
 
-Para proteger una página del panel admin se usa su propio `getServerSideProps`, que llama a `getServerAuthSession` y redirige a `/login` (o equivalente) cuando no hay sesión. Cuando aparezca el primer flujo real con varias páginas protegidas, vale extraer un helper `requireSession(ctx)` **sobre** `getServerAuthSession` (sin reimplementar `getServerSession` ni duplicar la allowlist) que devuelva un resultado discriminado tipo `{ session, redirect }`, consumido con early-return del `redirect` para que TS estreche `session` a no-null. Patrón **imperativo, no HOC**: cada página escribe su `getServerSideProps` y llama al helper adentro, conservando control para lógica extra. Páginas públicas (catálogo, checkout, `/login`) simplemente no exportan guard.
-
-> Mientras no exista ese helper no lo cites como si estuviera: es el patrón a seguir cuando se necesite, no código presente hoy.
+Para proteger una página del panel admin se usa su propio `getServerSideProps`. El helper `requireSession(ctx)` **ya existe** en `src/server/auth.ts`: llama a `getServerAuthSession` (sin reimplementar `getServerSession` ni duplicar la allowlist) y aplica la decisión pura `resolverGuard(session)` — que vive en `src/server/authPolicy.ts` — devolviendo un resultado discriminado `{ redirect } | { session }`. Cada página lo consume con early-return del `redirect` (`if ("redirect" in guard) return { redirect: guard.redirect }`), lo que estrecha `session` a no-null en la rama de props. Patrón **imperativo, no HOC**: cada página escribe su `getServerSideProps` y llama al helper adentro, conservando control para lógica extra. Lo usan las 5 páginas admin (`src/pages/admin/{index,libros,ventas,sorteo,configuracion}.tsx`); las páginas públicas (catálogo, checkout, `/login`) simplemente no exportan guard.
 
 ## Layering: routers → domain → services
 

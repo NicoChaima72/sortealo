@@ -47,7 +47,7 @@ Dos razones:
 
 ## 3. Dev server: uno solo, puerto 3000, HTTP plano
 
-libros-iselk corre **un solo** dev server. `npm run dev` levanta Next.js en `http://localhost:3000` directo — sin SSL proxy, sin subdominios.
+libros-iselk corre **un solo** dev server. `npm run dev` levanta Next.js en `http://localhost:3000` — sin SSL proxy. Tras el pivote SaaS (ADR-0007) la app es **multi-tenant por subdominio**: en dev, `http://<slug>.localhost:3000` = storefront del tenant `<slug>` (los browsers resuelven `*.localhost` sin DNS) y `http://localhost:3000` (apex) = zona plataforma / panel. Los slugs de prueba salen de los seeds (`scripts/`).
 
 - **Confirmá que el server está arriba** antes de confiar:
   ```bash

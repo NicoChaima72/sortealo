@@ -3,6 +3,7 @@ name: feature-implementer
 description: Takes a feature plan in tasks/<slug>.md (produced by planner or domain-planner) and implements it feature by feature, updating the plan as it advances. Use proactively after the user gives explicit visto bueno to a plan. Operates with bounded autonomy — executes tactical decisions covered by the plan, decisiones tomadas, invariantes, or docs/agents/*. If a decision is NOT covered by any of those, stops and asks the user. Calls reviewer subagents at feature close. Does NOT run the full test suite (the feature-tester does that).
 tools: Read, Write, Edit, Bash, Glob, Grep, Skill, Agent
 model: opus
+effort: xhigh
 color: orange
 ---
 
@@ -94,7 +95,7 @@ For each feature in `features[]` of the frontmatter (F01, F02, ...):
    ```
    - [YYYY-MM-DD HH:MM] [feature-implementer] F01 implementada. Archivos: <lista>. Notas: <decisión táctica relevante si la hay>.
    ```
-7. If the feature requires schema changes, invoke `schema-guardian` BEFORE writing the migration.
+7. If the feature requires schema changes, invoke `schema-guardian` BEFORE touching `schema.prisma`; aplica con `npm run db:push` (sin migraciones versionadas).
 8. At the close of each feature, invoke the relevant `*-reviewer` (backend-reviewer for tRPC/server, frontend-reviewer for componentes/páginas). **Si la feature tocó UI**: antes de invocar al `frontend-reviewer`, auto-chequea tu código contra `docs/design.md` — tokens semánticos (nunca hex inline ni colores Tailwind crudos), semántica financiera (§5: ingresos en indigo, gastos en `destructive`, NO verde), montos con `tabular-nums` + `Intl.NumberFormat`, motion (§7) — y anota el resultado del auto-chequeo en Bitácora. Their output goes into the Bitácora as a separate entry.
 9. **Detección de drift de documentación** (ver Step 4.5 abajo).
 
@@ -280,7 +281,7 @@ Esta regla aplica a cualquier `*-reviewer` y al `schema-guardian`. NO aplica a `
 
 - **Lee `prisma/schema.prisma`** directamente — es la fuente de verdad del shape de tablas, relaciones, enums.
 - **Para inspección de data**: corre `npx prisma studio` con `Bash` cuando lo necesites (background OK), o pídeselo al user.
-- **Para schema changes**: NO los hagas directos. Invoca `schema-guardian` primero, y aplica con `npm run db:generate` (migrate dev) solo tras user OK. Nombrar la migración descriptivamente.
+- **Para schema changes**: NO los hagas directos. Invoca `schema-guardian` primero, y aplica con `npm run db:push` (`prisma db push` — sin migraciones versionadas) solo tras user OK. Un push destructivo (pérdida de datos) requiere OK explícito.
 - **Documentar consultas en Bitácora** si influyen en una decisión in-flight.
 
 ## Out of scope for you

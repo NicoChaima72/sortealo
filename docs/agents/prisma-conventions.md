@@ -6,9 +6,9 @@ Convenciones de evolución del schema (`prisma/schema.prisma`). PostgreSQL con F
 
 ## Workflow de cambios
 
-- **Migrations versionadas**: `npm run db:generate` (`prisma migrate dev`) en desarrollo, `npm run db:migrate` (`migrate deploy`) en producción. `db:push` solo para prototipos descartables.
+- **Sin migraciones versionadas.** El schema se aplica con **`npm run db:push`** (`prisma db push` — sincroniza la DB con `schema.prisma`); introspección con **`npm run db:pull`** (`prisma db pull`). No hay carpeta `prisma/migrations/` ni tabla `_prisma_migrations`. Razón: bajo volumen, un solo entorno operativo, mono-dev — el ceremonial de migraciones no aporta y el proyecto se mantiene simple (ver `CLAUDE.md` § Principio rector).
 - Antes de cualquier cambio de schema: invocar `schema-guardian` (propone, no aplica).
-- Clasificar cada migración como **aditiva** (segura) o **destructiva** (drop de columna, narrowing de tipo, required sin default) — las destructivas requieren OK explícito del usuario.
+- Clasificar cada `db push` como **aditivo** (seguro) o **destructivo** (drop de columna, narrowing de tipo, required sin default) — los destructivos implican posible **pérdida de datos** (`prisma db push` pedirá `--accept-data-loss`) y requieren OK explícito del usuario.
 
 ## Convenciones obligatorias
 
@@ -19,6 +19,7 @@ Convenciones de evolución del schema (`prisma/schema.prisma`). PostgreSQL con F
   - `updatedAt DateTime @updatedAt` (no combinar con `@default(now())` — redundante).
 - **`@@index([fkId])` en TODOS los FKs queriables** — Postgres no auto-indexa FKs (sí PKs).
 - **`onDelete` explícito en cada relación**: `Cascade`, `SetNull` (FK opcional) o `Restrict`. El implícito `NoAction` es un smell.
+  - Criterio (sembrado en el schema inicial F01): `Restrict` hacia **padres auditables/append-only** (`Order`, `Book`, `Payment`) — no se borra un padre con hijos. `Cascade` **solo** para **composición intrínseca del agregado** (`OrderItem → Order`: un ítem-snapshot sin vida propia fuera de su orden). `SetNull` para FKs opcionales.
 - Relaciones con back-relation en ambos modelos.
 - Enums: convención `ModelNameStatus` / `ModelNameType`, valores en SCREAMING_CASE.
 - JSON: tipo `Json` nativo de Postgres.

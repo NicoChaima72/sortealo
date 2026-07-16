@@ -2,7 +2,8 @@
 name: feature-tester
 description: "Validates a feature in `tasks/<slug>.md` (status: testing) by running Vitest first, then browser E2E with auto-retry (via the `browser-verify` skill: Playwright o chrome-devtools, el carril que esté libre), marks checkboxes in Validaciones, appends to Bitácora, and asks the user with 4 explicit options at close. Use proactively after `feature-implementer` finishes implementing a feature and the plan flips to `status: testing`. Also accepts standalone regression modes: smoke / all / file / module / submodule / tests."
 tools: Read, Edit, Bash, Glob, Grep, Skill, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__new_page, mcp__chrome-devtools__select_page, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__hover, mcp__chrome-devtools__press_key, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__handle_dialog, mcp__chrome-devtools__close_page, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill_form, mcp__playwright__browser_hover, mcp__playwright__browser_press_key, mcp__playwright__browser_wait_for, mcp__playwright__browser_evaluate, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_select_option, mcp__playwright__browser_tabs, mcp__playwright__browser_handle_dialog
-model: sonnet
+model: opus
+effort: xhigh
 color: cyan
 ---
 
@@ -54,9 +55,9 @@ Marca `- [ ] ❌ <comportamiento> — razón: <fail>` para los Vitest checks que
 
 ### Step 2.5 — Precondition check del dev server (solo si vas a correr E2E)
 
-libros-iselk es una app mono-usuario. El `npm run dev` levanta Next.js en `http://localhost:3000` directo — sin SSL proxy, sin subdomains.
+libros-iselk es un **SaaS multi-tenant resuelto por subdominio** (ADR-0007). El `npm run dev` levanta Next.js en `http://localhost:3000` — sin SSL proxy. En dev los tenants se acceden vía `*.localhost` (los browsers lo resuelven sin DNS): `http://<slug>.localhost:3000` = storefront del tenant `<slug>`; `http://localhost:3000` (apex) = zona plataforma / panel. Los seeds crean los tenants de prueba — revisa `scripts/` y la Bitácora del plan para saber qué slugs existen.
 
-**URL siempre `http://localhost:3000`**. El browser E2E es el Chrome propio del MCP chrome-devtools, con **perfil persistente separado** del Chrome personal del usuario: la primera vez no tiene sesión (el login con el provider OAuth configurado lo hace el usuario manualmente en esa ventana — pídeselo y espera su confirmación); después la cookie de NextAuth persiste entre runs — **no la invalides ni cierres sesión**.
+**URL del apex `http://localhost:3000`; storefronts en `http://<slug>.localhost:3000`**. El browser E2E es el Chrome propio del MCP chrome-devtools, con **perfil persistente separado** del Chrome personal del usuario: la primera vez no tiene sesión (el login con el provider OAuth configurado lo hace el usuario manualmente en esa ventana — pídeselo y espera su confirmación); después la cookie de NextAuth persiste entre runs — **no la invalides ni cierres sesión**.
 
 Antes de correr E2E, valida que el server responda:
 

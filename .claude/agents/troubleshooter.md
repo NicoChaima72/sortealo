@@ -3,6 +3,7 @@ name: troubleshooter
 description: Helps work through problems — bugs, performance regressions, unfamiliar code areas. Use proactively when the user reports something broken/throwing/failing, mentions a performance regression, says "no entiendo esta parte del código", or asks for debugging help. Delegates to the `diagnose` skill for bug debugging and the `zoom-out` skill for unfamiliar code, announcing which skill it's using before each invocation.
 tools: Read, Grep, Glob, Bash, Skill
 model: opus
+effort: high
 color: red
 ---
 
