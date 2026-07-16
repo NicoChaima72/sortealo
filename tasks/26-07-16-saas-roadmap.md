@@ -97,6 +97,20 @@ abiertas; el pivote endurece el criterio de #4/#5 (wildcard subdomains — anota
 - **D7 — Sin grill extenso** (instrucción explícita del usuario): las decisiones de implementación de
   F01 se resuelven por criterio y quedan como **Supuestos revisables**; las de F02–F10 se resuelven
   en el planning de cada fase. Ninguna pregunta resultó estructuralmente imposible de asumir.
+- **D8 — Layering obligatorio estilo `heuristics-dtw` (datawalt-app) + F01 en 3 carriles paralelos**
+  (usuario, 2026-07-16). (a) Arquitectura por capas ya documentada en
+  `docs/agents/backend-conventions.md` § Layering: routers = adapters finos → seam `runDomain()`
+  (`DomainError`→`TRPCError`) → use cases en `domain/<modulo>/` → `services/` = adapters externos con
+  factory de config explícita; los endpoints Next (webhook) son borde con patrón núcleo+wrapper.
+  Referencia viva: `datawalt-app/src/server/domain/heuristics-dtw/ARCHITECTURE.md`. (b) Ejecución de
+  F01 dividida en carriles de archivos disjuntos: **A** = schema multi-tenant + service de cifrado +
+  seeds (pasos 1, 2, 7); **B** = tenancy por subdominio: parser puro + middleware + contexto (paso 3);
+  **C** = pago BYO-Flow: service Flow por credencial + checkout scoped + núcleo del webhook con ruteo
+  (pasos 4, 5, 6 — adapta el rescate S8); **Integrador** al final = cableado + página dev + seeds
+  corridos + E2E manual (pasos 8, 9). B y C escriben núcleos puros con deps inyectadas (no esperan el
+  schema de A); el integrador cabla contra el Prisma Client generado. Zonas exclusivas: `schema.prisma`
+  y `src/env.js` = A; `middleware.ts` y `src/server/api/trpc.ts` = B; `src/server/pago|domain|services/flow` +
+  webhook = C. Bitácora: cada carril appendea con tag `[F01-A]`/`[F01-B]`/`[F01-C]`.
 
 ## Plan
 

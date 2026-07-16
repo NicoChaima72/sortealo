@@ -8,7 +8,7 @@ Una fila = una línea corta. El detalle vive en la **Bitácora** de cada `tasks/
 
 | slug | agente / estado |
 |------|-----------------|
-| saas-roadmap | planning — roadmap del pivote SaaS multi-tenant escrito (10 fases, F01 fundación multi-tenant detallada, hito piloto = F07); AWAITING USER APPROVAL |
+| saas-roadmap | implementing — visto bueno del usuario 2026-07-16; F01 en ejecución paralela: 3 carriles (A schema+cifrado+seeds, B tenancy subdominio, C pago BYO-Flow) + integrador final (ver Bitácora D8) |
 
 ## En pausa
 
