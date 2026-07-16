@@ -1,26 +1,29 @@
 # libros-iselk
 
-Tienda de e-books con sorteo, para una autora del fandom K-pop / ARMY (Chile). La autora vende sus libros en PDF; la gente los compra y descarga; sobre la venta se monta un sorteo promocional (entradas a un recital de BTS). Es un encargo de desarrollo para un cliente externo (la autora); lo desarrolla y mantiene un freelancer.
+**SaaS multi-tenant de tiendas con sorteo** (pivote 2026-07-16, ADR-0005): Organizadores crean su cuenta, configuran su Tienda sobre una plantilla (logo/colores/textos — NO builder visual), suben productos digitales (MVP: PDF), montan su sorteo promocional y venden — cada tienda en su **subdominio**, cobrando con **su propia cuenta de Flow** (BYO-Flow). La autora ARMY original del encargo es el **tenant #1 / piloto**, y su tienda operativa es un hito con fecha propia (F07 del roadmap). Lo desarrolla y opera un freelancer (el **Operador de plataforma**).
 
-T3 stack: Next.js 14 (pages router) + tRPC 11 + NextAuth 4 (provider OAuth para el panel admin) + Prisma 5 + PostgreSQL + shadcn/ui + Tailwind.
+T3 stack: Next.js 14 (pages router) + tRPC 11 + NextAuth 4 (Google OAuth para Organizadores) + Prisma 5 + PostgreSQL + shadcn/ui + Tailwind.
 
 ## Propósito y alcance
 
-- **Qué es**: catálogo + carrito + checkout con pago Flow + entrega segura de PDFs + sistema de sorteo + Hermes (generador de copy con IA) + panel admin.
-- **Principio rector**: bajo volumen (~10 ventas/mes a $3.000 CLP) y bajo ingreso del cliente → la solución debe ser **simple y barata** de construir y mantener. No sobre-ingenierizar; priorizar un MVP funcional sobre features avanzadas.
-- **Decisiones cerradas**: ver `docs/adr/` (Flow + confirmación server-side, entrega vía storage privado + URL firmada, Hermes LLM-agnóstico, sin cuentas de comprador).
-- **Decisiones abiertas**: ver `docs/decisiones-abiertas.md` (storage de PDFs, correo, modelo LLM, nombre de dominio, hosting, marca de agua). **No las cierres sin consultar al usuario.**
-- **Vocabulario del dominio**: `CONTEXT.md`.
-- **Fuera de alcance (MVP)**: auto-posteo de Hermes a redes, SEO/Ads pagadas, integración directa de Mercado Pago, boletas SII automáticas, cuentas/login de compradores.
-- **Legal/tributario**: obligaciones del cliente (Inicio de Actividades SII, boleta electrónica, IVA 19%, bases del sorteo). El sistema no las automatiza en el MVP.
+- **Qué es**: plataforma multi-tenant — storefront por subdominio (catálogo + carrito + checkout Flow por tenant) + entrega segura de PDFs + sorteo por tienda + panel de Organizador + self-service de alta + Hermes (copy IA por tenant) + panel del Operador.
+- **Principio rector**: sigue siendo **simple y barato** de construir y mantener. La plataforma NUNCA mueve plata de terceros (ADR-0006). No sobre-ingenierizar; MVP funcional sobre features avanzadas; el piloto (F07) antes que el self-service (F08).
+- **Decisiones cerradas**: ver `docs/adr/` — Flow server-side (0001), entrega por URL firmada (0002), Hermes LLM-agnóstico (0003), sin cuentas de comprador (0004), multi-tenant por `tenantId` en DB compartida (0005), BYO-Flow con credenciales cifradas (0006), resolución por subdominio (0007), responsabilidad legal del sorteo = del Organizador (0008), storage Cloudflare R2 (0009), correo Resend (0010).
+- **Decisiones abiertas**: ver `docs/decisiones-abiertas.md` (#3 modelo LLM, #4 dominio de la plataforma con wildcard, #5 hosting con wildcard, #6 marca de agua). **No las cierres sin consultar al usuario.**
+- **Vocabulario del dominio**: `CONTEXT.md` (Tienda/`Tenant`, Organizador, Operador, `Product`, `FlowCredential`…). Roadmap vigente: `tasks/26-07-16-saas-roadmap.md`.
+- **Fuera de alcance (MVP)**: builder visual de tiendas, split de pagos / custodia de fondos, dominios custom por tenant, auto-posteo de Hermes, Mercado Pago directo, boletas SII automáticas, cuentas/login de compradores.
+- **Legal/tributario**: cada Organizador responde por lo suyo (Inicio de Actividades SII, boleta, IVA 19%, bases del sorteo). La plataforma exige ToS + bases + muestra disclaimer (ADR-0008); validación por abogado pendiente antes del go-live público (F10).
 
-## Regla de oro del dominio
+## Reglas de oro del dominio
 
 **Dinero: `Decimal`, NUNCA `Float`** ni aritmética con `number`. Aplica a precios, IVA (19%), comisiones de Flow (~3,44%) y el neto al vendedor. Operaciones que mueven plata van en `prisma.$transaction`. Montos en UI con `Intl.NumberFormat` (CLP).
 
-Dos invariantes críticos del dominio:
-- **Pagos**: la confirmación es **server-side contra la API de Flow**, nunca el redirect del navegador; el webhook es idempotente (ADR-0001).
-- **PDFs**: nunca enlace público; **storage privado + URL firmada con expiración**, autorizada por el `Entitlement` de una orden pagada (ADR-0002).
+**Tenancy: todo dato del dominio comercial lleva `tenantId` y toda query se filtra por el tenant resuelto SERVER-SIDE** (subdominio o sesión), nunca por input del cliente (ADR-0005; lección del bug H1 de datawalt-app). Uniques compuestos con `tenantId`.
+
+Tres invariantes críticos más:
+- **Pagos**: confirmación **server-side contra la API de Flow con las credenciales del tenant dueño de la orden**, nunca el redirect del navegador; webhook idempotente que rutea por tenant (ADR-0001/0006).
+- **PDFs**: nunca enlace público; **R2 privado con paths per-tenant + URL prefirmada con expiración**, autorizada por el `Entitlement` de una orden pagada (ADR-0002/0009).
+- **Credenciales de tenant** (`FlowCredential`): cifradas at-rest; secretos jamás en texto plano en DB, logs ni respuestas (ADR-0006).
 
 ## Harness de subagentes
 

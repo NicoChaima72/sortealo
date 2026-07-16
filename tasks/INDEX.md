@@ -8,9 +8,7 @@ Una fila = una línea corta. El detalle vive en la **Bitácora** de cada `tasks/
 
 | slug | agente / estado |
 |------|-----------------|
-| mvp-roadmap | roadmap escrito — esperando visto bueno (9 fases, F01 detallada) |
-| auth-admin-google | planning — plan F05 escrito, esperando visto bueno (Google OAuth + allowlist + guard; paralelo a F01) |
-| efectos-post-pago | planning — plan F02 escrito, esperando visto bueno; implementación BLOQUEADA hasta cerrar F01 |
+| saas-roadmap | planning — roadmap del pivote SaaS multi-tenant escrito (10 fases, F01 fundación multi-tenant detallada, hito piloto = F07); AWAITING USER APPROVAL |
 
 ## En pausa
 
@@ -21,3 +19,6 @@ Una fila = una línea corta. El detalle vive en la **Bitácora** de cada `tasks/
 
 | slug | cierre |
 |------|--------|
+| mvp-roadmap | superseded 2026-07-16 por pivote SaaS → `26-07-16-saas-roadmap.md` (trabajo parcial F01 se rescata en la Fase 1 nueva, ver S8) |
+| auth-admin-google | superseded 2026-07-16 por pivote SaaS → `26-07-16-saas-roadmap.md` F05 (se rescatan OAuth/authPolicy/guard; muere la allowlist mono-usuario) |
+| efectos-post-pago | superseded 2026-07-16 por pivote SaaS → `26-07-16-saas-roadmap.md` F02 (contrato del hook post-pago sigue válido, re-scopeado por tenant) |

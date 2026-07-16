@@ -7,6 +7,6 @@ Razón: un enlace público se filtra al fandom en minutos y destruye la venta. E
 ## Consecuencias
 
 - El path real del bucket nunca se expone al cliente; solo URLs firmadas efímeras o un endpoint que las genera al vuelo validando el `Entitlement`.
-- El **proveedor de storage** (S3 / Cloudflare R2 / Supabase Storage) es **decisión abierta** — ver `docs/decisiones-abiertas.md`. La abstracción de storage se modela como un service (`src/server/services/`) para poder cambiarlo con fricción mínima.
+- El **proveedor de storage** quedó **resuelto el 2026-07-16: Cloudflare R2** — ver [ADR-0009](0009-storage-pdfs-cloudflare-r2.md). La abstracción de storage se modela igualmente como un service (`src/server/services/`) para poder cambiarlo con fricción mínima.
 - **Marca de agua por-comprador** (correo/identificador embebido en el PDF) es recomendada para desincentivar la redistribución, pero su inclusión en el MVP es **decisión abierta** (#7).
 - La expiración exige reenvío/regeneración del enlace si el comprador no descarga a tiempo (endpoint de "reenviar mi descarga" validando el `Entitlement`).

@@ -2,11 +2,11 @@
 
 **Línea gráfica de la marca.** Fuente de verdad para TODO artefacto visual: la app y cualquier asset. Los agentes leen este archivo antes de generar algo visual.
 
-> ⚠️ **SEED — la identidad de marca está PENDIENTE.** El nombre, la paleta y la tipografía aún **no están decididos** (dependen de la identidad del fandom K-pop / ARMY y de la decisión de dominio — ver `docs/decisiones-abiertas.md`). **No inventar dirección visual de marca.** Resolver en una sesión dedicada (`frontend-design` / `domain-planner`) y volcar acá lo aprobado. Lo que sigue son las reglas **estructurales** que ya fija el stack; las secciones marcadas `PENDIENTE` se completan al definir la marca.
+> ⚠️ **SEED — la identidad de marca está PENDIENTE, y tras el pivote SaaS (ADR-0005) hay DOS niveles de identidad.** (1) La **marca de la PLATAFORMA** (nombre, paleta, tipografía — pendientes; ya no es una marca del fandom ARMY: es la marca del SaaS, ligada a la decisión de dominio #4). (2) El **theming per-tenant**: cada Tienda configura logo/colores/textos sobre la plantilla base (F06 del roadmap) — la identidad ARMY vive, si acaso, en la tienda del tenant piloto, no en la plataforma. **No inventar dirección visual de marca.** Resolver en una sesión dedicada (`frontend-design` / `domain-planner`) y volcar acá lo aprobado. Lo que sigue son las reglas **estructurales** que ya fija el stack; las secciones `PENDIENTE` se completan al definir la marca de la plataforma y el sistema de theming.
 
 ## 1. Esencia de la marca — PENDIENTE
 
-Público: fandom K-pop / ARMY (seguidores de BTS) en Chile. Producto: tienda de e-books, **mobile-first**, identidad acorde al fandom. Tono visual a definir (energía del fandom vs. legibilidad/confianza para pagar). Nombre de marca: pendiente (codename del repo: `libros-iselk`). Cuando se decida, el nombre vive en `src/config/app.ts` (`APP_CONFIG.name`) — la UI lo consume de ahí, nunca hardcodeado.
+Producto: **plataforma SaaS de tiendas con sorteo** (compradores mayoritariamente mobile → storefront **mobile-first**). Doble audiencia: Organizadores (confianza, claridad para operar y cobrar) y Compradores (la marca que ven es la de la TIENDA, con disclaimer de la plataforma — ADR-0008). Nombre de la plataforma: pendiente (codename del repo: `libros-iselk`). Cuando se decida, vive en `src/config/app.ts` (`APP_CONFIG.name`) — la UI lo consume de ahí, nunca hardcodeado. El theming per-tenant (logo/colores/textos de cada Tienda) es **dato, no código**: sale del modelo `Tenant`, jamás hardcodeado en componentes.
 
 ## 2. Paleta — PENDIENTE
 
