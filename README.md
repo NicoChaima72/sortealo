@@ -1,6 +1,6 @@
-# libros-iselk
+# sortealo
 
-> Codename del repo — el nombre comercial de la plataforma está pendiente (decisión abierta #4).
+> Nombre de trabajo del repo (codename histórico: `libros-iselk`) — el nombre comercial definitivo de la plataforma sigue pendiente (decisión abierta #4); `sortealo` es el candidato natural si se confirma con el dominio.
 
 **SaaS multi-tenant de tiendas con sorteo.** Organizadores crean su cuenta, configuran su Tienda sobre una plantilla (logo, colores, textos), suben productos digitales (MVP: PDF), montan un sorteo promocional y venden — cada tienda en su propio **subdominio**, cobrando con **su propia cuenta de Flow.cl** (BYO-Flow: la plataforma nunca mueve dinero de terceros).
 
