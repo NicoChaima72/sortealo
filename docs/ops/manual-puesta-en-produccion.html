@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual: puesta en producción de Sortéatelo (sorteatelo.cl)</title>
+<style>
+  :root {
+    --tinta: #1c2333; --tinta-suave: #4a5568; --fondo: #f7f8fa; --card: #ffffff;
+    --acento: #6d28d9; --acento-claro: #ede9fe; --ok: #047857; --ok-claro: #d1fae5;
+    --alerta: #b45309; --alerta-claro: #fef3c7; --peligro: #b91c1c; --peligro-claro: #fee2e2;
+    --borde: #e2e8f0; --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--fondo); color: var(--tinta); line-height: 1.65; }
+  header { background: linear-gradient(135deg, #4c1d95, #6d28d9); color: #fff; padding: 3rem 1.5rem 2.5rem; }
+  header .wrap, main { max-width: 900px; margin: 0 auto; padding: 0 1rem; }
+  header h1 { margin: 0 0 .5rem; font-size: 1.9rem; }
+  header p { margin: 0; opacity: .85; max-width: 60ch; }
+  main { padding: 2rem 1rem 4rem; }
+  nav.indice { background: var(--card); border: 1px solid var(--borde); border-radius: 12px; padding: 1.2rem 1.5rem; margin-bottom: 2rem; }
+  nav.indice ol { margin: .5rem 0 0; padding-left: 1.4rem; }
+  nav.indice a { color: var(--acento); text-decoration: none; }
+  nav.indice a:hover { text-decoration: underline; }
+  section { background: var(--card); border: 1px solid var(--borde); border-radius: 12px; padding: 1.5rem 1.8rem; margin-bottom: 1.6rem; }
+  h2 { margin-top: 0; font-size: 1.25rem; border-bottom: 2px solid var(--acento-claro); padding-bottom: .5rem; }
+  h2 .paso { display: inline-block; background: var(--acento); color: #fff; border-radius: 999px; font-size: .8rem; padding: .1rem .7rem; margin-right: .6rem; vertical-align: middle; }
+  h3 { font-size: 1rem; margin: 1.2rem 0 .4rem; }
+  code { font-family: var(--mono); font-size: .86em; background: #eef1f6; border-radius: 5px; padding: .1em .4em; }
+  pre { background: #101623; color: #d7e0ee; border-radius: 10px; padding: 1rem 1.2rem; overflow-x: auto; font-family: var(--mono); font-size: .85rem; line-height: 1.5; }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: .8rem 0; }
+  th, td { text-align: left; padding: .45rem .6rem; border: 1px solid var(--borde); vertical-align: top; }
+  th { background: #f1f3f8; }
+  td code { word-break: break-all; }
+  .nota, .ojo, .hecho { border-radius: 10px; padding: .8rem 1rem; margin: .9rem 0; font-size: .93rem; }
+  .nota { background: var(--acento-claro); border-left: 4px solid var(--acento); }
+  .ojo { background: var(--alerta-claro); border-left: 4px solid var(--alerta); }
+  .hecho { background: var(--ok-claro); border-left: 4px solid var(--ok); }
+  .peligro { background: var(--peligro-claro); border-left: 4px solid var(--peligro); border-radius: 10px; padding: .8rem 1rem; margin: .9rem 0; font-size: .93rem; }
+  ul, ol { padding-left: 1.4rem; }
+  footer { text-align: center; color: var(--tinta-suave); font-size: .85rem; padding: 0 1rem 3rem; }
+  .tag { display: inline-block; font-size: .75rem; border-radius: 6px; padding: .05rem .5rem; background: #eef1f6; color: var(--tinta-suave); margin-left: .4rem; vertical-align: middle; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🚀 Manual: puesta en producción de Sortéatelo</h1>
+    <p>Runbook de todo lo que se hizo el <strong>2026-07-17</strong> para llevar la plataforma desde "solo dev local" hasta <strong>sorteatelo.cl</strong> en Vercel — con cada paso reproducible, sus porqués y sus trampas. Referencias: ADR-0007 (subdominios), ADR-0014 (dominio), ADR-0015 (hosting).</p>
+  </div>
+</header>
+<main>
+
+<nav class="indice">
+  <strong>Índice</strong>
+  <ol>
+    <li><a href="#dominio">Comprar el dominio en NIC Chile</a></li>
+    <li><a href="#vercel">Crear el proyecto en Vercel y conectar dominios</a></li>
+    <li><a href="#nameservers">Delegar los nameservers a Vercel</a></li>
+    <li><a href="#db">Base de datos de producción (Supabase)</a></li>
+    <li><a href="#env">Variables de entorno (y el redeploy obligatorio)</a></li>
+    <li><a href="#oauth">Google OAuth para producción</a></li>
+    <li><a href="#resend">Resend: verificar el dominio remitente</a></li>
+    <li><a href="#r2">Bucket R2 público de assets</a></li>
+    <li><a href="#verificar">Cómo verificar que todo quedó bien</a></li>
+    <li><a href="#pendientes">Pendientes y deudas conocidas</a></li>
+  </ol>
+</nav>
+
+<section id="dominio">
+  <h2><span class="paso">1</span>Comprar el dominio en NIC Chile</h2>
+  <p><strong>Por qué NIC directo y no GoDaddy:</strong> NIC Chile es el registro oficial de <code>.cl</code>; los registradores internacionales solo revenden con sobreprecio (~2×). El dominio se compra una vez y el DNS se delega a donde haga falta — el registrador no importa para el hosting.</p>
+  <ol>
+    <li>Verificar disponibilidad en el whois: <code>https://www.nic.cl/registry/Whois.do?d=sorteatelo.cl</code></li>
+    <li>Botón <em>Inscribir</em> → login (o crear cuenta NIC con RUT). ⚠ La sesión de NIC expira rápido (~minutos).</li>
+    <li>Formulario: titular precargado, facturación <em>Boleta</em> (persona natural), <em>Configuración Técnica</em> se puede dejar vacía (se cambia gratis después).</li>
+    <li><em>Crear dominio</em> → carro de compra → plazo <strong>1 año = $9.990 CLP</strong> (no hay descuento por más años: 2 años = $19.980 exactos) → pagar con Webpay.</li>
+    <li>El dominio queda inscrito al confirmarse el pago. La <strong>zona .cl publica la delegación en tandas</strong> (hasta ~1 hora) — hasta entonces el dominio "no existe" para el resto de internet.</li>
+  </ol>
+  <div class="ojo"><strong>Renovación anual (vence 2027-07-17):</strong> si el dominio cae, se caen TODOS los storefronts de los tenants. Dejar recordatorio/renovación con anticipación en nic.cl.</div>
+</section>
+
+<section id="vercel">
+  <h2><span class="paso">2</span>Crear el proyecto en Vercel y conectar dominios</h2>
+  <p><strong>Por qué Vercel:</strong> stack T3/Next.js nativo (deploy automático por push a <code>main</code>), y soporta el requisito duro del ADR-0007: <strong>wildcard <code>*.sorteatelo.cl</code> con certificado automático</strong>.</p>
+  <ol>
+    <li>Importar el repo GitHub <code>NicoChaima72/sorteatelo</code> como proyecto (framework Next.js autodetectado).</li>
+    <li>Proyecto → <em>Settings → Domains → Add Existing</em>. Agregar <strong>dos</strong> dominios apuntando a <em>Production</em>:
+      <ul>
+        <li><code>sorteatelo.cl</code> — el apex = zona de plataforma (landing, panel, onboarding).</li>
+        <li><code>*.sorteatelo.cl</code> — el wildcard = storefronts de los tenants.</li>
+      </ul>
+    </li>
+    <li><strong>DESMARCAR</strong> el checkbox "Redirect apex domains to www": nuestra arquitectura usa el apex como canónico; un <code>www</code> hasta podría confundirse con un slug de tienda en el middleware.</li>
+    <li>Ambos quedarán "Invalid Configuration" hasta completar el paso 3 — Vercel exige sus nameservers para el wildcard.</li>
+  </ol>
+  <div class="nota"><strong>Comportamiento esperado post-config:</strong> <code>sorteatelo.vercel.app</code> responde <strong>404 a propósito</strong> — es un host desconocido para el middleware (ADR-0007: respuesta neutral). Las únicas entradas válidas son <code>sorteatelo.cl</code> y <code>&lt;slug&gt;.sorteatelo.cl</code>.</div>
+</section>
+
+<section id="nameservers">
+  <h2><span class="paso">3</span>Delegar los nameservers a Vercel (en NIC Chile)</h2>
+  <p><strong>Qué significa:</strong> Vercel pasa a administrar TODO el DNS del dominio (y así emite el certificado wildcard). Desde este momento, <em>cualquier</em> registro DNS futuro (Resend, correo, verificaciones) se agrega en Vercel, <strong>nunca más en NIC</strong>.</p>
+  <ol>
+    <li>En <code>clientes.nic.cl</code> → Mis Dominios → <code>sorteatelo.cl</code> → sección <em>4. Configuración Técnica</em>.</li>
+    <li>Tipo de servicio: <em>Servidores DNS</em>. Agregar uno por uno:
+      <ul><li><code>ns1.vercel-dns.com</code></li><li><code>ns2.vercel-dns.com</code></li></ul>
+    </li>
+    <li><em>Actualizar datos de dominio</em> → debe decir "La modificación fue realizada correctamente".</li>
+    <li>Esperar la tanda de publicación de la zona .cl. Verificar con: <pre><code>nslookup -type=NS sorteatelo.cl a.nic.cl</code></pre> Cuando responda los NS de Vercel, en minutos Vercel valida los dominios y emite certificados (el estado en Settings → Domains pasa a "Valid Configuration").</li>
+  </ol>
+</section>
+
+<section id="db">
+  <h2><span class="paso">4</span>Base de datos de producción (Supabase)</h2>
+  <p>La app en Vercel no puede ver el Postgres local — necesita uno administrado accesible por internet. Elegido: <strong>Supabase</strong> (PostgreSQL, free tier, pooler <code>aws-1-us-east-1.pooler.supabase.com</code>).</p>
+  <ol>
+    <li>Crear el proyecto en Supabase y copiar la <code>DATABASE_URL</code> (usar la del <strong>pooler</strong> en runtime; <code>DIRECT_URL</code> para migraciones de Prisma).</li>
+    <li>Cargar el schema: con la <code>DATABASE_URL</code> en el <code>.env</code> local, correr <pre><code>npm run db:push   # prisma db push — sincroniza schema.prisma sin migraciones</code></pre></li>
+    <li>Verificar que las tablas existen: <pre><code>npx prisma db pull --print | grep "^model "</code></pre> Deben aparecer los 15 modelos (Tenant, Product, Order, Raffle, DownloadGrant…).</li>
+  </ol>
+  <div class="peligro"><strong>Deuda anotada en ADR-0015:</strong> hoy la MISMA base sirve dev y producción. Antes del go-live público (F10), separar en dos proyectos Supabase (dev / prod) para que el desarrollo no pueda tocar datos reales.</div>
+</section>
+
+<section id="env">
+  <h2><span class="paso">5</span>Variables de entorno en Vercel</h2>
+  <p>Proyecto → <em>Settings → Environment Variables</em>. La lista completa sale de <code>.env.example</code>. Las que dolieron:</p>
+  <table>
+    <tr><th>Variable</th><th>Valor / origen</th><th>Notas</th></tr>
+    <tr><td><code>DATABASE_URL</code> / <code>DIRECT_URL</code></td><td>Supabase</td><td>Secretas.</td></tr>
+    <tr><td><code>NEXTAUTH_URL</code></td><td><code>https://sorteatelo.cl</code></td><td>El apex, con https.</td></tr>
+    <tr><td><code>NEXTAUTH_SECRET</code></td><td><code>openssl rand -base64 32</code></td><td>Secreta.</td></tr>
+    <tr><td><code>GOOGLE_CLIENT_ID</code> / <code>_SECRET</code></td><td>GCP → proyecto <code>sortealo</code> → client <code>sortealo-dev</code></td><td>Ver paso 6.</td></tr>
+    <tr><td><code>CREDENTIALS_ENCRYPTION_KEY</code></td><td>AES-256 base64 (32 bytes)</td><td>Cifra las FlowCredential (ADR-0006). Perderla = re-cargar credenciales de todos los tenants.</td></tr>
+    <tr><td><code>NEXT_PUBLIC_PLATFORM_DOMAIN</code></td><td><code>sorteatelo.cl</code></td><td><strong>⚠ La que faltó:</strong> viene comentada en <code>.env.example</code> y sin ella la app hace fail-fast con 500 en TODA request (ADR-0007). NO es secreta (no marcar "Sensitive").</td></tr>
+    <tr><td><code>R2_*</code></td><td>Cloudflare R2 (bucket privado de PDFs)</td><td>Account ID, keys, bucket, endpoint.</td></tr>
+    <tr><td><code>R2_PUBLIC_BUCKET</code> / <code>R2_PUBLIC_BASE_URL</code></td><td>Bucket público de assets (paso 8)</td><td>No secretas.</td></tr>
+    <tr><td><code>RESEND_API_KEY</code></td><td>resend.com → API Keys</td><td>Secreta.</td></tr>
+    <tr><td><code>FLOW_URL_CONFIRMATION</code></td><td><code>https://sorteatelo.cl/api/webhooks/flow</code></td><td>En prod ya no hay túnel — es la URL real.</td></tr>
+    <tr><td><code>PLATFORM_OPERATOR_EMAILS</code></td><td>correo del Operador</td><td>Fail-closed si falta.</td></tr>
+  </table>
+  <div class="peligro"><strong>La lección más importante del día:</strong> en Vercel las env vars <u>no</u> afectan al deployment que ya corre. Cambiaste una variable ⇒ <strong>Redeploy obligatorio</strong> (Deployments → menú ⋯ → Redeploy). Las <code>NEXT_PUBLIC_*</code> además se "hornean" en el build del cliente. Nos pasó dos veces: el deploy quedó construido segundos antes de guardar la variable y siguió botado con 500.</div>
+</section>
+
+<section id="oauth">
+  <h2><span class="paso">6</span>Google OAuth para producción</h2>
+  <p>El client OAuth (<code>sortealo-dev</code>, proyecto GCP <code>sortealo-502704</code>) solo conocía localhost — sin esto el "Entrar con Google" de los Organizadores falla en producción.</p>
+  <ol>
+    <li><code>console.cloud.google.com/apis/credentials</code> → ojo con estar en la <strong>cuenta y proyecto correctos</strong> (el ID del client en el <code>.env</code> empieza con el número del proyecto: <code>274688118230-…</code>).</li>
+    <li>Editar el client → <em>Orígenes autorizados de JavaScript</em> → agregar <code>https://sorteatelo.cl</code>.</li>
+    <li><em>URIs de redireccionamiento autorizados</em> → agregar <code>https://sorteatelo.cl/api/auth/callback/google</code> (el path exacto de NextAuth).</li>
+    <li>Guardar. Google avisa: puede tardar de 5 minutos a horas en aplicar.</li>
+  </ol>
+  <div class="nota">Para el go-live serio conviene un client de producción separado (y publicar la pantalla de consentimiento fuera de "Testing" para que cualquier Organizador pueda loguearse).</div>
+</section>
+
+<section id="resend">
+  <h2><span class="paso">7</span>Resend: verificar el dominio remitente</h2>
+  <p>Para enviar como <code>@sorteatelo.cl</code> (y no <code>onboarding@resend.dev</code>) Resend exige probar la propiedad del dominio vía DNS. <strong>No se necesita contratar ningún buzón para enviar.</strong></p>
+  <ol>
+    <li><code>resend.com/domains</code> → <em>Add domain</em> → <code>sorteatelo.cl</code>, región <strong>São Paulo (sa-east-1)</strong>.</li>
+    <li>Resend entrega 3-4 registros. Se agregan en <strong>Vercel</strong> (Team → Domains → sorteatelo.cl → DNS Records):
+      <table>
+        <tr><th>Tipo</th><th>Name</th><th>Value</th><th>Prio</th></tr>
+        <tr><td>TXT</td><td><code>resend._domainkey</code></td><td><code>p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKB…</code> (la clave DKIM que muestra Resend)</td><td>—</td></tr>
+        <tr><td>MX</td><td><code>send</code></td><td><code>feedback-smtp.sa-east-1.amazonses.com</code></td><td>10</td></tr>
+        <tr><td>TXT</td><td><code>send</code></td><td><code>v=spf1 include:amazonses.com ~all</code></td><td>—</td></tr>
+        <tr><td>TXT</td><td><code>_dmarc</code></td><td><code>v=DMARC1; p=none;</code> (opcional, recomendado)</td><td>—</td></tr>
+      </table>
+    </li>
+    <li>En Resend: <em>I've added the records</em> → estado <em>Pending / Checking DNS</em> → pasa a <em>Verified</em> solo (requiere que la zona .cl ya esté publicada).</li>
+    <li><strong>Al verificarse, cambiar el remitente en el código</strong>: la constante <code>REMITENTE_CORREO</code> en <code>src/server/domain/correo/plantillaDescarga.ts</code> (D6: un solo lugar) — de <code>onboarding@resend.dev</code> a algo como <code>no-responder@sorteatelo.cl</code>. La marca visible ya es <code>MARCA_PLATAFORMA = "Sortéatelo"</code>.</li>
+  </ol>
+  <div class="nota"><strong>Recibir</strong> correo en <code>contacto@sorteatelo.cl</code> es otra cosa: se resuelve gratis con Cloudflare Email Routing o Zoho Mail free cuando se necesite (los MX del apex están libres).</div>
+</section>
+
+<section id="r2">
+  <h2><span class="paso">8</span>Bucket R2 público de assets (ADR-0013)</h2>
+  <p>Los assets de marca de las tiendas (logo, hero, portadas, premio) van en un <strong>segundo bucket con lectura pública</strong> — separado a nivel de bucket del privado de PDFs (<code>sortealo-dev</code>), para que un PDF jamás pueda filtrarse por URL pública. Reusa las mismas credenciales R2 de la cuenta.</p>
+  <ol>
+    <li>Cloudflare Dashboard → R2 → <em>Create bucket</em> → nombre <code>sortealo-public-dev</code> (consistente con el naming dev existente).</li>
+    <li>Bucket → <em>Settings → Public access → R2.dev subdomain → Allow</em>. Copiar la URL <code>https://pub-&lt;hash&gt;.r2.dev</code>.</li>
+    <li>Verificar que el API token R2 existente tenga permiso <em>Object Read &amp; Write</em> sobre este bucket (si estaba scopeado solo a <code>sortealo-dev</code>, editar el token y sumar el bucket nuevo — no hace falta regenerar las keys).</li>
+    <li>Env vars (local y Vercel, no secretas): <pre><code>R2_PUBLIC_BUCKET="sortealo-public-dev"
+R2_PUBLIC_BASE_URL="https://pub-&lt;hash&gt;.r2.dev"   # SIN barra final</code></pre></li>
+    <li>Redeploy (regla del paso 5). Mientras no existan, la plantilla degrada elegante (gradientes en vez de imágenes) — no rompe nada.</li>
+  </ol>
+</section>
+
+<section id="verificar">
+  <h2><span class="paso">9</span>Cómo verificar que todo quedó bien</h2>
+  <pre><code># 1. La zona .cl ya delegó a Vercel?
+nslookup -type=NS sorteatelo.cl a.nic.cl        # → ns1/ns2.vercel-dns.com
+
+# 2. El apex responde? (200 = plataforma arriba)
+curl -sS -o /dev/null -w "%{http_code}\n" https://sorteatelo.cl
+
+# 3. Un storefront de tienda responde?
+curl -sS -o /dev/null -w "%{http_code}\n" https://&lt;slug&gt;.sorteatelo.cl
+
+# 4. El host neutro responde 404 (correcto, ADR-0007)
+curl -sS -o /dev/null -w "%{http_code}\n" https://sorteatelo.vercel.app</code></pre>
+  <ul>
+    <li><strong>Errores de runtime:</strong> Vercel → proyecto → Logs (o la herramienta <em>get_runtime_logs</em>). Un 500 en toda ruta con "Falta NEXT_PUBLIC_PLATFORM_DOMAIN" = env var faltante + redeploy.</li>
+    <li><strong>Login Google:</strong> probar "Entrar con Google" en <code>https://sorteatelo.cl/login</code>. Error <code>redirect_uri_mismatch</code> = paso 6 incompleto o aún propagando.</li>
+    <li><strong>Resend:</strong> dashboard → Domains → sorteatelo.cl = <em>Verified</em>; enviar un correo de prueba.</li>
+  </ul>
+</section>
+
+<section id="pendientes">
+  <h2><span class="paso">10</span>Pendientes y deudas conocidas</h2>
+  <ul>
+    <li>🟠 <strong>Plan Vercel Hobby → Pro (US$20/mes)</strong> antes de vender de verdad: los ToS de Hobby prohíben uso comercial (piloto F07 / go-live F10). Presupuestado dentro de la mantención.</li>
+    <li>🟠 <strong>Separar DB dev / prod</strong> (dos proyectos Supabase) antes de F10.</li>
+    <li>🟠 <strong>Remitente real en Resend</strong> cuando el dominio quede <em>Verified</em> (cambiar <code>REMITENTE_CORREO</code>).</li>
+    <li>🟠 <strong>Client OAuth de producción</strong> separado + consent screen publicada.</li>
+    <li>🟠 <strong>Buzón de recepción</strong> <code>contacto@sorteatelo.cl</code> (Cloudflare Email Routing / Zoho) cuando se necesite.</li>
+    <li>🟠 <strong>Buckets R2 de producción</strong> propios cuando se separe dev/prod (hoy se reusan los <code>*-dev</code>).</li>
+    <li>🟢 <strong>Renovar sorteatelo.cl</strong> cada año en nic.cl (vence 2027-07-17).</li>
+  </ul>
+</section>
+
+</main>
+<footer>
+  Generado el 2026-07-17 · Plataforma Sortéatelo · fuentes: ADR-0007 / ADR-0014 / ADR-0015, <code>docs/decisiones-abiertas.md</code>, <code>.env.example</code>
+</footer>
+</body>
+</html>
