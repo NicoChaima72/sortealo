@@ -34,7 +34,7 @@ describe("services/correo — fail-fast de config", () => {
 
     await expect(
       correo.enviarCorreo({
-        from: "T · vía Sortéatelo <onboarding@resend.dev>",
+        from: "T · vía Sortéatelo <no-reply@sorteatelo.cl>",
         to: "fan@example.cl",
         subject: "s",
         text: "t",
@@ -52,7 +52,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
     const correo = crearCorreoService({ apiKey: API_KEY, fetchImpl });
 
     const res = await correo.enviarCorreo({
-      from: "Tienda ARMY · vía Sortéatelo <onboarding@resend.dev>",
+      from: "Tienda ARMY · vía Sortéatelo <no-reply@sorteatelo.cl>",
       to: "fan@example.cl",
       replyTo: "organizadora@tienda.cl",
       subject: "Tu compra en Tienda ARMY",
@@ -69,7 +69,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
 
     const enviado = JSON.parse(init.body) as Record<string, unknown>;
     expect(enviado).toMatchObject({
-      from: "Tienda ARMY · vía Sortéatelo <onboarding@resend.dev>",
+      from: "Tienda ARMY · vía Sortéatelo <no-reply@sorteatelo.cl>",
       to: "fan@example.cl",
       reply_to: "organizadora@tienda.cl", // snake_case exigido por la API de Resend
       subject: "Tu compra en Tienda ARMY",
@@ -86,7 +86,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
     const correo = crearCorreoService({ apiKey: API_KEY, fetchImpl });
 
     await correo.enviarCorreo({
-      from: "T · vía Sortéatelo <onboarding@resend.dev>",
+      from: "T · vía Sortéatelo <no-reply@sorteatelo.cl>",
       to: "fan@example.cl",
       subject: "s",
       text: "t",
@@ -112,7 +112,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
 
     const err = await correo
       .enviarCorreo({
-        from: "T · vía Sortéatelo <onboarding@resend.dev>",
+        from: "T · vía Sortéatelo <no-reply@sorteatelo.cl>",
         to: "no-sirve",
         subject: "s",
         text: "t",
@@ -136,7 +136,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
 
     await expect(
       correo.enviarCorreo({
-        from: "T · vía Sortéatelo <onboarding@resend.dev>",
+        from: "T · vía Sortéatelo <no-reply@sorteatelo.cl>",
         to: "fan@example.cl",
         subject: "s",
         text: "t",
@@ -152,7 +152,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
  * lo corre UNA vez para probar el circuito real.
  *
  * Destinatario: el correo DE LA CUENTA Resend (`nikochaima72@gmail.com`). Con el remitente de
- * prueba `onboarding@resend.dev` (sin dominio verificado, S1), Resend SOLO permite enviar al email
+ * prueba `no-reply@sorteatelo.cl` (sin dominio verificado, S1), Resend SOLO permite enviar al email
  * exacto del dueño de la cuenta — rechaza cualquier otro destinatario (incluida la subdirección
  * `+test`, que Resend trata como string distinto) con 403 hasta verificar un dominio (decisión
  * abierta #4). Es la restricción esperada del modo sandbox, no un bug del adapter.
@@ -167,7 +167,7 @@ describe("services/correo — envío real contra Resend (integración, opt-in)",
     async () => {
       const correo = crearCorreoService({ apiKey: process.env.RESEND_API_KEY });
       const { id } = await correo.enviarCorreo({
-        from: "Sortéatelo (prueba) · vía Sortéatelo <onboarding@resend.dev>",
+        from: "Sortéatelo (prueba) · vía Sortéatelo <no-reply@sorteatelo.cl>",
         // El email del dueño de la cuenta Resend: único destinatario permitido con el
         // remitente de prueba sin dominio verificado (ver el header del describe).
         to: "nikochaima72@gmail.com",

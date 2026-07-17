@@ -20,10 +20,10 @@
 export const MARCA_PLATAFORMA = "Sortéatelo";
 
 /**
- * Remitente de PRUEBA de Resend, usado hasta que la decisión #4 (dominio de la plataforma) habilite
- * un dominio verificado (S1/ADR-0010). UN solo lugar para cambiarlo cuando llegue el dominio real.
+ * Remitente real del correo transaccional: dominio `sorteatelo.cl` VERIFIED en Resend (ADR-0014/0015).
+ * UN solo lugar para cambiarlo (D6). Buzón no monitoreado; el reply-to del Organizador va aparte.
  */
-export const REMITENTE_CORREO = "onboarding@resend.dev";
+export const REMITENTE_CORREO = "no-reply@sorteatelo.cl";
 
 export interface ItemDescarga {
   titulo: string;

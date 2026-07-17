@@ -20,7 +20,7 @@ describe("domain/correo/plantillaDescarga — construirFrom (D6)", () => {
     expect(construirFrom("Tienda ARMY")).toBe(
       `Tienda ARMY · vía ${MARCA_PLATAFORMA} <${REMITENTE_CORREO}>`,
     );
-    expect(REMITENTE_CORREO).toBe("onboarding@resend.dev"); // remitente dev hasta decisión #4 (S1)
+    expect(REMITENTE_CORREO).toBe("no-reply@sorteatelo.cl"); // dominio verificado en Resend (ADR-0014/0015)
   });
 });
 
