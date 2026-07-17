@@ -5,10 +5,15 @@ import { textoOpcionalANull } from "~/server/domain/panel/_internal";
 import { type CrearProductoInput } from "~/server/domain/panel/schemas";
 
 /**
- * Use case del panel (F05): crea un producto en la Tienda del Organizador. El `tenantId`
- * sale del `acceso` resuelto server-side, NUNCA del input (I1/ADR-0005): un producto no
- * puede crearse "para otra Tienda" desde el cliente. El precio se persiste como `Decimal`
- * (I4). `pdfPath` es el seam de F03 — texto por ahora; la subida real llega con F03 (I6).
+ * Use case del panel (F05, actualizado por F03/D4): crea un producto en la Tienda del
+ * Organizador. El `tenantId` sale del `acceso` resuelto server-side, NUNCA del input
+ * (I1/ADR-0005): un producto no puede crearse "para otra Tienda" desde el cliente. El precio
+ * se persiste como `Decimal` (I4).
+ *
+ * Nace **sin PDF** (`pdfPath: null` = pendiente) y **como borrador** (`activo: false`) —
+ * fail-closed: sin PDF no hay venta (I7). La subida real del archivo la hacen después
+ * `crearUrlSubidaPdf` + `confirmarPdfProducto` (presigned PUT a R2); recién ahí puede
+ * activarse. El cliente ya no manda ningún `pdfPath` (murió el seam de texto de F05, I6).
  */
 export async function crearProducto({
   db,
@@ -30,9 +35,9 @@ export async function crearProducto({
       titulo: input.titulo,
       descripcion: input.descripcion,
       precio: new Prisma.Decimal(input.precio), // CLP entero ⇒ Decimal (I4)
-      pdfPath: input.pdfPath,
+      pdfPath: null, // PDF pendiente; lo escribe solo confirmarPdfProducto (I6)
       portadaUrl: textoOpcionalANull(input.portadaUrl),
-      activo: true,
+      activo: false, // fail-closed: sin PDF no hay venta (I7)
     },
     select: { id: true },
   });

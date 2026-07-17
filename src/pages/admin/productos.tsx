@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   Card,
+  FileInput,
   Group,
   Modal,
   Select,
@@ -15,7 +16,12 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import { IconPencil, IconPlus } from "@tabler/icons-react";
+import {
+  IconFileText,
+  IconPencil,
+  IconPlus,
+  IconUpload,
+} from "@tabler/icons-react";
 import { type GetServerSideProps } from "next";
 import { useEffect, useState } from "react";
 
@@ -36,7 +42,6 @@ interface ProductoForm {
   titulo: string;
   descripcion: string;
   precio: string; // dinero SIEMPRE string (I2): CLP entero ⇒ Decimal en el server.
-  pdfPath: string;
   portadaUrl: string;
   activo: boolean;
 }
@@ -45,10 +50,12 @@ const VALORES_INICIALES: ProductoForm = {
   titulo: "",
   descripcion: "",
   precio: "3000",
-  pdfPath: "",
   portadaUrl: "",
-  activo: true,
+  activo: false, // un producto nace como borrador (sin PDF no hay venta, F03/I7)
 };
+
+/** Content-type único que firma el server para la subida (debe coincidir en el PUT). */
+const CONTENT_TYPE_PDF = "application/pdf";
 
 function iniciales(titulo: string) {
   return titulo
@@ -71,6 +78,10 @@ function ProductoFormModal({
   const esEdicion = producto !== null;
   const utils = api.useUtils();
 
+  // El PDF nuevo a subir (opcional): en crear, adjunta el archivo; en editar, lo reemplaza.
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+
   const form = useForm<ProductoForm>({
     initialValues: VALORES_INICIALES,
     validate: {
@@ -91,11 +102,11 @@ function ProductoFormModal({
       titulo: producto?.titulo ?? "",
       descripcion: producto?.descripcion ?? "",
       precio: producto?.precio ?? "3000",
-      pdfPath: producto?.pdfPath ?? "",
       portadaUrl: producto?.portadaUrl ?? "",
-      activo: producto?.activo ?? true,
+      activo: producto?.activo ?? false,
     });
     form.resetDirty();
+    setArchivo(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, producto]);
 
@@ -112,30 +123,80 @@ function ProductoFormModal({
     onOpenChange(false);
   };
 
-  const onError = (error: { message: string }) => {
-    notifications.show({ message: error.message, color: "red" });
+  const onError = (error: unknown) => {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Ocurrió un error. Vuelve a intentar.";
+    notifications.show({ message, color: "red" });
   };
 
-  const crear = api.panel.crearProducto.useMutation({ onSuccess: onDone, onError });
-  const actualizar = api.panel.actualizarProducto.useMutation({
-    onSuccess: onDone,
-    onError,
-  });
+  const crear = api.panel.crearProducto.useMutation();
+  const actualizar = api.panel.actualizarProducto.useMutation();
+  const crearUrlSubida = api.panel.crearUrlSubidaPdf.useMutation();
+  const confirmarPdf = api.panel.confirmarPdfProducto.useMutation();
 
-  const enviando = crear.isPending || actualizar.isPending;
+  const enviando =
+    crear.isPending ||
+    actualizar.isPending ||
+    crearUrlSubida.isPending ||
+    confirmarPdf.isPending ||
+    subiendo;
 
-  const submit = form.onSubmit((valores) => {
-    if (esEdicion) {
-      actualizar.mutate({ id: producto.id, ...valores });
-    } else {
-      // crear no recibe `activo` (nace a la venta por defecto en el server).
-      crear.mutate({
-        titulo: valores.titulo,
-        descripcion: valores.descripcion,
-        precio: valores.precio,
-        pdfPath: valores.pdfPath,
-        portadaUrl: valores.portadaUrl,
+  // El producto tiene PDF confirmado si ya lo tenía (edición) o si se adjuntó uno ahora.
+  const tienePdf = producto?.pdfPath != null || archivo !== null;
+
+  /**
+   * Sube el PDF a R2 por presigned PUT (D2): el server computa la key y firma la URL; el
+   * cliente hace el PUT directo (los bytes no pasan por nuestro server) y confirma. El
+   * `Content-Type` DEBE ser `application/pdf` (es lo que el server firmó — si no, R2 rechaza).
+   */
+  const subirPdf = async (productId: string, file: File) => {
+    setSubiendo(true);
+    try {
+      const { url } = await crearUrlSubida.mutateAsync({ productId });
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": CONTENT_TYPE_PDF },
+        body: file,
       });
+      if (!res.ok) {
+        throw new Error(`No se pudo subir el PDF (HTTP ${res.status}).`);
+      }
+      await confirmarPdf.mutateAsync({ productId });
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  const submit = form.onSubmit(async (valores) => {
+    try {
+      if (esEdicion) {
+        // Si hay archivo nuevo, subir ANTES de actualizar: así el guard del server permite
+        // activar (el producto ya tendrá pdfPath). Espeja el guard I7 acá para UX inmediata.
+        if (archivo) await subirPdf(producto.id, archivo);
+        if (valores.activo && !tienePdf) {
+          notifications.show({
+            message: "Sube el PDF antes de poner el producto a la venta.",
+            color: "red",
+          });
+          return;
+        }
+        await actualizar.mutateAsync({ id: producto.id, ...valores });
+      } else {
+        // Crear nace como borrador SIN PDF (el server fuerza pdfPath null + activo false).
+        const creado = await crear.mutateAsync({
+          titulo: valores.titulo,
+          descripcion: valores.descripcion,
+          precio: valores.precio,
+          portadaUrl: valores.portadaUrl,
+        });
+        // Si se adjuntó un PDF, subirlo y confirmarlo (queda listo para activar después).
+        if (archivo) await subirPdf(creado.id, archivo);
+      }
+      await onDone();
+    } catch (e) {
+      onError(e);
     }
   });
 
@@ -196,12 +257,41 @@ function ProductoFormModal({
             {...form.getInputProps("portadaUrl")}
           />
 
-          <TextInput
-            label="Ruta del PDF"
-            placeholder="autora/mi-libro.pdf"
-            description="Por ahora es una ruta de texto. La subida real del archivo llega con la próxima etapa (entrega de PDF)."
-            {...form.getInputProps("pdfPath")}
+          <FileInput
+            label={esEdicion ? "Reemplazar PDF" : "PDF del producto"}
+            placeholder={
+              esEdicion && producto.pdfPath != null
+                ? "Elegir un PDF nuevo (opcional)"
+                : "Elegir el archivo PDF"
+            }
+            description={
+              esEdicion
+                ? producto.pdfPath != null
+                  ? "El producto ya tiene su PDF. Sube uno nuevo solo si quieres reemplazarlo."
+                  : "Este producto todavía no tiene PDF: súbelo para poder ponerlo a la venta."
+                : "El archivo que la compradora descargará. Puedes agregarlo ahora o más tarde."
+            }
+            accept={CONTENT_TYPE_PDF}
+            clearable
+            value={archivo}
+            onChange={setArchivo}
+            leftSection={<IconFileText className="size-4" />}
           />
+
+          {esEdicion && (
+            <Badge
+              variant="light"
+              color={producto.pdfPath != null || archivo ? "teal" : "orange"}
+              leftSection={<IconUpload className="size-3" />}
+              styles={{ root: { width: "fit-content" }, label: { textTransform: "none" } }}
+            >
+              {archivo
+                ? "PDF nuevo listo para subir"
+                : producto.pdfPath != null
+                  ? "PDF subido"
+                  : "PDF pendiente"}
+            </Badge>
+          )}
         </div>
 
         <Group justify="flex-end" mt="lg" gap="sm">
@@ -341,6 +431,14 @@ export default function ProductosPage() {
                           styles={{ label: { textTransform: "none" } }}
                         >
                           A la venta
+                        </Badge>
+                      ) : producto.pdfPath == null ? (
+                        <Badge
+                          variant="outline"
+                          color="orange"
+                          styles={{ label: { fontWeight: 400, textTransform: "none" } }}
+                        >
+                          Sin PDF
                         </Badge>
                       ) : (
                         <Badge

@@ -5,9 +5,11 @@ import { type AccesoPanel } from "~/server/authPolicy";
 import { crearProducto } from "~/server/domain/panel/crearProducto";
 
 /**
- * Tests del use case `crearProducto` con `db` FAKE. Clave (F02): el `tenantId` sale del
- * `acceso` resuelto server-side, NUNCA del input; el precio se persiste como `Decimal`;
- * el `pdfPath` es el seam de F03 (texto). Sin membresía ⇒ FORBIDDEN.
+ * Tests del use case `crearProducto` con `db` FAKE. Clave: el `tenantId` sale del `acceso`
+ * resuelto server-side, NUNCA del input; el precio se persiste como `Decimal`. Actualizado
+ * por F03/D4: el producto nace SIN PDF (`pdfPath: null`) y como BORRADOR (`activo: false`) —
+ * fail-closed, sin PDF no hay venta (I7); el cliente ya no manda `pdfPath` (murió el seam).
+ * Sin membresía ⇒ FORBIDDEN.
  */
 
 function fakeDb() {
@@ -30,8 +32,8 @@ const acceso = (tenantIds: string[]): AccesoPanel => ({
 });
 
 describe("domain/panel/crearProducto (fake db, tenant-scoped)", () => {
-  // panel.productos.crear.001 — persiste con el tenantId resuelto, precio Decimal, pdfPath seam
-  it("crea el producto con el tenantId resuelto server-side, precio Decimal y pdfPath", async () => {
+  // panel.productos.crear.001 — persiste con el tenantId resuelto, precio Decimal, PDF pendiente
+  it("crea el producto con el tenantId resuelto server-side, precio Decimal, pdfPath null y activo false", async () => {
     const { db, getCreado } = fakeDb();
     await crearProducto({
       db,
@@ -40,7 +42,6 @@ describe("domain/panel/crearProducto (fake db, tenant-scoped)", () => {
         titulo: "Nuevo libro",
         descripcion: "una descripción",
         precio: "3000",
-        pdfPath: "A/pendiente/nuevo-libro.pdf",
         portadaUrl: "",
       },
     });
@@ -49,8 +50,9 @@ describe("domain/panel/crearProducto (fake db, tenant-scoped)", () => {
     expect(data.titulo).toBe("Nuevo libro");
     expect(Prisma.Decimal.isDecimal(data.precio)).toBe(true);
     expect((data.precio as Prisma.Decimal).toFixed(2)).toBe("3000.00");
-    expect(data.pdfPath).toBe("A/pendiente/nuevo-libro.pdf");
-    expect(data.activo).toBe(true);
+    // F03/D4: nace SIN PDF y como borrador (fail-closed, I7).
+    expect(data.pdfPath).toBeNull();
+    expect(data.activo).toBe(false);
     // portadaUrl vacía ⇒ null (no string vacío)
     expect(data.portadaUrl).toBeNull();
   });
@@ -66,7 +68,6 @@ describe("domain/panel/crearProducto (fake db, tenant-scoped)", () => {
           titulo: "x",
           descripcion: "y",
           precio: "1000",
-          pdfPath: "x.pdf",
           portadaUrl: "",
         },
       }),

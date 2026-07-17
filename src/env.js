@@ -43,6 +43,17 @@ export const env = createEnv({
     // FLOW_URL_CONFIRMATION apunta al webhook único /api/webhooks/flow.
     FLOW_URL_CONFIRMATION: z.string().url().optional(),
     FLOW_URL_RETURN: z.string().url().optional(),
+    // Storage de PDFs — Cloudflare R2, bucket privado S3-compatible (ADR-0002/0009, F03).
+    // A diferencia de Flow (BYO por tenant, ADR-0006), el storage es de PLATAFORMA: una
+    // sola cuenta R2 operada por el freelancer, un bucket con paths per-tenant. Opcionales:
+    // la app arranca sin ellas; la factory `crearStorageService` hace fail-fast en runtime
+    // si faltan al presignar/subir (I4/I7, patrón Flow). Las claves R2 son SECRETAS: solo
+    // en env (Zod) y en memoria dentro del closure del service — jamás en logs ni respuestas.
+    R2_ACCOUNT_ID: z.string().optional(),
+    R2_ACCESS_KEY_ID: z.string().optional(),
+    R2_SECRET_ACCESS_KEY: z.string().optional(),
+    R2_BUCKET: z.string().optional(),
+    R2_ENDPOINT: z.string().url().optional(),
   },
 
   /**
@@ -75,6 +86,11 @@ export const env = createEnv({
     CREDENTIALS_ENCRYPTION_KEY: process.env.CREDENTIALS_ENCRYPTION_KEY,
     FLOW_URL_CONFIRMATION: process.env.FLOW_URL_CONFIRMATION,
     FLOW_URL_RETURN: process.env.FLOW_URL_RETURN,
+    R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+    R2_BUCKET: process.env.R2_BUCKET,
+    R2_ENDPOINT: process.env.R2_ENDPOINT,
     NEXT_PUBLIC_PLATFORM_DOMAIN: process.env.NEXT_PUBLIC_PLATFORM_DOMAIN,
   },
   /**

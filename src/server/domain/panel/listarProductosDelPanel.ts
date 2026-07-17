@@ -25,7 +25,7 @@ export async function listarProductosDelPanel({
     precio: string;
     activo: boolean;
     portadaUrl: string | null;
-    pdfPath: string;
+    pdfPath: string | null; // null = PDF pendiente (F03/D4)
     createdAt: Date;
   }>
 > {

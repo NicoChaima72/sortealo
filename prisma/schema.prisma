@@ -186,7 +186,7 @@ model Product {
   descripcion    String
   precio         Decimal         @db.Decimal(15, 2) // precio final al público, IVA incluido (I4)
   portadaUrl     String?
-  pdfPath        String // ref al PDF en storage privado per-tenant (ADR-0002/0009); nunca enlace público
+  pdfPath        String? // null = PDF pendiente; NO-null = key determinística `<tenantId>/<productId>.pdf` verificada en R2 privado (ADR-0002/0009), la escribe SOLO confirmarPdfProducto tras headObject; nunca enlace público
   activo         Boolean         @default(true)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt

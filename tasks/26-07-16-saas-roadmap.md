@@ -792,3 +792,37 @@ Para F01 (los demás en el planning de cada fase):
   productos queda 1:1 (sin botón destructivo nuevo — REVISABLE si el usuario quiere confirmación de
   desactivar); `text-right` blesseado como layout en frontend-conventions. E2E-con-sesión de F05
   cubiertos en este pase (dashboard/ventas en vivo; productos/config renderizan 200 + Vitest).
+- [2026-07-17 01:56] [planner-grill] **F03 planificada** → task file propio
+  `tasks/26-07-17-entrega-storage-r2.md` (SIN grill, instrucción nocturna: criterio + Supuestos
+  revisables). Alcance: (1) `services/storage.ts` — adapter S3-compatible contra R2 (ADR-0009;
+  factory config explícita patrón flow.ts, presign GET/PUT + headObject, aws-sdk v3); (2) subida
+  real del PDF del panel por **presigned PUT desde el cliente** (S1 revisable) a la key
+  determinística `<tenantId>/<productId>.pdf` computada server-side — cierra el seam `pdfPath` de
+  F05, `Product.pdfPath` pasa a nullable (schema-guardian) y "sin PDF no hay producto activo";
+  (3) endpoint público `GET /api/descargas/[token]`: DownloadGrant vigente ⇒ 302 a URL prefirmada
+  ~10 min, cualquier fallo ⇒ 404 neutral idéntico (I9: cross-tenant imposible + defensa en
+  profundidad por prefijo de key); (4) `/dev/descargas` (solo dev) como puente de E2E hasta el
+  correo de F04. `GRANT_TTL_DIAS=30` RATIFICADO (el schema decía "política final en F03"). Marca
+  de agua **#6 sigue ABIERTA** (diferida a propósito — blob opaco end-to-end). Infra lista: bucket
+  `sortealo-dev` + token, creds en `.env` (declararlas en `env.js`/`.env.example` es paso 1 del
+  plan). **AWAITING USER APPROVAL** para pasar F03 a implementing.
+- [2026-07-17 02:34] [F03] **F03 IMPLEMENTADA** (feature-implementer, contrato nocturno; detalle
+  completo en la Bitácora de `tasks/26-07-17-entrega-storage-r2.md`). Storage privado R2 operativo:
+  `services/storage.ts` (adapter S3-compatible, factory config-explícita, presign PUT/GET 10 min +
+  headObject, `keyDePdfProducto` per-tenant), subida real del PDF desde el panel por presigned PUT
+  (cierra el seam `pdfPath` de F05 → `Product.pdfPath` nullable vía schema-guardian; `crearUrlSubidaPdf`
+  + `confirmarPdfProducto`; FileInput Mantine con flujo crear→PUT→confirmar; guard "sin PDF no hay
+  venta"), endpoint público `GET /api/descargas/[token]` (núcleo+wrapper; grant vigente ⇒ 302 a URL
+  prefirmada, cualquier fallo ⇒ 404 neutral idéntico, defensa I9 por prefijo de tenant, sin sesión
+  ADR-0004, no loguea token/path), `/dev/descargas` puente pre-F04. Deps `@aws-sdk/client-s3` +
+  `s3-request-presigner`. Gates: tsc/lint/**vitest 165/165** (incl. roundtrip real contra R2; cero
+  regresión). backend+frontend-reviewer APPROVE. Desbloquea F04 (correo con el enlace) y la entrega
+  real del piloto (F07). **⚠ Pendiente operativo**: CORS del bucket a mano en Cloudflare (el token
+  Object R&W no tiene `PutBucketCors` — S2); solo afecta el PUT de subida desde el navegador (el E2E
+  de F02), NO la descarga ni el resto. Marca de agua #6 sigue DIFERIDA/ABIERTA. Sin commit/push/
+  feature-tester (instrucción nocturna).
+- [2026-07-17 06:45] [orquestador] F03 verificada E2E de punta a punta: PDF real subido a R2
+  (key per-tenant), GET /api/descargas/<token> ⇒ 302 presignado ⇒ descarga 200 bytes PDF válidos;
+  token inválido ⇒ 404 neutral. CORS del bucket configurado vía dashboard (el token API no tiene
+  PutBucketCors — cubierto manualmente por el orquestador con la sesión del usuario). Gates 165/165.
+  El circuito comercial completo (compra→pago→grant→descarga) está operativo en dev.

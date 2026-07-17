@@ -15,19 +15,15 @@ const precioClp = z
   .refine((v) => Number(v) > 0, "El precio debe ser mayor que 0");
 
 /**
- * `pdfPath` es el SEAM de F03: en F05 no hay subida real de archivos (I6). El Organizador
- * ingresa/edita la ruta como texto claramente marcado "la subida real llega con F03".
+ * El seam de texto `pdfPath` de F05 MURIÓ con F03 (D4/I6): el cliente ya no escribe paths
+ * (cerró el vector de un path arbitrario/ajeno como input). El `pdfPath` lo escribe SOLO
+ * `confirmarPdfProducto` = key determinística `<tenantId>/<productId>.pdf`, computada
+ * server-side. `crearProducto` nace con `pdfPath: null` (pendiente) y `activo: false`.
  */
-const pdfPath = z
-  .string()
-  .trim()
-  .min(1, "Indica la ruta del PDF (la subida real llega con F03)");
-
 export const crearProductoInput = z.object({
   titulo: z.string().trim().min(1, "El título es obligatorio").max(200),
   descripcion: z.string().trim().min(1, "La descripción es obligatoria").max(2000),
   precio: precioClp,
-  pdfPath,
   portadaUrl: z.string().trim().url().optional().or(z.literal("")),
 });
 export type CrearProductoInput = z.infer<typeof crearProductoInput>;
@@ -37,11 +33,26 @@ export const actualizarProductoInput = z.object({
   titulo: z.string().trim().min(1, "El título es obligatorio").max(200),
   descripcion: z.string().trim().min(1, "La descripción es obligatoria").max(2000),
   precio: precioClp,
-  pdfPath,
   portadaUrl: z.string().trim().url().optional().or(z.literal("")),
   activo: z.boolean(),
 });
 export type ActualizarProductoInput = z.infer<typeof actualizarProductoInput>;
+
+/**
+ * Subida del PDF (F03/D4): el cliente pide una URL prefirmada para SU producto — NUNCA elige
+ * la key (la computa el server con `keyDePdfProducto(tenantId, productId)`, I6) ni manda el
+ * `tenantId` (sale del acceso, I1). Solo referencia el producto por id.
+ */
+export const crearUrlSubidaPdfInput = z.object({
+  productId: z.string().cuid(),
+});
+export type CrearUrlSubidaPdfInput = z.infer<typeof crearUrlSubidaPdfInput>;
+
+/** Confirmación de la subida (F03/D4): verifica con headObject y persiste `pdfPath`. */
+export const confirmarPdfProductoInput = z.object({
+  productId: z.string().cuid(),
+});
+export type ConfirmarPdfProductoInput = z.infer<typeof confirmarPdfProductoInput>;
 
 /** Listado de ventas del panel, paginado por cursor (backend-conventions § Paginación). */
 export const listarVentasInput = z.object({

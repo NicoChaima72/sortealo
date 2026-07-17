@@ -1,7 +1,9 @@
 import { runDomain } from "~/server/api/runDomain";
 import { createTRPCRouter, panelProcedure } from "~/server/api/trpc";
 import { actualizarProducto } from "~/server/domain/panel/actualizarProducto";
+import { confirmarPdfProducto } from "~/server/domain/panel/confirmarPdfProducto";
 import { crearProducto } from "~/server/domain/panel/crearProducto";
+import { crearUrlSubidaPdf } from "~/server/domain/panel/crearUrlSubidaPdf";
 import { ejecutarSorteo } from "~/server/domain/panel/ejecutarSorteo";
 import { getAccesoActual } from "~/server/domain/panel/getAccesoActual";
 import { getConfiguracionTienda } from "~/server/domain/panel/getConfiguracionTienda";
@@ -14,13 +16,16 @@ import { listarProductosDelPanel } from "~/server/domain/panel/listarProductosDe
 import { listarVentas } from "~/server/domain/panel/listarVentas";
 import {
   actualizarProductoInput,
+  confirmarPdfProductoInput,
   crearProductoInput,
+  crearUrlSubidaPdfInput,
   ejecutarSorteoInput,
   guardarConfiguracionTiendaInput,
   guardarCredencialFlowInput,
   listarVentasInput,
 } from "~/server/domain/panel/schemas";
 import { claveDeCifradoDeEnv } from "~/server/pago/flowDeTenant";
+import { crearStorageDeEnv } from "~/server/storage/storageDeEnv";
 
 /**
  * Router del panel de Organizadores (F05, ADR-0005) — borde de administración. Todos sus
@@ -54,6 +59,35 @@ export const panelRouter = createTRPCRouter({
     .mutation(({ ctx, input }) =>
       runDomain(() =>
         actualizarProducto({ db: ctx.db, acceso: ctx.acceso, input }),
+      ),
+    ),
+
+  // ── Subida del PDF a R2 (F03/D4): presigned PUT + confirmación server-side ──
+  // El storage se cabla desde env en el borde (crearStorageDeEnv, I7); el use case lo
+  // recibe inyectado. El cliente NUNCA elige la key (la computa el server, I6).
+  crearUrlSubidaPdf: panelProcedure
+    .input(crearUrlSubidaPdfInput)
+    .mutation(({ ctx, input }) =>
+      runDomain(() =>
+        crearUrlSubidaPdf({
+          db: ctx.db,
+          acceso: ctx.acceso,
+          input,
+          storage: crearStorageDeEnv(),
+        }),
+      ),
+    ),
+
+  confirmarPdfProducto: panelProcedure
+    .input(confirmarPdfProductoInput)
+    .mutation(({ ctx, input }) =>
+      runDomain(() =>
+        confirmarPdfProducto({
+          db: ctx.db,
+          acceso: ctx.acceso,
+          input,
+          storage: crearStorageDeEnv(),
+        }),
       ),
     ),
 

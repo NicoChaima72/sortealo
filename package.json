@@ -17,6 +17,7 @@
     "seed:tenants": "tsx scripts/seed-tenants.ts",
     "otorgar:membresia": "tsx scripts/otorgar-membresia.ts",
     "seed:raffles": "tsx scripts/seed-raffles.ts",
+    "cors:r2": "tsx scripts/configurar-cors-r2.ts",
     "lint": "next lint",
     "start": "next start",
     "test": "vitest run",
@@ -24,6 +25,8 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^1.6.0",
+    "@aws-sdk/client-s3": "^3.1089.0",
+    "@aws-sdk/s3-request-presigner": "^3.1089.0",
     "@mantine/core": "^7.17.8",
     "@mantine/form": "^7.17.8",
     "@mantine/hooks": "^7.17.8",
