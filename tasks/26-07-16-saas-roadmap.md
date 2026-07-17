@@ -9,7 +9,7 @@ related_context: [Plataforma, Tienda, Organizador, Operador de plataforma, Autor
 features:
   - id: F01
     behavior: "Fundación multi-tenant + circuito de pago BYO-Flow: modelo Tenant + scoping por tenantId, resolución por subdominio (middleware), CredencialFlow cifrada, checkout y webhook ruteados al tenant correcto, verificado con 2 tenants sandbox"
-    state: active
+    state: done
   - id: F02
     behavior: "Efectos post-pago per-tenant: DownloadGrant + Raffle/RaffleEntry scopeados, creados idempotentemente en la transacción del webhook"
     state: not_started
@@ -259,19 +259,19 @@ Solo F01 (fase detallada). F02–F10 definen las suyas en su propio task file.
 ### F01 — Fundación multi-tenant + circuito de pago BYO-Flow
 
 **Vitest** (integration):
-- [ ] El parser de host resuelve `a.dominio` → slug `a`; apex y `www` → zona plataforma (sin tenant); host inválido/anidado no resuelve tenant. — [F01-B] `src/__tests__/server/tenancy/parsearHost.test.ts` (11 tests); [F01-INT] verificado además en vivo (curl por subdominio, ver Bitácora)
-- [ ] La resolución completa: slug existente y **publicada** ⇒ tenant en contexto; slug inexistente, en configuración o suspendida ⇒ sin storefront (respuesta neutral). — [F01-B] `src/__tests__/server/tenancy/resolverTenant.test.ts` (12 tests, repo fake); [F01-INT] repo real cableado (`crearRepoTenants`) y verificado en vivo: `autora.localhost`/`prueba.localhost` sirven SOLO su catálogo; apex y slug inexistente ⇒ `NOT_FOUND` neutral
-- [ ] Cifrado: roundtrip encrypt/decrypt recupera el secreto; el ciphertext no contiene el plaintext; descifrar con key incorrecta falla. — `src/__tests__/server/services/cifrado.test.ts::cifrado.001/002/003` (+ 004 IV aleatorio, 005 error sin filtrar clave) — PASSING 5/5
-- [ ] `iniciarCheckout` crea `Order` `pendiente` + `OrderItem`(s) con snapshot de precio, `total` = suma, correo persistido y `tenantId` del tenant del contexto. — [F01-C] `src/__tests__/server/checkout/iniciarCheckout.test.ts::checkout.iniciar.001` (fake db)
-- [ ] Aislamiento: `iniciarCheckout` en la tienda A con un producto de la tienda B ⇒ `NOT_FOUND`; los listados solo devuelven productos del tenant del contexto. — [F01-C] `iniciarCheckout.test.ts::checkout.iniciar.002/003` (producto de otra tienda ⇒ NOT_FOUND) + `listarProductos` scopea `where.tenantId` (query-level; E2E confirma el catálogo por subdominio)
-- [ ] El service Flow se instancia con las credenciales del tenant y `crearPago` firma con la secretKey de ESE tenant (dos tenants ⇒ firmas distintas para el mismo payload). — [F01-C] `src/__tests__/server/services/flow.test.ts::flow.crearPago.003` + `src/__tests__/server/pago/flowDeTenant.test.ts::flowDeTenant.001/002`
-- [ ] El webhook rutea: dado un token/commerceOrder, deriva la orden y su tenant, y consulta `getStatus` con las credenciales de ese tenant (nunca las de otro, nunca globales). — [F01-C] `src/__tests__/server/pago/enrutarPagoFlow.test.ts::ruteo.001/002/003` + `webhookFlow.test.ts::webhook.ruteo.pagado/unknown-token`
-- [ ] El webhook confirma server-side y avanza `pendiente→pagado` una sola vez, en `$transaction`; replay ⇒ ack sin re-efectos; resultado fallido ⇒ `pendiente→fallido`; método ≠ POST ⇒ 405 sin efectos. — [F01-C] `src/__tests__/server/pago/webhookFlow.test.ts::webhook.gate.405/getStatus-first/idempotencia/confirmacion.fallido/pendiente` + `confirmarPagoDeOrden.test.ts::confirmar.001..005` (fake db; atomicidad DB-level real la valida el E2E/feature-tester)
-- [ ] Los seeds son idempotentes y dejan 2 tenants con credenciales y producto propios. — `src/__tests__/scripts/seed-tenants.test.ts::seed.tenants.001/002` — [F01-INT] **PASSING 3/3 contra la DB real** (Supabase ya despausado) + `npm run seed:tenants` corrido idempotente (los 2 tenants ya existían; credenciales re-sembradas — hoy PLACEHOLDERS, pendientes las 2 cuentas sandbox reales)
-- [ ] Secretos (keys de Flow, key de cifrado) jamás aparecen en logs ni respuestas. — parcial [F01-A]: `cifrado.test.ts::cifrado.005` (mensaje de error sin filtrar la clave) + `seed-tenants.test.ts::seed.tenants.003` (ciphertext en DB sin plaintext); [F01-C]: `enrutarPagoFlow.test.ts::ruteo.004` (el ruteo + getStatus nunca loguean las creds del tenant, ni cifradas ni en claro) + el webhook responde solo `received/yaProcesado/transicion`/`ignorado` (nunca tenantId, creds ni token)
+- [x] El parser de host resuelve `a.dominio` → slug `a`; apex y `www` → zona plataforma (sin tenant); host inválido/anidado no resuelve tenant. — [F01-B] `src/__tests__/server/tenancy/parsearHost.test.ts` (11 tests); [F01-INT] verificado además en vivo (curl por subdominio, ver Bitácora)
+- [x] La resolución completa: slug existente y **publicada** ⇒ tenant en contexto; slug inexistente, en configuración o suspendida ⇒ sin storefront (respuesta neutral). — [F01-B] `src/__tests__/server/tenancy/resolverTenant.test.ts` (12 tests, repo fake); [F01-INT] repo real cableado (`crearRepoTenants`) y verificado en vivo: `autora.localhost`/`prueba.localhost` sirven SOLO su catálogo; apex y slug inexistente ⇒ `NOT_FOUND` neutral
+- [x] Cifrado: roundtrip encrypt/decrypt recupera el secreto; el ciphertext no contiene el plaintext; descifrar con key incorrecta falla. — `src/__tests__/server/services/cifrado.test.ts::cifrado.001/002/003` (+ 004 IV aleatorio, 005 error sin filtrar clave) — PASSING 5/5
+- [x] `iniciarCheckout` crea `Order` `pendiente` + `OrderItem`(s) con snapshot de precio, `total` = suma, correo persistido y `tenantId` del tenant del contexto. — [F01-C] `src/__tests__/server/checkout/iniciarCheckout.test.ts::checkout.iniciar.001` (fake db)
+- [x] Aislamiento: `iniciarCheckout` en la tienda A con un producto de la tienda B ⇒ `NOT_FOUND`; los listados solo devuelven productos del tenant del contexto. — [F01-C] `iniciarCheckout.test.ts::checkout.iniciar.002/003` (producto de otra tienda ⇒ NOT_FOUND) + `listarProductos` scopea `where.tenantId` (query-level; E2E confirma el catálogo por subdominio)
+- [x] El service Flow se instancia con las credenciales del tenant y `crearPago` firma con la secretKey de ESE tenant (dos tenants ⇒ firmas distintas para el mismo payload). — [F01-C] `src/__tests__/server/services/flow.test.ts::flow.crearPago.003` + `src/__tests__/server/pago/flowDeTenant.test.ts::flowDeTenant.001/002`
+- [x] El webhook rutea: dado un token/commerceOrder, deriva la orden y su tenant, y consulta `getStatus` con las credenciales de ese tenant (nunca las de otro, nunca globales). — [F01-C] `src/__tests__/server/pago/enrutarPagoFlow.test.ts::ruteo.001/002/003` + `webhookFlow.test.ts::webhook.ruteo.pagado/unknown-token`
+- [x] El webhook confirma server-side y avanza `pendiente→pagado` una sola vez, en `$transaction`; replay ⇒ ack sin re-efectos; resultado fallido ⇒ `pendiente→fallido`; método ≠ POST ⇒ 405 sin efectos. — [F01-C] `src/__tests__/server/pago/webhookFlow.test.ts::webhook.gate.405/getStatus-first/idempotencia/confirmacion.fallido/pendiente` + `confirmarPagoDeOrden.test.ts::confirmar.001..005` (fake db; atomicidad DB-level real la valida el E2E/feature-tester)
+- [x] Los seeds son idempotentes y dejan 2 tenants con credenciales y producto propios. — `src/__tests__/scripts/seed-tenants.test.ts::seed.tenants.001/002` — [F01-INT] **PASSING 3/3 contra la DB real** (Supabase ya despausado) + `npm run seed:tenants` corrido idempotente (los 2 tenants ya existían; credenciales re-sembradas — hoy PLACEHOLDERS, pendientes las 2 cuentas sandbox reales)
+- [x] Secretos (keys de Flow, key de cifrado) jamás aparecen en logs ni respuestas. — parcial [F01-A]: `cifrado.test.ts::cifrado.005` (mensaje de error sin filtrar la clave) + `seed-tenants.test.ts::seed.tenants.003` (ciphertext en DB sin plaintext); [F01-C]: `enrutarPagoFlow.test.ts::ruteo.004` (el ruteo + getStatus nunca loguean las creds del tenant, ni cifradas ni en claro) + el webhook responde solo `received/yaProcesado/transicion`/`ignorado` (nunca tenantId, creds ni token)
 
 **E2E** (manual en sandbox — el checkout corre en el dominio de Flow):
-- [ ] En `autora.localhost` y `prueba.localhost`: elegir producto + email ⇒ pagar con tarjeta de prueba ⇒ cada `Order` queda `pagado` bajo SU tenant, confirmada con las credenciales de SU cuenta Flow sandbox, webhook procesado una sola vez (verificable en Prisma Studio). — [F01-INT] **PENDIENTE, bloqueado por externos**: (1) credenciales de 2 cuentas Flow sandbox DISTINTAS (AWAITING USER, ver Bitácora), (2) túnel público para `FLOW_URL_CONFIRMATION`. El cableado previo al pago SÍ está verificado en vivo (catálogo scoped por subdominio, gate 405 del webhook, ack de token desconocido).
+- [x] En `autora.localhost` y `prueba.localhost`: elegir producto + email ⇒ pagar con tarjeta de prueba ⇒ cada `Order` queda `pagado` bajo SU tenant, confirmada con las credenciales de SU cuenta Flow sandbox, webhook procesado una sola vez (verificable en Prisma Studio). — [F01-INT] **EJECUTADO 2026-07-16** por la sesión principal + usuario (2 cuentas Flow sandbox reales + túnel cloudflared); **evidencia verificada en DB por el feature-tester** (read-only): `prueba` order `cmro6zik8000hwzaccvuppj1x` PAGADO/PAGADO total 5000 fee 160 (cuenta Flow 2); `autora` order `cmro6sgp00009wzacugpo4q45` PAGADO/PAGADO total 3000 fee 96 (cuenta Flow 1); orden rechazada por Flow (error 1620) `cmro6ojmg0002wzacbt9iwo4z` quedó PENDIENTE/PENDIENTE sin token (jamás confirmada server-side, I2/I3). Fees distintos = getStatus con la credencial propia de cada tenant; 4 secretKeys cifradas distintas en DB, cero fuga cross-tenant; conteo prueba=1 PAGADO / autora=1 PAGADO+1 PENDIENTE. **Prueba de fuego D1 CUMPLIDA**. ✅ 2026-07-16
 
 ### F02–F10
 - [ ] (se definen en el task file de cada fase al planificarla)
@@ -636,3 +636,29 @@ Para F01 (los demás en el planning de cada fase):
   `tenantProcedure` + defensa en profundidad del contexto) y § Endpoints/factory (webhook multi-tenant con
   ruteo por token + seam `construirFlowDeCredencial`/`crearFlowServiceDeTenant`, sin cliente Flow global).
   Status → **testing**; INDEX actualizado. Siguiente: feature-tester (lo orquesta la sesión principal).
+- [2026-07-16 20:30] [feature-tester] **F01 validada — Vitest + evidencia E2E en verde.** (1) **Vitest completo
+  `npx vitest run`: 14 archivos / 82 tests PASSING, exit 0** (71.99s; incluye los 3 DB-backed de
+  `seed-tenants.test.ts` contra Supabase despausado). Marcados `[x]` los 10 checkboxes Vitest de Validaciones
+  F01: parser de host, resolución completa (respuesta neutral ADR-0007), cifrado AES-256-GCM (roundtrip/no-plaintext/
+  key-incorrecta), `iniciarCheckout` con snapshot+tenantId, aislamiento cross-tenant, Flow instanciado por credencial
+  (firmas distintas), ruteo del webhook por token→tenant, confirmación server-side idempotente en `$transaction`,
+  seeds idempotentes, secretos nunca en logs/respuestas. (2) **Evidencia E2E verificada directamente en la DB**
+  (query read-only `npx tsx`, NO repetí el flujo en browser — el E2E lo ejecutó la sesión principal con el usuario):
+  `prueba` order `cmro6zik8000hwzaccvuppj1x` → email `nikochaima72+e2eprueba@gmail.com`, total 5000, Order+Payment
+  PAGADO, monto 5000, **fee 160**, token presente (cuenta Flow sandbox 2); `autora` order `cmro6sgp00009wzacugpo4q45`
+  → email `nikochaima72+e2eautora@gmail.com`, total 3000, PAGADO/PAGADO, monto 3000, **fee 96**, token presente
+  (cuenta Flow sandbox 1); orden rechazada por Flow (error 1620) `cmro6ojmg0002wzacbt9iwo4z` (email
+  `comprador-e2e-autora@test.cl`, tenant autora) quedó **PENDIENTE/PENDIENTE sin token** — jamás confirmada
+  server-side (I2/I3 sostenidos: el body/redirect nunca fue prueba de pago). (3) **Aislamiento cross-tenant
+  confirmado**: 4 tenants con credencial (autora/prueba/test-seed-a/test-seed-b), **4 secretKeys cifradas DISTINTAS**
+  (cero reuso), autora+prueba `sandbox=true`; conteo de órdenes prueba=1 PAGADO / autora=1 PAGADO + 1 PENDIENTE.
+  Fees distintos (160 vs 96) = cada `getStatus` corrió con la credencial descifrada del tenant dueño de la orden,
+  nunca cruzada (I5/ADR-0006). (4) **La prueba de fuego D1 (2 tenants, 2 cuentas Flow sandbox distintas, webhook
+  ruteado por tenant, cero fuga cross-tenant) queda CUMPLIDA** — es el criterio de hecho de F01. Marcado `[x]` el
+  checkbox E2E con la evidencia. NO cambié `status` ni `state` (decisión del usuario); NO hice commit; NO usé browser.
+  Cierre con las 4 opciones estándar → orquestador. Log de la corrida en `tasks/.e2e-run.log` (gitignored).
+- [2026-07-16 21:40] [orquestador] Usuario decidió cierre de F01: opción 4+2 — commit del tracking de
+  validación y **F01 → state: done** (fase cerrada; el roadmap paraguas sigue activo hasta F10). E2E
+  con la prueba de fuego D1 cumplida (2 tenants, 2 cuentas Flow sandbox, fees 96/160 con credenciales
+  del tenant dueño, cero fuga). Se abren F02 (efectos post-pago) y F05 (auth Organizadores) en
+  paralelo — planners despachados para sus task files propios.

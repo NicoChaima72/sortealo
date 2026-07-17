@@ -8,7 +8,7 @@ Una fila = una línea corta. El detalle vive en la **Bitácora** de cada `tasks/
 
 | slug | agente / estado |
 |------|-----------------|
-| saas-roadmap | **testing** — F01 integrada 2026-07-16 [F01-INT]: los 3 carriles cableados (repoTenants real, ctx.flow global retirado, NEXT_PUBLIC_PLATFORM_DOMAIN, seeds por-tenant, dev page tenant-aware), **Vitest 82/82 + tsc + eslint verdes** (Supabase despausado, tests DB-backed incluidos), middleware + aislamiento por subdominio verificados en vivo. Falta feature-tester + E2E manual: AWAITING USER (2 cuentas Flow sandbox + túnel público — ver Bitácora). |
+| saas-roadmap | implementing — F01 DONE (validada 82/82 + E2E D1 verde, commit 6d5a766). F02 y F05 en planning paralelo (task files propios). Siguientes bloqueos externos: identidad visual (F06), decisiones #3/#4/#5/#6. |
 
 ## En pausa
 

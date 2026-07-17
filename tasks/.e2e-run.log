@@ -1,0 +1,32 @@
+=== feature-tester run — F01 (saas-roadmap) ===
+Modo: feature (slug=saas-roadmap)
+Scope: Validaciones F01 (Vitest completo + verificación de evidencia E2E en DB)
+Server URL: N/A (E2E manual ya ejecutado por la sesión principal; feature-tester NO usa browser)
+Inicio: 2026-07-16
+
+--- VITEST (npx vitest run) ---
+[PASS] 14 test files / 82 tests — exit 0 (71.99s)
+  parsearHost.test.ts .......... verde
+  resolverTenant.test.ts (12) .. verde
+  configPlataforma.test.ts (5) . verde
+  headerTenant.test.ts (6) ..... verde
+  cifrado.test.ts (5) .......... verde
+  iniciarCheckout.test.ts (4) .. verde
+  flow.test.ts ................. verde (incl. firmas distintas por tenant)
+  flowDeTenant.test.ts (3) ..... verde
+  enrutarPagoFlow.test.ts (4) .. verde (incl. no-logueo de secretos)
+  webhookFlow.test.ts (9) ...... verde
+  confirmarPagoDeOrden.test.ts (5) verde
+  seed-tenants.test.ts (3, DB-backed) verde
+
+--- E2E (verificación de evidencia en DB, read-only via npx tsx) ---
+[OK] order=cmro6zik8000hwzaccvuppj1x tenant=prueba PAGADO/PAGADO total=5000 fee=160 token=presente items=1
+[OK] order=cmro6sgp00009wzacugpo4q45 tenant=autora PAGADO/PAGADO total=3000 fee=96  token=presente items=1
+[OK] order=cmro6ojmg0002wzacbt9iwo4z tenant=autora PENDIENTE/PENDIENTE token=AUSENTE (rechazada por Flow, jamás confirmada) items=1
+[OK] Aislamiento credenciales: 4 tenants, 4 secretKeys cifradas DISTINTAS (autora/prueba/test-seed-a/test-seed-b), cero reuso; autora+prueba sandbox=true
+[OK] Conteo por tenant: prueba=1 PAGADO; autora=1 PAGADO + 1 PENDIENTE — sin fuga cross-tenant
+[OK] Prueba de fuego D1: 2 tenants, 2 cuentas Flow sandbox (fees distintos 160 vs 96 = getStatus por credencial propia), sin fuga — CUMPLIDA
+
+--- FOOTER ---
+Vitest: 82/82. E2E (evidencia DB): 3/3 órdenes + aislamiento + D1 verificados.
+Resultado: F01 VERDE. Cierre: AWAITING USER (4 opciones estándar).
