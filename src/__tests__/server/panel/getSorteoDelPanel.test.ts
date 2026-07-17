@@ -32,6 +32,7 @@ const RAFFLE_A = {
   estado: "ACTIVO",
   fechaInicio: new Date("2026-01-01"),
   fechaFin: new Date("2026-03-01"),
+  premioImageUrl: null,
   ganadorEmail: null,
   ejecutadoAt: null,
   ejecutadoPor: null,

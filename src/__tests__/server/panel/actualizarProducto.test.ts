@@ -61,7 +61,6 @@ const inputBase = {
   titulo: "Editado",
   descripcion: "desc",
   precio: "5000",
-  portadaUrl: "",
   activo: true,
   participaEnSorteo: true,
 };
@@ -86,6 +85,8 @@ describe("domain/panel/actualizarProducto (fake db, tenant-scoped)", () => {
     expect(args.data.participaEnSorteo).toBe(true);
     // F03/D4/I6: el update NO toca pdfPath (lo escribe solo confirmarPdfProducto).
     expect("pdfPath" in args.data).toBe(false);
+    // plantilla-rica D4/I6: el update tampoco toca portadaUrl (la escribe confirmarImagenSubida).
+    expect("portadaUrl" in args.data).toBe(false);
   });
 
   // panel.productos.actualizar.002 — producto de OTRO tenant ⇒ NOT_FOUND (sin fuga de existencia)

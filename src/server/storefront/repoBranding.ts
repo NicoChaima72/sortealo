@@ -21,7 +21,12 @@ export function crearRepoBranding(db: PrismaClient): RepoBranding {
           colorPrimario: true,
           heroTitulo: true,
           heroSubtitulo: true,
+          heroImageUrl: true,
           avisoTexto: true,
+          instagramUrl: true,
+          tiktokUrl: true,
+          whatsappUrl: true,
+          contactoEmail: true,
         },
       }),
   };

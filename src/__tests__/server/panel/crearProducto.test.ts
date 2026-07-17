@@ -42,7 +42,6 @@ describe("domain/panel/crearProducto (fake db, tenant-scoped)", () => {
         titulo: "Nuevo libro",
         descripcion: "una descripción",
         precio: "3000",
-        portadaUrl: "",
         participaEnSorteo: true,
       },
     });
@@ -54,8 +53,8 @@ describe("domain/panel/crearProducto (fake db, tenant-scoped)", () => {
     // F03/D4: nace SIN PDF y como borrador (fail-closed, I7).
     expect(data.pdfPath).toBeNull();
     expect(data.activo).toBe(false);
-    // portadaUrl vacía ⇒ null (no string vacío)
-    expect(data.portadaUrl).toBeNull();
+    // plantilla-rica D4/I6: la portada NO se setea en el create (la escribe confirmarImagenSubida).
+    expect("portadaUrl" in data).toBe(false);
     // ADR-0012/D1: el flag del sorteo se persiste tal cual del input.
     expect(data.participaEnSorteo).toBe(true);
   });
@@ -71,7 +70,6 @@ describe("domain/panel/crearProducto (fake db, tenant-scoped)", () => {
           titulo: "x",
           descripcion: "y",
           precio: "1000",
-          portadaUrl: "",
           participaEnSorteo: false,
         },
       }),

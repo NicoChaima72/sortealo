@@ -28,7 +28,14 @@ export interface TenantBranding {
   colorPrimario: string | null;
   heroTitulo: string | null;
   heroSubtitulo: string | null;
+  /** URL PÚBLICA de la imagen de hero (bucket público, ADR-0013); `null` ⇒ gradiente temático (D7). */
+  heroImageUrl: string | null;
   avisoTexto: string | null;
+  // Redes y contacto del footer (plantilla-rica F02/D2). Cada una `null` ⇒ se oculta ese ícono/línea (D7).
+  instagramUrl: string | null;
+  tiktokUrl: string | null;
+  whatsappUrl: string | null;
+  contactoEmail: string | null;
 }
 
 /** Clave del color de marca en `theme.colors`. Un solo token = un solo color (design.md §2). */
@@ -128,4 +135,22 @@ export function overrideDesdeBranding(
     colors: { [COLOR_MARCA]: generarEscalaColor(branding.colorPrimario) },
     primaryColor: COLOR_MARCA,
   };
+}
+
+/**
+ * Gradiente temático de la plantilla rica (plantilla-rica F04/D7, design.md §5.2): el fondo con el
+ * que degradan los slots de imagen ausentes (hero sin `heroImageUrl`, portada/premio sin imagen).
+ * Deriva su color de la ESCALA del `colorPrimario` — **cero hex inline** (design.md §9), solo CSS
+ * vars del theme:
+ *   - Con color de marca ⇒ la escala vive en `--mantine-color-marca-N` (la generó
+ *     `overrideDesdeBranding`); usamos tonos medios→oscuros para un fondo con cuerpo.
+ *   - Sin color de marca ⇒ el primario BASE de plataforma (`--mantine-primary-color-*`, que Mantine
+ *     siempre define) — el storefront degrada igual de limpio, sobre el theme neutro.
+ * Puro y determinista: mismo `colorPrimario` ⇒ mismo string (sirve SSR + cliente sin mismatch).
+ */
+export function gradienteTematico(colorPrimario: string | null): string {
+  if (esHex(colorPrimario)) {
+    return `linear-gradient(135deg, var(--mantine-color-${COLOR_MARCA}-5), var(--mantine-color-${COLOR_MARCA}-8))`;
+  }
+  return "linear-gradient(135deg, var(--mantine-primary-color-filled), var(--mantine-primary-color-filled-hover))";
 }

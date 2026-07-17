@@ -21,6 +21,7 @@ import {
   IconFileText,
   IconGift,
   IconPencil,
+  IconPhoto,
   IconPlus,
   IconUpload,
 } from "@tabler/icons-react";
@@ -28,6 +29,11 @@ import { type GetServerSideProps } from "next";
 import { useEffect, useState } from "react";
 
 import { AdminLayout } from "~/components/admin/admin-layout";
+import { VistaPreviaAsset } from "~/components/admin/asset-uploader";
+import {
+  ACCEPT_IMAGEN,
+  useSubirImagenMarca,
+} from "~/components/admin/use-subir-imagen";
 import { clp } from "~/lib/formato";
 import { requireSession } from "~/server/auth";
 import { api, type RouterOutputs } from "~/utils/api";
@@ -44,7 +50,6 @@ interface ProductoForm {
   titulo: string;
   descripcion: string;
   precio: string; // dinero SIEMPRE string (I2): CLP entero ⇒ Decimal en el server.
-  portadaUrl: string;
   activo: boolean;
   participaEnSorteo: boolean; // opt-in al sorteo (ADR-0012/D1)
 }
@@ -53,7 +58,6 @@ const VALORES_INICIALES: ProductoForm = {
   titulo: "",
   descripcion: "",
   precio: "3000",
-  portadaUrl: "",
   activo: false, // un producto nace como borrador (sin PDF no hay venta, F03/I7)
   participaEnSorteo: false, // opt-in: no entra al sorteo sin que el Organizador lo decida (D1)
 };
@@ -84,7 +88,11 @@ function ProductoFormModal({
 
   // El PDF nuevo a subir (opcional): en crear, adjunta el archivo; en editar, lo reemplaza.
   const [archivo, setArchivo] = useState<File | null>(null);
+  // La portada nueva a subir (opcional, imagen). Se sube DESPUÉS de crear/actualizar (necesita el
+  // productId para la key per-recurso). El asset se persiste por el flujo de subida, no por el form.
+  const [portadaFile, setPortadaFile] = useState<File | null>(null);
   const [subiendo, setSubiendo] = useState(false);
+  const { subir: subirImagen } = useSubirImagenMarca();
 
   const form = useForm<ProductoForm>({
     initialValues: VALORES_INICIALES,
@@ -106,12 +114,13 @@ function ProductoFormModal({
       titulo: producto?.titulo ?? "",
       descripcion: producto?.descripcion ?? "",
       precio: producto?.precio ?? "3000",
-      portadaUrl: producto?.portadaUrl ?? "",
+      // La portada NO es campo del form (D4/I6): es un asset que se sube aparte (portadaFile).
       activo: producto?.activo ?? false,
       participaEnSorteo: producto?.participaEnSorteo ?? false,
     });
     form.resetDirty();
     setArchivo(null);
+    setPortadaFile(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, producto]);
 
@@ -147,6 +156,16 @@ function ProductoFormModal({
     crearUrlSubida.isPending ||
     confirmarPdf.isPending ||
     subiendo;
+
+  /** Sube la portada (imagen) de un producto ya creado (key per-recurso `.../portada`). */
+  const subirPortada = async (productId: string, file: File) => {
+    setSubiendo(true);
+    try {
+      await subirImagen({ destino: "portada", productId }, file);
+    } finally {
+      setSubiendo(false);
+    }
+  };
 
   // El producto tiene PDF confirmado si ya lo tenía (edición) o si se adjuntó uno ahora.
   const tienePdf = producto?.pdfPath != null || archivo !== null;
@@ -187,18 +206,23 @@ function ProductoFormModal({
           });
           return;
         }
+        // `portadaUrl` viaja SIN cambio (la URL actual); la portada nueva la escribe la subida.
         await actualizar.mutateAsync({ id: producto.id, ...valores });
+        // Subir la portada nueva DESPUÉS del update (la sobrescribe con la URL fresca, D4/I6).
+        if (portadaFile) await subirPortada(producto.id, portadaFile);
       } else {
-        // Crear nace como borrador SIN PDF (el server fuerza pdfPath null + activo false).
+        // Crear nace como borrador SIN PDF ni portada (el server fuerza pdfPath/portadaUrl null +
+        // activo false). La portada se sube como asset tras crear (necesita el productId, D4/I6).
         const creado = await crear.mutateAsync({
           titulo: valores.titulo,
           descripcion: valores.descripcion,
           precio: valores.precio,
-          portadaUrl: valores.portadaUrl,
           participaEnSorteo: valores.participaEnSorteo,
         });
         // Si se adjuntó un PDF, subirlo y confirmarlo (queda listo para activar después).
         if (archivo) await subirPdf(creado.id, archivo);
+        // Si se adjuntó una portada, subirla (key per-recurso con el id recién creado).
+        if (portadaFile) await subirPortada(creado.id, portadaFile);
       }
       await onDone();
     } catch (e) {
@@ -257,11 +281,28 @@ function ProductoFormModal({
             )}
           </div>
 
-          <TextInput
-            label="Portada (URL, opcional)"
-            placeholder="https://…"
-            {...form.getInputProps("portadaUrl")}
-          />
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              Portada (imagen, opcional)
+            </Text>
+            <Group gap="md" align="flex-start" wrap="nowrap">
+              <VistaPreviaAsset url={producto?.portadaUrl ?? null} />
+              <FileInput
+                className="flex-1"
+                placeholder={
+                  producto?.portadaUrl
+                    ? "Reemplazar portada…"
+                    : "Elegir imagen (PNG, JPG o WebP)"
+                }
+                description="La imagen que se ve en el catálogo. Sin portada se muestra un degradado con tu color."
+                accept={ACCEPT_IMAGEN}
+                clearable
+                value={portadaFile}
+                onChange={setPortadaFile}
+                leftSection={<IconPhoto className="size-4" />}
+              />
+            </Group>
+          </div>
 
           <Switch
             label="Participa en el sorteo"

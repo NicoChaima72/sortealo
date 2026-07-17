@@ -17,6 +17,7 @@ interface ProductoFake {
   descripcion: string;
   precio: Prisma.Decimal;
   portadaUrl: string | null;
+  participaEnSorteo: boolean;
   activo: boolean;
 }
 
@@ -49,6 +50,7 @@ const producto = (over: Partial<ProductoFake>): ProductoFake => ({
   descripcion: "una guía",
   precio: dec("3000"),
   portadaUrl: null,
+  participaEnSorteo: false,
   activo: true,
   ...over,
 });
@@ -64,6 +66,24 @@ describe("domain/checkout/getProductoStorefront (fake db, tenant-scoped)", () =>
     });
     expect(res).toMatchObject({ id: "p1", titulo: "Guía", precio: 3000 });
     expect(typeof res.precio).toBe("number");
+  });
+
+  // checkout.producto.storefront.005 — devuelve portadaUrl + participaEnSorteo (plantilla-rica F02)
+  it("devuelve portadaUrl y participaEnSorteo del producto (para el badge Sorteo del storefront)", async () => {
+    const db = fakeDb([
+      producto({
+        id: "p1",
+        portadaUrl: "https://pub.r2.dev/A/productos/p1/portada?v=9",
+        participaEnSorteo: true,
+      }),
+    ]);
+    const res = await getProductoStorefront({
+      db,
+      tenantId: TENANT_A,
+      input: { id: "p1" },
+    });
+    expect(res.portadaUrl).toBe("https://pub.r2.dev/A/productos/p1/portada?v=9");
+    expect(res.participaEnSorteo).toBe(true);
   });
 
   // checkout.producto.storefront.002 — producto de OTRA Tienda ⇒ NOT_FOUND (aislamiento)

@@ -3,8 +3,10 @@ import { createTRPCRouter, panelProcedure } from "~/server/api/trpc";
 import { baseUrlApp, crearCorreoDeEnv } from "~/server/correo/correoDeEnv";
 import { reenviarCorreoDescargaDeOrden } from "~/server/domain/correo/reenviarCorreoDescargaDeOrden";
 import { actualizarProducto } from "~/server/domain/panel/actualizarProducto";
+import { confirmarImagenSubida } from "~/server/domain/panel/confirmarImagenSubida";
 import { confirmarPdfProducto } from "~/server/domain/panel/confirmarPdfProducto";
 import { crearProducto } from "~/server/domain/panel/crearProducto";
+import { crearUrlSubidaImagen } from "~/server/domain/panel/crearUrlSubidaImagen";
 import { crearUrlSubidaPdf } from "~/server/domain/panel/crearUrlSubidaPdf";
 import { ejecutarSorteo } from "~/server/domain/panel/ejecutarSorteo";
 import { getAccesoActual } from "~/server/domain/panel/getAccesoActual";
@@ -25,8 +27,10 @@ import { crearTiendaInput } from "~/server/domain/tenants/schemas";
 import { TOS_TEXTO, TOS_VERSION } from "~/server/tos/tos";
 import {
   actualizarProductoInput,
+  confirmarImagenSubidaInput,
   confirmarPdfProductoInput,
   crearProductoInput,
+  crearUrlSubidaImagenInput,
   crearUrlSubidaPdfInput,
   ejecutarSorteoInput,
   guardarConfiguracionTiendaInput,
@@ -36,6 +40,7 @@ import {
 } from "~/server/domain/panel/schemas";
 import { claveDeCifradoDeEnv } from "~/server/pago/flowDeTenant";
 import { crearStorageDeEnv } from "~/server/storage/storageDeEnv";
+import { crearStoragePublicoDeEnv } from "~/server/storage/storagePublicoDeEnv";
 
 /**
  * Router del panel de Organizadores (F05, ADR-0005) — borde de administración. Todos sus
@@ -135,6 +140,36 @@ export const panelRouter = createTRPCRouter({
           acceso: ctx.acceso,
           input,
           storage: crearStorageDeEnv(),
+        }),
+      ),
+    ),
+
+  // ── Subida de assets de marca al bucket PÚBLICO (plantilla-rica F03/ADR-0013) ──
+  // Mismo patrón presigned PUT + confirmación server-side que el PDF, pero contra el
+  // bucket PÚBLICO (crearStoragePublicoDeEnv, I7) y por destino (logo/hero/portada/premio).
+  // El cliente NUNCA elige la key (la computa el server per-destino, I6).
+  crearUrlSubidaImagen: panelProcedure
+    .input(crearUrlSubidaImagenInput)
+    .mutation(({ ctx, input }) =>
+      runDomain(() =>
+        crearUrlSubidaImagen({
+          db: ctx.db,
+          acceso: ctx.acceso,
+          input,
+          storage: crearStoragePublicoDeEnv(),
+        }),
+      ),
+    ),
+
+  confirmarImagenSubida: panelProcedure
+    .input(confirmarImagenSubidaInput)
+    .mutation(({ ctx, input }) =>
+      runDomain(() =>
+        confirmarImagenSubida({
+          db: ctx.db,
+          acceso: ctx.acceso,
+          input,
+          storage: crearStoragePublicoDeEnv(),
         }),
       ),
     ),

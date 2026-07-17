@@ -3,6 +3,7 @@ import {
   Anchor,
   Button,
   Card,
+  Container,
   Divider,
   Group,
   Stack,
@@ -43,7 +44,9 @@ export default function CheckoutPage({
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <StorefrontLayout branding={tenantBranding}>
-      <ResumenYPago />
+      <Container size="lg" py="xl" px={{ base: "md", lg: "xl" }}>
+        <ResumenYPago />
+      </Container>
     </StorefrontLayout>
   );
 }

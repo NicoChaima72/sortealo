@@ -24,7 +24,10 @@ export const crearProductoInput = z.object({
   titulo: z.string().trim().min(1, "El título es obligatorio").max(200),
   descripcion: z.string().trim().min(1, "La descripción es obligatoria").max(2000),
   precio: precioClp,
-  portadaUrl: z.string().trim().url().optional().or(z.literal("")),
+  // `portadaUrl` MURIÓ como input de texto (plantilla-rica D4/I6, espejo de `logoUrl`): la portada
+  // es un asset del bucket público que se SUBE (crearUrlSubidaImagen+confirmarImagenSubida). La
+  // columna `Product.portadaUrl` la escribe SOLO el flujo de subida tras headObject — cerrar el
+  // vector de una URL externa arbitraria en un campo que ahora es propaganda pública del storefront.
   // Opt-in al sorteo (ADR-0012/D1): comprarlo genera Tickets. Default false vía el form; se
   // persiste tal cual en el Product (scoped por tenant, nunca del input el tenantId, I1).
   participaEnSorteo: z.boolean(),
@@ -36,7 +39,8 @@ export const actualizarProductoInput = z.object({
   titulo: z.string().trim().min(1, "El título es obligatorio").max(200),
   descripcion: z.string().trim().min(1, "La descripción es obligatoria").max(2000),
   precio: precioClp,
-  portadaUrl: z.string().trim().url().optional().or(z.literal("")),
+  // `portadaUrl` fuera del input (D4/I6): editar el producto NO toca la portada; la sobrescribe el
+  // flujo de subida. Ver `crearProductoInput`.
   activo: z.boolean(),
   participaEnSorteo: z.boolean(), // ADR-0012/D1 — editable en el panel; el snapshot al comprar es de OrderItem
 });
@@ -91,7 +95,9 @@ export type EjecutarSorteoInput = z.infer<typeof ejecutarSorteoInput>;
 
 export const guardarConfiguracionTiendaInput = z.object({
   descripcion: z.string().trim().max(2000).optional().or(z.literal("")),
-  logoUrl: z.string().trim().url().optional().or(z.literal("")),
+  // `logoUrl` MURIÓ como input de texto (plantilla-rica D4/I6): el logo se SUBE como asset (bucket
+  // público, ADR-0013) vía crearUrlSubidaImagen+confirmarImagenSubida — la columna la escribe SOLO
+  // el flujo de subida, nunca un input de texto arbitrario. Idem heroImageUrl/portadaUrl/premioImageUrl.
   colorPrimario: z
     .string()
     .trim()
@@ -105,7 +111,42 @@ export const guardarConfiguracionTiendaInput = z.object({
   heroTitulo: z.string().trim().max(200).optional().or(z.literal("")),
   heroSubtitulo: z.string().trim().max(500).optional().or(z.literal("")),
   avisoTexto: z.string().trim().max(500).optional().or(z.literal("")),
+  // Redes y contacto del footer (plantilla-rica F02/F03/D2). Opcionales; vacío ⇒ null (el footer
+  // oculta el ícono/línea, D7). URLs validadas como URL; el contacto como email.
+  instagramUrl: z.string().trim().url().optional().or(z.literal("")),
+  tiktokUrl: z.string().trim().url().optional().or(z.literal("")),
+  whatsappUrl: z.string().trim().url().optional().or(z.literal("")),
+  contactoEmail: z.string().trim().email().optional().or(z.literal("")),
 });
 export type GuardarConfiguracionTiendaInput = z.infer<
   typeof guardarConfiguracionTiendaInput
+>;
+
+/**
+ * Subida de un asset de marca al bucket PÚBLICO (plantilla-rica F03/ADR-0013): el cliente pide una
+ * URL prefirmada para SU destino — NUNCA elige la key (la computa el server per-destino, D3/I6) ni
+ * manda el `tenantId` (sale del acceso, I1). El `contentType` va contra la allowlist de imágenes
+ * (D6). Discriminado por `destino`: portada exige `productId`, premio exige `raffleId`; logo/hero no.
+ */
+const contentTypeImagen = z.enum(["image/png", "image/jpeg", "image/webp"]);
+
+const destinoImagen = z.discriminatedUnion("destino", [
+  z.object({ destino: z.literal("logo") }),
+  z.object({ destino: z.literal("hero") }),
+  z.object({ destino: z.literal("portada"), productId: z.string().cuid() }),
+  z.object({ destino: z.literal("premio"), raffleId: z.string().cuid() }),
+]);
+
+export const crearUrlSubidaImagenInput = z.intersection(
+  destinoImagen,
+  z.object({ contentType: contentTypeImagen }),
+);
+export type CrearUrlSubidaImagenInput = z.infer<
+  typeof crearUrlSubidaImagenInput
+>;
+
+/** Confirmación de la subida de un asset (plantilla-rica F03): headObject + persiste la URL pública. */
+export const confirmarImagenSubidaInput = destinoImagen;
+export type ConfirmarImagenSubidaInput = z.infer<
+  typeof confirmarImagenSubidaInput
 >;

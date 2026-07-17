@@ -15,15 +15,21 @@ import {
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import {
+  IconBrandInstagram,
+  IconBrandTiktok,
+  IconBrandWhatsapp,
   IconCreditCard,
   IconLayoutNavbar,
+  IconMail,
   IconPalette,
+  IconPhoto,
   IconTicket,
 } from "@tabler/icons-react";
 import { type GetServerSideProps } from "next";
 import { type ComponentType, type ReactNode, useEffect } from "react";
 
 import { AdminLayout } from "~/components/admin/admin-layout";
+import { AssetUploader } from "~/components/admin/asset-uploader";
 import { fechaHora } from "~/lib/formato";
 import { requireSession } from "~/server/auth";
 import { api } from "~/utils/api";
@@ -190,15 +196,18 @@ function CredencialFlowCard() {
 
 interface ConfigTiendaForm {
   descripcion: string;
-  logoUrl: string;
   colorPrimario: string;
   heroTitulo: string;
   heroSubtitulo: string;
   avisoTexto: string;
   basesSorteo: string;
+  instagramUrl: string;
+  tiktokUrl: string;
+  whatsappUrl: string;
+  contactoEmail: string;
 }
 
-/** Card de config de tienda: descripción, logo, color, bases del sorteo (texto). */
+/** Card de config de tienda: descripción, marca (logo/hero/color), redes/contacto, bases (texto). */
 function ConfiguracionTiendaCard() {
   const utils = api.useUtils();
   const config = api.panel.getConfiguracionTienda.useQuery(undefined, {
@@ -208,26 +217,33 @@ function ConfiguracionTiendaCard() {
   const form = useForm<ConfigTiendaForm>({
     initialValues: {
       descripcion: "",
-      logoUrl: "",
       colorPrimario: "",
       heroTitulo: "",
       heroSubtitulo: "",
       avisoTexto: "",
       basesSorteo: "",
+      instagramUrl: "",
+      tiktokUrl: "",
+      whatsappUrl: "",
+      contactoEmail: "",
     },
   });
 
-  // Rehidratar el form cuando llegan los datos.
+  // Rehidratar el form cuando llegan los datos. Los assets (logo/hero) NO son campos del form:
+  // los sube el AssetUploader (presigned PUT + confirmación, D4/I6).
   useEffect(() => {
     if (!config.data) return;
     form.setValues({
       descripcion: config.data.descripcion ?? "",
-      logoUrl: config.data.logoUrl ?? "",
       colorPrimario: config.data.colorPrimario ?? "",
       heroTitulo: config.data.heroTitulo ?? "",
       heroSubtitulo: config.data.heroSubtitulo ?? "",
       avisoTexto: config.data.avisoTexto ?? "",
       basesSorteo: config.data.basesSorteo ?? "",
+      instagramUrl: config.data.instagramUrl ?? "",
+      tiktokUrl: config.data.tiktokUrl ?? "",
+      whatsappUrl: config.data.whatsappUrl ?? "",
+      contactoEmail: config.data.contactoEmail ?? "",
     });
     form.resetDirty();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -283,98 +299,166 @@ function ConfiguracionTiendaCard() {
     );
   }
 
+  const invalidarConfig = () => utils.panel.getConfiguracionTienda.invalidate();
+
   return (
     <SettingCard
       icon={IconPalette}
       title="Tu tienda"
-      description="La descripción, el logo y el color de tu tienda. El diseño real llega más adelante."
+      description="La marca de tu tienda: logo, imagen de hero, color, textos, redes y contacto."
     >
-      <form onSubmit={form.onSubmit((valores) => guardar.mutate(valores))}>
-        <Stack gap="md">
-          <Textarea
-            label="Descripción"
-            placeholder="Una línea que describa tu tienda."
-            minRows={2}
-            autosize
-            {...form.getInputProps("descripcion")}
-          />
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-            <TextInput
-              label="Logo (URL)"
-              placeholder="https://…"
-              {...form.getInputProps("logoUrl")}
+      <Stack gap="md">
+        {/* Assets de marca — se suben al instante (independiente del botón Guardar). */}
+        <div
+          className="pb-4"
+          style={{ borderBottom: "1px solid var(--mantine-color-default-border)" }}
+        >
+          <Group gap="xs" mb="xs">
+            <IconPhoto className="size-[18px]" stroke={1.75} />
+            <Text size="sm" fw={500}>
+              Logo e imagen de portada
+            </Text>
+          </Group>
+          <Stack gap="md">
+            <AssetUploader
+              destino={{ destino: "logo" }}
+              urlActual={config.data.logoUrl}
+              label="Logo de la tienda"
+              description="Aparece en el encabezado. Si no subes uno, se muestra el nombre de tu tienda."
+              onSubido={invalidarConfig}
+            />
+            <AssetUploader
+              destino={{ destino: "hero" }}
+              urlActual={config.data.heroImageUrl}
+              label="Imagen de hero"
+              description="La imagen grande de la portada. Si no subes una, se usa un degradado con tu color."
+              onSubido={invalidarConfig}
+            />
+          </Stack>
+        </div>
+
+        <form onSubmit={form.onSubmit((valores) => guardar.mutate(valores))}>
+          <Stack gap="md">
+            <Textarea
+              label="Descripción"
+              placeholder="Una línea que describa tu tienda."
+              minRows={2}
+              autosize
+              {...form.getInputProps("descripcion")}
             />
             <TextInput
               label="Color de marca (hex)"
               placeholder="#4f46e5"
+              className="sm:max-w-52"
               {...form.getInputProps("colorPrimario")}
             />
-          </SimpleGrid>
 
-          <div
-            className="pt-4"
-            style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
-          >
-            <Group gap="xs" mb="xs">
-              <IconLayoutNavbar className="size-[18px]" stroke={1.75} />
-              <Text size="sm" fw={500}>
-                Portada del storefront
+            <div
+              className="pt-4"
+              style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
+            >
+              <Group gap="xs" mb="xs">
+                <IconLayoutNavbar className="size-[18px]" stroke={1.75} />
+                <Text size="sm" fw={500}>
+                  Textos del storefront
+                </Text>
+              </Group>
+              <Stack gap="md">
+                <TextInput
+                  label="Título del hero"
+                  placeholder="Bienvenido a mi tienda"
+                  description="Si lo dejas vacío, se usa el nombre de tu tienda."
+                  {...form.getInputProps("heroTitulo")}
+                />
+                <TextInput
+                  label="Subtítulo del hero"
+                  placeholder="Una frase corta que enganche."
+                  description="Si lo dejas vacío, se usa la descripción."
+                  {...form.getInputProps("heroSubtitulo")}
+                />
+                <Textarea
+                  label="Aviso (banner)"
+                  placeholder="Un aviso opcional que aparece arriba de tu tienda."
+                  description="Opcional. Si lo dejas vacío, no se muestra el banner."
+                  minRows={2}
+                  autosize
+                  {...form.getInputProps("avisoTexto")}
+                />
+              </Stack>
+            </div>
+
+            <div
+              className="pt-4"
+              style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
+            >
+              <Group gap="xs" mb="xs">
+                <IconBrandInstagram className="size-[18px]" stroke={1.75} />
+                <Text size="sm" fw={500}>
+                  Redes y contacto
+                </Text>
+              </Group>
+              <Text size="xs" c="dimmed" mb="sm">
+                Aparecen en el pie de tu tienda. Cada campo vacío se oculta.
               </Text>
-            </Group>
-            <Stack gap="md">
-              <TextInput
-                label="Título del hero"
-                placeholder="Bienvenido a mi tienda"
-                description="Si lo dejas vacío, se usa el nombre de tu tienda."
-                {...form.getInputProps("heroTitulo")}
-              />
-              <TextInput
-                label="Subtítulo del hero"
-                placeholder="Una frase corta que enganche."
-                description="Si lo dejas vacío, se usa la descripción."
-                {...form.getInputProps("heroSubtitulo")}
-              />
+              <Stack gap="md">
+                <TextInput
+                  label="Instagram"
+                  placeholder="https://instagram.com/tu-tienda"
+                  leftSection={<IconBrandInstagram className="size-4" />}
+                  {...form.getInputProps("instagramUrl")}
+                />
+                <TextInput
+                  label="TikTok"
+                  placeholder="https://tiktok.com/@tu-tienda"
+                  leftSection={<IconBrandTiktok className="size-4" />}
+                  {...form.getInputProps("tiktokUrl")}
+                />
+                <TextInput
+                  label="WhatsApp"
+                  placeholder="https://wa.me/56900000000"
+                  leftSection={<IconBrandWhatsapp className="size-4" />}
+                  {...form.getInputProps("whatsappUrl")}
+                />
+                <TextInput
+                  label="Correo de contacto"
+                  placeholder="hola@tu-tienda.cl"
+                  leftSection={<IconMail className="size-4" />}
+                  {...form.getInputProps("contactoEmail")}
+                />
+              </Stack>
+            </div>
+
+            <div
+              className="pt-4"
+              style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
+            >
+              <Group gap="xs" mb="xs">
+                <IconTicket className="size-[18px]" stroke={1.75} />
+                <Text size="sm" fw={500}>
+                  Bases del sorteo
+                </Text>
+              </Group>
               <Textarea
-                label="Aviso (banner)"
-                placeholder="Un aviso opcional que aparece arriba de tu tienda."
-                description="Opcional. Si lo dejas vacío, no se muestra el banner."
-                minRows={2}
+                placeholder="Escribe aquí las bases legales del sorteo. Tú eres responsable de su contenido."
+                minRows={6}
                 autosize
-                {...form.getInputProps("avisoTexto")}
+                {...form.getInputProps("basesSorteo")}
               />
-            </Stack>
-          </div>
-
-          <div
-            className="pt-4"
-            style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
-          >
-            <Group gap="xs" mb="xs">
-              <IconTicket className="size-[18px]" stroke={1.75} />
-              <Text size="sm" fw={500}>
-                Bases del sorteo
+              <Text size="xs" c="dimmed" mt={6}>
+                El texto de las bases. La responsabilidad legal del sorteo es tuya.
               </Text>
-            </Group>
-            <Textarea
-              placeholder="Escribe aquí las bases legales del sorteo. Tú eres responsable de su contenido."
-              minRows={6}
-              autosize
-              {...form.getInputProps("basesSorteo")}
-            />
-            <Text size="xs" c="dimmed" mt={6}>
-              El texto de las bases. La responsabilidad legal del sorteo es tuya.
-            </Text>
-          </div>
+            </div>
 
-          <Button
-            type="submit"
-            loading={guardar.isPending}
-            className="self-start"
-          >
-            Guardar cambios
-          </Button>
-        </Stack>
-      </form>
+            <Button
+              type="submit"
+              loading={guardar.isPending}
+              className="self-start"
+            >
+              Guardar cambios
+            </Button>
+          </Stack>
+        </form>
+      </Stack>
     </SettingCard>
   );
 }

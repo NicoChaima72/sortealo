@@ -132,7 +132,16 @@ model Tenant {
   // (ADR-0008/D7), que es obligatorio, fijo de plataforma y se muestra siempre con sorteo activo.
   heroTitulo    String? // título del hero del storefront; fallback a `nombre`
   heroSubtitulo String? // subtítulo del hero; fallback a `descripcion`
+  heroImageUrl  String? // URL PÚBLICA (bucket R2 público, ADR-0013) de la imagen del hero, con cache-buster ?v= (plantilla-rica F02/D2); null ⇒ gradiente temático (degradación elegante D7). No queriable ⇒ sin @@index
   avisoTexto    String? // banner de aviso opcional; null = no se muestra
+  // ── Redes y contacto público del footer (plantilla-rica F02/D2, ADR-0013). Editables por el
+  // Organizador en Configuración (guardarConfiguracionTienda); el footer las consume con degradación
+  // elegante (D7: red faltante ⇒ se oculta el ícono). No queriables (se leen por el tenant ya
+  // resuelto) ⇒ sin @@index.
+  instagramUrl  String? // URL del perfil de Instagram; null = ícono oculto
+  tiktokUrl     String? // URL del perfil de TikTok; null = ícono oculto
+  whatsappUrl   String? // enlace de WhatsApp; null = ícono oculto
+  contactoEmail String? // email de contacto PÚBLICO del Organizador (footer). Distinto de Order.email (identidad del comprador, ADR-0004)
   // Bases del sorteo como TEXTO borrador del Organizador (F05/D8, ADR-0008). Distinto de
   // `Raffle.basesUrl` (F02), que es el enlace al ARCHIVO de bases (lo sube F03). Coexisten a
   // propósito: acá vive el borrador editable a nivel Tienda; el archivo final vive en el Sorteo.
@@ -300,7 +309,8 @@ model Raffle {
   estado       RaffleStatus @default(ACTIVO)
   fechaInicio  DateTime
   fechaFin     DateTime
-  basesUrl     String? // bases del sorteo (del Organizador, ADR-0008); carga real en F05
+  basesUrl       String? // bases del sorteo (del Organizador, ADR-0008); carga real en F05
+  premioImageUrl String? // URL PÚBLICA (bucket R2 público, ADR-0013) de la imagen del premio, con cache-buster ?v= (plantilla-rica F02/D5); null ⇒ gradiente temático (D7). No queriable ⇒ sin @@index
   // ── Ejecución auditable del sorteo (F05, aditivo sobre el modelo de F02). ──────────
   // Los tres campos se escriben JUNTOS, UNA sola vez, en el use case que ejecuta el
   // sorteo (transición ACTIVO→CERRADO). `ejecutadoAt` es la llave de idempotencia:

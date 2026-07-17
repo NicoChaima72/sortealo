@@ -84,9 +84,14 @@ export interface StorageConfig {
 }
 
 export interface StorageService {
-  /** URL prefirmada PUT para subir el objeto en `key` (content-type `application/pdf`). */
+  /**
+   * URL prefirmada PUT para subir el objeto en `key`. El `contentType` va FIRMADO (la URL solo
+   * vale para ese tipo exacto); default `application/pdf` (F03). El bucket público de assets de
+   * marca (ADR-0013) reusa este mismo presigner pasando un `contentType` de imagen.
+   */
   presignarSubida(input: {
     key: string;
+    contentType?: string;
     expiresEnSegundos?: number;
   }): Promise<string>;
   /** URL prefirmada GET para descargar `key` como attachment con `nombreArchivo`. */
@@ -139,18 +144,18 @@ export function crearStorageService(config: StorageConfig): StorageService {
   }
 
   return {
-    async presignarSubida({ key, expiresEnSegundos }) {
+    async presignarSubida({ key, contentType, expiresEnSegundos }) {
       const { s3, bucket } = resolver();
       const comando = new PutObjectCommand({
         Bucket: bucket,
         Key: key,
-        ContentType: CONTENT_TYPE_PDF,
+        ContentType: contentType ?? CONTENT_TYPE_PDF,
       });
       return getSignedUrl(s3, comando, {
         expiresIn: expiresEnSegundos ?? EXPIRACION_SUBIDA_SEGUNDOS,
-        // Firma el content-type: la URL solo es válida si el cliente sube exactamente
-        // `application/pdf` (sin esto el aws-sdk deja content-type fuera de SignedHeaders
-        // y cualquier tipo pasaría). El fetch PUT del panel debe mandar ese header.
+        // Firma el content-type: la URL solo es válida si el cliente sube exactamente ESE tipo
+        // (sin esto el aws-sdk deja content-type fuera de SignedHeaders y cualquier tipo pasaría).
+        // El fetch PUT del cliente debe mandar el mismo header (application/pdf o el de la imagen).
         signableHeaders: new Set(["content-type"]),
       });
     },

@@ -11,6 +11,7 @@ import {
 import { type GetServerSideProps } from "next";
 
 import { AdminLayout } from "~/components/admin/admin-layout";
+import { AssetUploader } from "~/components/admin/asset-uploader";
 import { StatCard } from "~/components/admin/stat-card";
 import { fechaHora, num } from "~/lib/formato";
 import { requireSession } from "~/server/auth";
@@ -143,6 +144,21 @@ export default function SorteoPage() {
                 {ejecutado ? "Cerrado" : "Activo"}
               </Badge>
             </Group>
+
+            {!ejecutado && (
+              <div
+                className="mt-4 pt-4"
+                style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
+              >
+                <AssetUploader
+                  destino={{ destino: "premio", raffleId: sorteo.id }}
+                  urlActual={sorteo.premioImageUrl}
+                  label="Imagen del premio"
+                  description="Se muestra en la vitrina del sorteo de tu tienda. Sin imagen se usa un degradado con tu color."
+                  onSubido={() => utils.panel.getSorteo.invalidate()}
+                />
+              </div>
+            )}
 
             <div className="mt-4">
               {ejecutado ? (

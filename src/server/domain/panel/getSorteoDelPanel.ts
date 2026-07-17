@@ -9,6 +9,8 @@ interface SorteoDelPanel {
   estado: RaffleStatus;
   fechaInicio: Date;
   fechaFin: Date;
+  /** URL pública de la imagen del premio (bucket público, ADR-0013); null ⇒ sin imagen (plantilla-rica F03). */
+  premioImageUrl: string | null;
   /** Participaciones AGRUPADAS por correo, con su conteo de tickets (S2/D6, ADR-0012). */
   participantes: Array<{ email: string; tickets: number; ultimaInscripcion: Date }>;
   /** Total de TICKETS del sorteo (nº de RaffleEntry = suma de tickets de todos los correos). */
@@ -52,6 +54,7 @@ export async function getSorteoDelPanel({
       estado: true,
       fechaInicio: true,
       fechaFin: true,
+      premioImageUrl: true,
       ganadorEmail: true,
       ejecutadoAt: true,
       ejecutadoPor: true,

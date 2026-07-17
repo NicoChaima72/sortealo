@@ -30,7 +30,12 @@ const persistido = (
   colorPrimario: "#4f46e5",
   heroTitulo: "Hola",
   heroSubtitulo: null,
+  heroImageUrl: "https://pub.r2.dev/x/branding/hero?v=1",
   avisoTexto: null,
+  instagramUrl: "https://instagram.com/x",
+  tiktokUrl: null,
+  whatsappUrl: null,
+  contactoEmail: "hola@x.cl",
 });
 
 function fakeRepo(tiendas: TenantBrandingPersistido[]): RepoBranding {
@@ -55,9 +60,18 @@ describe("server/storefront/resolverBranding", () => {
       slug: "autora",
       colorPrimario: "#4f46e5",
       heroTitulo: "Hola",
+      // plantilla-rica F02: la marca lleva la imagen de hero + redes/contacto del footer.
+      heroImageUrl: "https://pub.r2.dev/x/branding/hero?v=1",
+      instagramUrl: "https://instagram.com/x",
+      contactoEmail: "hola@x.cl",
     });
     // No filtra el estado al cliente (no lo necesita el chrome).
     expect(res.branding).not.toHaveProperty("estado");
+    // Nunca arrastra credenciales ni secretos (ADR-0006): la marca es propaganda pública.
+    const claves = Object.keys(res.branding);
+    expect(claves).not.toContain("flowCredential");
+    expect(claves).not.toContain("apiKeyCifrada");
+    expect(claves).not.toContain("secretKeyCifrada");
   });
 
   // storefront.branding.002 — apex y www ⇒ zona plataforma, sin branding, sin tocar la DB

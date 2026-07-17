@@ -1,136 +1,226 @@
 import {
+  Badge,
+  Box,
   Button,
   Card,
+  Container,
   Group,
   SimpleGrid,
   Skeleton,
   Stack,
   Text,
+  Title,
 } from "@mantine/core";
-import { IconBooks } from "@tabler/icons-react";
+import { IconBooks, IconGift } from "@tabler/icons-react";
 import Link from "next/link";
 
 import { useCarrito } from "~/components/storefront/carrito";
 import { StepperCantidad } from "~/components/storefront/stepper-cantidad";
 import { clp } from "~/lib/formato";
+import { gradienteTematico } from "~/styles/tenantTheme";
 import { api, type RouterOutputs } from "~/utils/api";
 
 /** Tipo derivado del backend (no redeclarar el shape a mano). */
 type ProductoCatalogo = RouterOutputs["checkout"]["listarProductos"][number];
 
 /**
- * Catálogo del storefront (F03): grid de productos ACTIVOS de la Tienda del subdominio. Reusa
- * `checkout.listarProductos` (tenant-scoped server-side, I1). Resuelve los 3 estados
- * (loading/error/vacío), no solo el happy path (data-fetching-conventions). Montos con `~/lib/formato`
- * (`clp`), `tabular-nums` (I4) — el storefront solo MUESTRA, nunca opera dinero en el cliente.
+ * Catálogo rico del storefront (plantilla-rica F04, design.md §5.1 pto 3): grid de tarjetas con
+ * portada (imagen), título, precio (`tabular-nums`, CLP vía `~/lib/formato`, I4), badge "Sorteo" si
+ * `participaEnSorteo`, y agregar / stepper de cantidad (reusa `StepperCantidad`). Card sin portada ⇒
+ * placeholder temático (gradiente derivado del color de marca + inicial, degradación elegante §5.2).
+ * Reusa `checkout.listarProductos` (tenant-scoped server-side, I1) y resuelve los 3 estados.
  */
-export function CatalogoStorefront() {
+export function CatalogoStorefront({
+  colorPrimario,
+}: {
+  colorPrimario: string | null;
+}) {
   const productos = api.checkout.listarProductos.useQuery();
 
-  if (productos.isLoading) {
-    return (
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} height={190} radius="md" />
-        ))}
-      </SimpleGrid>
-    );
-  }
-
-  if (productos.isError) {
-    return (
-      <Stack align="center" py="xl" gap="sm">
-        <Text size="sm" c="red">
-          No pudimos cargar los productos.
-        </Text>
-        <Button
-          variant="default"
-          size="xs"
-          onClick={() => void productos.refetch()}
-        >
-          Reintentar
-        </Button>
-      </Stack>
-    );
-  }
-
-  if (!productos.data || productos.data.length === 0) {
-    return (
-      <Stack align="center" py="xl" gap="xs">
-        <IconBooks
-          className="size-8"
-          stroke={1.5}
-          color="var(--mantine-color-dimmed)"
-        />
-        <Text size="sm" c="dimmed" ta="center">
-          Esta tienda todavía no tiene productos publicados.
-        </Text>
-      </Stack>
-    );
-  }
-
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-      {productos.data.map((producto) => (
-        <TarjetaProducto key={producto.id} producto={producto} />
-      ))}
-    </SimpleGrid>
+    <Box component="section" id="catalogo" py={{ base: "xl", md: 48 }}>
+      <Container size="lg" px={{ base: "md", lg: "xl" }}>
+        <Stack gap="lg">
+          <Title order={2} fz={{ base: 24, sm: 30 }} fw={700}>
+            Catálogo
+          </Title>
+
+          {productos.isLoading ? (
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} height={320} radius="md" />
+              ))}
+            </SimpleGrid>
+          ) : productos.isError ? (
+            <Stack align="center" py="xl" gap="sm">
+              <Text size="sm" c="red">
+                No pudimos cargar los productos.
+              </Text>
+              <Button
+                variant="default"
+                size="xs"
+                onClick={() => void productos.refetch()}
+              >
+                Reintentar
+              </Button>
+            </Stack>
+          ) : !productos.data || productos.data.length === 0 ? (
+            <Stack align="center" py="xl" gap="xs">
+              <IconBooks
+                className="size-8"
+                stroke={1.5}
+                color="var(--mantine-color-dimmed)"
+              />
+              <Text size="sm" c="dimmed" ta="center">
+                Esta tienda todavía no tiene productos publicados.
+              </Text>
+            </Stack>
+          ) : (
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+              {productos.data.map((producto) => (
+                <TarjetaProducto
+                  key={producto.id}
+                  producto={producto}
+                  colorPrimario={colorPrimario}
+                />
+              ))}
+            </SimpleGrid>
+          )}
+        </Stack>
+      </Container>
+    </Box>
   );
 }
 
-function TarjetaProducto({ producto }: { producto: ProductoCatalogo }) {
+function TarjetaProducto({
+  producto,
+  colorPrimario,
+}: {
+  producto: ProductoCatalogo;
+  colorPrimario: string | null;
+}) {
   const { contiene, agregar, quitar } = useCarrito();
   const enCarrito = contiene(producto.id);
 
   return (
-    <Card withBorder radius="md" padding="lg">
-      <Stack gap="sm" h="100%">
-        <Stack gap={4} className="flex-1">
-          <Text
-            component={Link}
-            href={`/producto/${producto.id}`}
-            fw={600}
-            lineClamp={2}
-          >
-            {producto.titulo}
-          </Text>
-          <Text size="sm" c="dimmed" lineClamp={2}>
-            {producto.descripcion}
-          </Text>
-        </Stack>
+    <Card withBorder radius="md" padding={0} className="h-full">
+      <Stack gap={0} h="100%">
+        <Portada
+          url={producto.portadaUrl}
+          titulo={producto.titulo}
+          colorPrimario={colorPrimario}
+          participaEnSorteo={producto.participaEnSorteo}
+        />
 
-        <Group justify="space-between" wrap="nowrap" gap="sm">
-          <Text fw={700} className="tabular-nums">
-            {clp(producto.precio)}
-          </Text>
-          {enCarrito ? (
-            <Group gap="xs" wrap="nowrap">
-              <StepperCantidad id={producto.id} size="sm" />
-              <Button
-                variant="subtle"
-                color="gray"
-                size="xs"
-                onClick={() => quitar(producto.id)}
-              >
-                Quitar
-              </Button>
-            </Group>
-          ) : (
-            <Button
-              size="xs"
-              onClick={() =>
-                agregar({
-                  id: producto.id,
-                  titulo: producto.titulo,
-                  precio: producto.precio,
-                })
-              }
+        <Stack gap="sm" p="md" className="flex-1">
+          <Stack gap={4} className="flex-1">
+            <Text
+              component={Link}
+              href={`/producto/${producto.id}`}
+              fw={600}
+              lineClamp={2}
             >
-              Agregar
-            </Button>
-          )}
-        </Group>
+              {producto.titulo}
+            </Text>
+            <Text size="sm" c="dimmed" lineClamp={2}>
+              {producto.descripcion}
+            </Text>
+          </Stack>
+
+          <Group justify="space-between" wrap="nowrap" gap="sm">
+            <Text fw={700} className="tabular-nums">
+              {clp(producto.precio)}
+            </Text>
+            {enCarrito ? (
+              <Group gap="xs" wrap="nowrap">
+                <StepperCantidad id={producto.id} size="sm" />
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  size="xs"
+                  onClick={() => quitar(producto.id)}
+                >
+                  Quitar
+                </Button>
+              </Group>
+            ) : (
+              <Button
+                size="xs"
+                onClick={() =>
+                  agregar({
+                    id: producto.id,
+                    titulo: producto.titulo,
+                    precio: producto.precio,
+                  })
+                }
+              >
+                Agregar
+              </Button>
+            )}
+          </Group>
+        </Stack>
       </Stack>
     </Card>
+  );
+}
+
+/** Portada del producto: imagen, o placeholder temático (gradiente + inicial) si no hay (§5.2). */
+function Portada({
+  url,
+  titulo,
+  colorPrimario,
+  participaEnSorteo,
+}: {
+  url: string | null;
+  titulo: string;
+  colorPrimario: string | null;
+  participaEnSorteo: boolean;
+}) {
+  const inicial = titulo.trim().charAt(0).toUpperCase() || "?";
+
+  return (
+    <Box pos="relative" style={{ aspectRatio: "4 / 3", overflow: "hidden" }}>
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt={titulo}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      ) : (
+        <Box
+          aria-hidden
+          className="flex items-center justify-center"
+          style={{
+            width: "100%",
+            height: "100%",
+            background: gradienteTematico(colorPrimario),
+          }}
+        >
+          <Text fz={44} fw={800} c="white" style={{ opacity: 0.9 }}>
+            {inicial}
+          </Text>
+        </Box>
+      )}
+
+      {participaEnSorteo && (
+        <Badge
+          variant="filled"
+          radius="sm"
+          leftSection={<IconGift className="size-3" stroke={2} />}
+          pos="absolute"
+          top={8}
+          left={8}
+          styles={{ label: { textTransform: "none" } }}
+        >
+          Sorteo
+        </Badge>
+      )}
+    </Box>
   );
 }

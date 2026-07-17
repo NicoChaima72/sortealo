@@ -1,6 +1,8 @@
 import {
   Anchor,
+  Box,
   Button,
+  Container,
   Group,
   Skeleton,
   Stack,
@@ -20,6 +22,7 @@ import {
   getPropsPaginaComprador,
   type PropsStorefront,
 } from "~/server/storefront/getStorefrontProps";
+import { gradienteTematico } from "~/styles/tenantTheme";
 import { api } from "~/utils/api";
 
 /**
@@ -40,12 +43,18 @@ export default function ProductoPage({
 
   return (
     <StorefrontLayout branding={tenantBranding}>
-      {id ? <Detalle id={id} /> : <NoEncontrado />}
+      <Container size="lg" py="xl" px={{ base: "md", lg: "xl" }}>
+        {id ? (
+          <Detalle id={id} colorPrimario={tenantBranding.colorPrimario} />
+        ) : (
+          <NoEncontrado />
+        )}
+      </Container>
     </StorefrontLayout>
   );
 }
 
-function Detalle({ id }: { id: string }) {
+function Detalle({ id, colorPrimario }: { id: string; colorPrimario: string | null }) {
   const producto = api.checkout.getProductoStorefront.useQuery(
     { id },
     { retry: false },
@@ -97,7 +106,7 @@ function Detalle({ id }: { id: string }) {
         </Group>
       </Anchor>
 
-      {p.portadaUrl && (
+      {p.portadaUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={p.portadaUrl}
@@ -109,6 +118,22 @@ function Detalle({ id }: { id: string }) {
             borderRadius: "var(--mantine-radius-md)",
           }}
         />
+      ) : (
+        // Degradación elegante (§5.2): sin portada, un gradiente temático con la inicial.
+        <Box
+          aria-hidden
+          className="flex items-center justify-center"
+          style={{
+            width: "100%",
+            height: 220,
+            borderRadius: "var(--mantine-radius-md)",
+            background: gradienteTematico(colorPrimario),
+          }}
+        >
+          <Text fz={56} fw={800} c="white" style={{ opacity: 0.9 }}>
+            {p.titulo.trim().charAt(0).toUpperCase() || "?"}
+          </Text>
+        </Box>
       )}
 
       <Stack gap="xs">

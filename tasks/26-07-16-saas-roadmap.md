@@ -969,3 +969,38 @@ Para F01 (los demás en el planning de cada fase):
   carrito, badge "Sorteo" en el producto del panel; la matemática K-tickets cubierta por los 12 tests
   de aplicarEfectosPostPago (cantidad×N → N entries). ADR-0012 + CONTEXT (Producto participante,
   Ticket). Drift docs aplicado (stepper en frontend-conv, swap de unique en prisma-conv).
+- [2026-07-17 18:40] [planner-grill] (domain-planner) **Feature ADITIVA nueva planificada fuera del
+  roadmap de fases**: "Plantilla rica y tematizable del storefront" ⇒ `tasks/26-07-17-plantilla-rica.md`
+  (SIN grill, por instrucción del usuario: criterio + Supuestos revisables). NO altera el orden ni el
+  alcance de F01–F10: es la evolución VISUAL del storefront F06 (ya en verde) de minimalista a rica —
+  las 7 secciones de la plantilla oficial (`design.md` §5.1), mobile-first, tematizadas per-tenant, con
+  degradación elegante. Salto técnico grande = **imágenes**: nuevo modelo de **assets públicos de marca
+  en bucket R2 PÚBLICO** separado del bucket privado de PDFs (frontera público/privado a nivel de bucket),
+  subida reusando el presigned PUT + headObject de F03. Schema aditivo (Tenant.heroImageUrl/instagramUrl/
+  tiktokUrl/whatsappUrl/contactoEmail + Raffle.premioImageUrl; Product.portadaUrl gana flujo de subida).
+  Docs de dominio mantenidos: **ADR-0013** (assets públicos vs privados — nivel 2) + CONTEXT.md ([[Plantilla]]
+  extendida + nuevo [[Asset de marca]]) + `docs/design.md` §5.1/§5.2 (estructura oficial de la plantilla +
+  tabla de degradación elegante; checkbox pendiente de F06 resuelto). Alcance sano: UNA plantilla rica
+  (múltiples plantillas seleccionables = puerta abierta post-MVP, `Tenant.plantilla`); marca de la
+  PLATAFORMA sigue PENDIENTE (#4) — footer con atribución NEUTRAL. Env nuevas: `R2_PUBLIC_BUCKET` +
+  `R2_PUBLIC_BASE_URL` (el Operador crea el bucket público + acceso público a mano, como el CORS de F03).
+  AWAITING USER APPROVAL de ese task file (no de este roadmap).
+- [2026-07-17 18:07] [feature-implementer] [PLANTILLA-RICA] **IMPLEMENTADA** (extiende F06;
+  `tasks/26-07-17-plantilla-rica.md`, F01..F04, status → testing). Assets públicos de marca en bucket
+  R2 PÚBLICO separado del privado de PDFs (ADR-0013): `services/storagePublico.ts` (presigned PUT +
+  headObject + composer de URL pública con cache-buster, reusa el S3 client de `storage.ts`) + env
+  `R2_PUBLIC_BUCKET`/`R2_PUBLIC_BASE_URL`. Schema aditivo (schema-guardian APPROVE + db push): `Tenant`
+  hero/redes/contacto + `Raffle.premioImageUrl`. Subida de imágenes en el panel (logo/hero/portada/premio,
+  destino discriminado, key per-recurso server-side I6, mismo patrón presigned del PDF) — logo y portada
+  pasan de input de texto a asset subido (D4/I6, alineado por backend-reviewer). Storefront RICO: 7
+  secciones de design.md §5.1 (header sticky+countdown, hero 2-col+trust badges, catálogo con portadas+badge
+  Sorteo, vitrina del premio+disclaimer ADR-0008, cómo funciona, footer con redes ocultables/atribución
+  neutral), mobile-first, tematizado per-tenant (gradientes derivados de la escala de color, cero hex inline)
+  con degradación elegante COMPLETA (§5.2). Reviewers TODOS verdes (schema-guardian/backend/frontend/
+  change-set APPROVE; blocker de lint corregido). Gate `npm run check` VERDE: tsc + lint 0 + **vitest 290
+  passed / 2 skipped (54 archivos)**. Verificación SSR en :3001 (autora rosa / prueba teal sin redes /
+  apex neutral). Seeds: branding demo (color/hero/aviso/redes) idempotente; imágenes degradan a gradiente
+  hasta el bucket público. **Pendiente del usuario**: crear el bucket R2 público real en Cloudflare
+  (`R2_PUBLIC_BUCKET`/`R2_PUBLIC_BASE_URL` vacías) para desbloquear el E2E de subida real de imágenes; 2
+  drafts de drift de `frontend-conventions.md` sin aplicar (esperan permiso). Sin commit/push/feature-tester
+  (instrucción). **AWAITING feature-tester + usuario.**

@@ -54,6 +54,20 @@ export const env = createEnv({
     R2_SECRET_ACCESS_KEY: z.string().optional(),
     R2_BUCKET: z.string().optional(),
     R2_ENDPOINT: z.string().url().optional(),
+    // Assets PÚBLICOS de marca — Cloudflare R2, bucket PÚBLICO separado del privado de PDFs
+    // (ADR-0013, plantilla-rica F01). Las imágenes del storefront (logo/hero/portadas/premio)
+    // son propaganda cacheable servida por CDN, sin valor si se "filtran" — categóricamente
+    // distintas del PDF vendido (privado + gated por Entitlement). La frontera público/privado
+    // es a nivel de BUCKET, no de prefijo: un segundo bucket con lectura pública NO puede filtrar
+    // un PDF porque los PDF no están ahí. Reusan R2_ACCOUNT_ID/ACCESS_KEY_ID/SECRET_ACCESS_KEY/
+    // ENDPOINT (misma cuenta R2 del Operador). Opcionales: la app arranca sin ellas; la factory
+    // `crearStoragePublicoDeEnv` hace fail-fast al presignar/componer si faltan.
+    //   - R2_PUBLIC_BUCKET: bucket con acceso público de lectura (el Operador lo crea + habilita
+    //     el acceso público a mano en Cloudflare, como el CORS de F03).
+    //   - R2_PUBLIC_BASE_URL: base de la URL pública (subdominio r2.dev gestionado en el MVP;
+    //     dominio propio cuando se cierre la decisión #4/#5). Sin barra final.
+    R2_PUBLIC_BUCKET: z.string().optional(),
+    R2_PUBLIC_BASE_URL: z.string().url().optional(),
     // Correo transaccional — Resend (ADR-0010, F04). API key SECRETA del proveedor de
     // correo (una cuenta de PLATAFORMA, como el storage — no BYO por tenant). Opcional:
     // la app arranca sin ella; la factory `crearCorreoService` hace fail-fast en runtime
@@ -104,6 +118,8 @@ export const env = createEnv({
     R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
     R2_BUCKET: process.env.R2_BUCKET,
     R2_ENDPOINT: process.env.R2_ENDPOINT,
+    R2_PUBLIC_BUCKET: process.env.R2_PUBLIC_BUCKET,
+    R2_PUBLIC_BASE_URL: process.env.R2_PUBLIC_BASE_URL,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     APP_URL: process.env.APP_URL,
     NEXT_PUBLIC_PLATFORM_DOMAIN: process.env.NEXT_PUBLIC_PLATFORM_DOMAIN,

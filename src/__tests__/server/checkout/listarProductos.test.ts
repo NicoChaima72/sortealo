@@ -16,6 +16,8 @@ interface ProductoFake {
   titulo: string;
   descripcion: string;
   precio: Prisma.Decimal;
+  portadaUrl: string | null;
+  participaEnSorteo: boolean;
   activo: boolean;
   createdAt: Date;
 }
@@ -37,15 +39,55 @@ function fakeDb(productos: ProductoFake[]) {
 
 const dec = (v: string) => new Prisma.Decimal(v);
 
+const prod = (over: Partial<ProductoFake>): ProductoFake => ({
+  id: "p1",
+  tenantId: "A",
+  titulo: "Producto",
+  descripcion: "d",
+  precio: dec("3000"),
+  portadaUrl: null,
+  participaEnSorteo: false,
+  activo: true,
+  createdAt: new Date(),
+  ...over,
+});
+
 describe("domain/checkout/listarProductos (storefront filtra activo:true)", () => {
   // checkout.listar.storefront.001 — el catálogo excluye productos inactivos
   it("no lista los productos desactivados (activo:false)", async () => {
     const db = fakeDb([
-      { id: "act", tenantId: "A", titulo: "Activo", descripcion: "d", precio: dec("3000"), activo: true, createdAt: new Date() },
-      { id: "inact", tenantId: "A", titulo: "Desactivado", descripcion: "d", precio: dec("3000"), activo: false, createdAt: new Date() },
+      prod({ id: "act", titulo: "Activo", activo: true }),
+      prod({ id: "inact", titulo: "Desactivado", activo: false }),
     ]);
     const res = await listarProductos({ db, tenantId: "A" });
     expect(res.map((p) => p.id)).toEqual(["act"]);
     expect(res.some((p) => p.id === "inact")).toBe(false);
+  });
+
+  // checkout.listar.storefront.002 — devuelve portadaUrl + participaEnSorteo por producto (F02)
+  it("devuelve portadaUrl y participaEnSorteo de cada producto (para el catálogo rico)", async () => {
+    const db = fakeDb([
+      prod({
+        id: "p1",
+        portadaUrl: "https://pub.r2.dev/A/productos/p1/portada?v=3",
+        participaEnSorteo: true,
+      }),
+    ]);
+    const res = await listarProductos({ db, tenantId: "A" });
+    expect(res[0]).toMatchObject({
+      id: "p1",
+      portadaUrl: "https://pub.r2.dev/A/productos/p1/portada?v=3",
+      participaEnSorteo: true,
+    });
+  });
+
+  // checkout.listar.storefront.003 — tenant-scoped: un producto de otra Tienda no aparece (I1)
+  it("no lista un producto de otra Tienda (tenant-scoped server-side)", async () => {
+    const db = fakeDb([
+      prod({ id: "propio", tenantId: "A" }),
+      prod({ id: "ajeno", tenantId: "B" }),
+    ]);
+    const res = await listarProductos({ db, tenantId: "A" });
+    expect(res.map((p) => p.id)).toEqual(["propio"]);
   });
 });

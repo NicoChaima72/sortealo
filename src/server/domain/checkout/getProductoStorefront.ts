@@ -27,6 +27,7 @@ export async function getProductoStorefront({
   descripcion: string;
   precio: number;
   portadaUrl: string | null;
+  participaEnSorteo: boolean;
 }> {
   const producto = await db.product.findFirst({
     where: { id: input.id, tenantId, activo: true },
@@ -36,6 +37,7 @@ export async function getProductoStorefront({
       descripcion: true,
       precio: true,
       portadaUrl: true,
+      participaEnSorteo: true,
     },
   });
 
@@ -49,5 +51,6 @@ export async function getProductoStorefront({
     descripcion: producto.descripcion,
     precio: producto.precio.toNumber(),
     portadaUrl: producto.portadaUrl,
+    participaEnSorteo: producto.participaEnSorteo,
   };
 }

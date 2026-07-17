@@ -25,6 +25,7 @@ export async function getSorteoActivoStorefront({
   fechaFin: Date;
   basesUrl: string | null;
   basesTexto: string | null;
+  premioImageUrl: string | null;
   totalParticipaciones: number;
 } | null> {
   const raffle = await db.raffle.findFirst({
@@ -37,6 +38,8 @@ export async function getSorteoActivoStorefront({
       fechaInicio: true,
       fechaFin: true,
       basesUrl: true,
+      // URL pública de la imagen del premio (bucket público, ADR-0013); null ⇒ gradiente temático (D7).
+      premioImageUrl: true,
       // Solo el CONTEO de tickets — nunca los correos de las entries (privacidad, ADR-0004).
       _count: { select: { entries: true } },
       // Texto de las bases del Organizador (a nivel Tienda, ADR-0008).
@@ -54,6 +57,7 @@ export async function getSorteoActivoStorefront({
     fechaFin: raffle.fechaFin,
     basesUrl: raffle.basesUrl,
     basesTexto: raffle.tenant.basesSorteo,
+    premioImageUrl: raffle.premioImageUrl,
     totalParticipaciones: raffle._count.entries,
   };
 }

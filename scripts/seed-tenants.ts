@@ -34,6 +34,22 @@ export interface EspecificacionTenant {
     /** Opt-in al sorteo (ADR-0012/D1, S3). Ausente ⇒ false. */
     participaEnSorteo?: boolean;
   };
+  /**
+   * Branding DEMO de la plantilla rica (plantilla-rica F04): color/textos/redes/contacto para que el
+   * storefront de dev se vea tematizado y con el footer de redes. Las imágenes (logo/hero/portadas/
+   * premio) NO se siembran acá — son assets del bucket público que aún no existe: degradan a
+   * gradientes temáticos (degradación elegante §5.2). Se aplica idempotente (update) al sembrar.
+   */
+  branding?: {
+    colorPrimario?: string;
+    heroTitulo?: string;
+    heroSubtitulo?: string;
+    avisoTexto?: string;
+    instagramUrl?: string;
+    tiktokUrl?: string;
+    whatsappUrl?: string;
+    contactoEmail?: string;
+  };
 }
 
 export interface ResultadoSeedTenant {
@@ -64,6 +80,17 @@ export async function sembrarTenants({
     if (!tenant) {
       tenant = await db.tenant.create({
         data: { slug: spec.slug, nombre: spec.nombre, estado: spec.estado },
+      });
+    }
+
+    // 1b) Branding DEMO (plantilla-rica F04): update idempotente de color/textos/redes/contacto
+    // para que el storefront de dev se vea tematizado + con footer de redes. Solo si la spec lo
+    // trae; las imágenes se dejan null (degradan a gradiente hasta que exista el bucket público).
+    if (spec.branding) {
+      await db.tenant.update({
+        where: { id: tenant.id },
+        data: spec.branding,
+        select: { id: true },
       });
     }
 
@@ -201,6 +228,19 @@ function construirSpecs(envFlow: {
         pdfPath: "autora/seed/como-enriquecer-a-tu-idol-favorito.pdf",
         participaEnSorteo: true, // el piloto demuestra la promo (ADR-0012/S3)
       },
+      // Demo de la plantilla rica (F04): color rosa + textos + redes/contacto. Sin imágenes
+      // (degradan a gradiente hasta que exista el bucket público real).
+      branding: {
+        colorPrimario: "#e11d48",
+        heroTitulo: "Historias que enamoran",
+        heroSubtitulo:
+          "Libros y guías digitales con humor, listos para descargar. Cada compra te suma al sorteo.",
+        avisoTexto: "Recibes el PDF por correo apenas se confirma tu pago.",
+        instagramUrl: "https://instagram.com/tienda.autora",
+        tiktokUrl: "https://tiktok.com/@tienda.autora",
+        whatsappUrl: "https://wa.me/56900000000",
+        contactoEmail: "hola@tienda-autora.cl",
+      },
     },
     {
       slug: "prueba",
@@ -214,6 +254,14 @@ function construirSpecs(envFlow: {
         precio: "5000",
         pdfPath: "prueba/seed/guia-de-prueba-del-sorteo.pdf",
         participaEnSorteo: false, // ejerce el camino "no participa" (ADR-0012/S3)
+      },
+      // Segundo tenant con OTRO color (teal) y SIN redes: demuestra aislamiento per-tenant +
+      // degradación elegante del footer (redes ocultas) en la verificación visual.
+      branding: {
+        colorPrimario: "#0d9488",
+        heroTitulo: "Tienda de Prueba",
+        heroSubtitulo:
+          "El segundo tenant para verificar el aislamiento cross-tenant y la degradación elegante.",
       },
     },
   ];

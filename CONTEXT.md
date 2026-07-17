@@ -1,4 +1,4 @@
-# CONTEXT — Glosario del dominio (libros-iselk / plataforma SaaS)
+# CONTEXT — Glosario del dominio (sorteatelo / plataforma SaaS)
 
 Fuente de verdad del **vocabulario del dominio**. Cuando un agente nombra un concepto (en un
 título de issue, un test, un modelo Prisma, una propuesta), usa el término **como está definido
@@ -58,9 +58,25 @@ La dirección de una [[Tienda]] publicada: `<slug>.<dominio de la plataforma>`. 
 por el host del request (ADR-0007). El apex (`dominio` / `www`) queda reservado a la [[Plataforma]].
 
 ### Plantilla (tema configurable)
-El **único** tema de storefront que ofrece la Plataforma: el [[Organizador]] configura logo, colores
-y textos **sobre** la plantilla existente. NO es un editor visual: un builder drag-and-drop queda
-explícitamente fuera del MVP. _Evitar_: builder, editor, tema custom.
+El **único** tema de storefront que ofrece la Plataforma: el [[Organizador]] configura logo, colores,
+textos e **imágenes** ([[Asset de marca]]) **sobre** la plantilla existente. NO es un editor visual: un
+builder drag-and-drop queda explícitamente fuera del MVP. La plantilla es **estructura rica, no estética
+fija**: un skin neutro-profesional de secciones (header con countdown, hero a 2 columnas, catálogo con
+portadas, vitrina del sorteo/premio, cómo funciona, footer con redes) que **cada Tienda tematiza** con su
+`colorPrimario` (que se expande a una escala de 10 tonos) y sus assets. Sirve igual a una tienda de fandom
+o a una sobria. Regla dura de la plantilla: **degradación elegante** — todo dato de marca es opcional y,
+si falta, la sección degrada limpio (sin imagen ⇒ gradiente temático, nunca un hueco; sin redes ⇒ se
+oculta el ícono; sin sorteo ⇒ no aparece la sección), nunca un `<img>` roto ni un campo vacío. La
+estructura oficial vive en `docs/design.md` §5 (fuente de verdad visual). _Evitar_: builder, editor,
+tema custom, "múltiples plantillas" (hoy hay UNA; que sean varias seleccionables es puerta abierta post-MVP).
+
+### Asset de marca (imagen pública de marketing)
+Una **imagen pública** que personaliza el storefront de una [[Tienda]]: **logo**, **imagen de hero**,
+**portada** de un [[Producto]] y **imagen del premio** del [[Sorteo]]. Son propaganda cacheable, servida
+por CDN, y **categóricamente distinta del PDF** vendido: viven en un **bucket R2 público** separado del
+bucket privado gated por [[Entitlement]] (ADR-0013). Las sube el [[Organizador]] desde su panel (presigned
+PUT + confirmación, mismo patrón que el PDF de F03) y son **opcionales** (ver degradación elegante en
+[[Plantilla]]). _Evitar_: confundirlas con el PDF/archivo del producto (privado, nunca público, ADR-0002).
 
 ### CredencialFlow (`FlowCredential`)
 Las credenciales (apiKey / secretKey) de la **cuenta Flow propia** del [[Organizador]], almacenadas

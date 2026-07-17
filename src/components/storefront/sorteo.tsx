@@ -2,89 +2,193 @@ import {
   Alert,
   Anchor,
   Badge,
-  Card,
+  Box,
+  Container,
   Group,
-  Skeleton,
+  SimpleGrid,
   Stack,
   Text,
+  ThemeIcon,
+  Title,
 } from "@mantine/core";
-import { IconGift, IconScale } from "@tabler/icons-react";
+import { IconGift, IconScale, IconTicket } from "@tabler/icons-react";
 
+import {
+  formatoCompacto,
+  useCountdown,
+} from "~/components/storefront/use-countdown";
+import { useSorteoActivo } from "~/components/storefront/use-sorteo-activo";
 import { fecha, num } from "~/lib/formato";
-import { api } from "~/utils/api";
+import { gradienteTematico } from "~/styles/tenantTheme";
 
 /**
- * Sección del sorteo ACTIVO del storefront (F05/D8, ADR-0008). Consume `getSorteoActivoStorefront`
- * (público, tenant-scoped, SIN correos). Solo aparece cuando hay un sorteo ACTIVO; con él, el
- * DISCLAIMER del sorteo es OBLIGATORIO y visible (I8/D7/ADR-0008): texto fijo de plataforma que deja
- * claro que el responsable del sorteo es el Organizador, no la plataforma. No es configurable por tenant.
- *
- * Es una sección opcional/decorativa de la home: si la query falla o no hay sorteo, simplemente no se
- * renderiza (el catálogo es el contenido principal) — no rompe la home con un error.
+ * Vitrina del sorteo del storefront (plantilla-rica F04, design.md §5.1 pto 4; ADR-0008). Aparece
+ * SOLO si hay un sorteo ACTIVO (degradación elegante §5.2: sin sorteo ⇒ sin sección ni countdown).
+ * Muestra la imagen del premio (o un gradiente temático si no hay), nombre/premio/fechas, el conteo
+ * de participaciones (TICKETS, sin correos — privacidad ADR-0004), "comprar = participar" y el
+ * DISCLAIMER fijo de plataforma OBLIGATORIO (I8/D7/ADR-0008): el responsable del sorteo es el
+ * Organizador, no la plataforma. No es configurable por tenant. Consume la query pública compartida.
  */
 
-/** Disclaimer FIJO de plataforma (S8; redacción legal fina se ajusta con abogado en F10, ADR-0008). */
+/** Disclaimer FIJO de plataforma (redacción legal fina se ajusta con abogado en F10, ADR-0008). */
 const DISCLAIMER_SORTEO =
   "Este sorteo es organizado y ejecutado exclusivamente por quien opera esta tienda, único " +
   "responsable de sus bases, premios y resultado. La plataforma solo provee la tecnología: no " +
   "organiza el sorteo ni responde por su ejecución. Revisa las bases antes de participar.";
 
-export function SorteoStorefront() {
-  const sorteo = api.checkout.getSorteoActivoStorefront.useQuery(undefined, {
-    retry: false,
-  });
+export function SorteoStorefront({
+  colorPrimario,
+}: {
+  colorPrimario: string | null;
+}) {
+  const sorteo = useSorteoActivo();
 
-  if (sorteo.isLoading) return <Skeleton height={160} radius="md" />;
+  // Sección opcional/decorativa: si falla o no hay sorteo, no se renderiza (no rompe la home, §5.2).
   if (sorteo.isError || !sorteo.data) return null;
-
   const s = sorteo.data;
 
   return (
-    <Card withBorder radius="md" padding="lg">
-      <Stack gap="md">
-        <Group gap="xs" wrap="nowrap">
-          <IconGift className="size-5" stroke={1.75} />
-          <Text fw={700} fz="lg">
-            Sorteo activo
-          </Text>
-        </Group>
-
-        <Stack gap={4}>
-          <Text fw={600}>{s.nombre}</Text>
-          <Text size="sm">
-            Premio: <strong>{s.premio}</strong>
-          </Text>
-          <Text size="sm" c="dimmed">
-            Vigente del {fecha(s.fechaInicio)} al {fecha(s.fechaFin)}
-          </Text>
-          <Group gap="xs" mt={4}>
-            <Badge variant="light" styles={{ label: { textTransform: "none" } }}>
-              {num(s.totalParticipaciones)}{" "}
-              {s.totalParticipaciones === 1 ? "participación" : "participaciones"}
-            </Badge>
-          </Group>
-        </Stack>
-
-        {s.basesTexto && (
-          <Text size="sm" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
-            {s.basesTexto}
-          </Text>
-        )}
-        {s.basesUrl && (
-          <Anchor href={s.basesUrl} target="_blank" rel="noreferrer" size="sm">
-            Ver las bases completas
-          </Anchor>
-        )}
-
-        <Alert
-          variant="light"
-          color="gray"
-          icon={<IconScale className="size-[18px]" />}
-          title="Responsabilidad del sorteo"
+    <Box
+      component="section"
+      id="sorteo"
+      py={{ base: "xl", md: 48 }}
+      style={{
+        borderTop: "1px solid var(--mantine-color-default-border)",
+        borderBottom: "1px solid var(--mantine-color-default-border)",
+        background: "var(--mantine-color-default-hover)",
+      }}
+    >
+      <Container size="lg" px={{ base: "md", lg: "xl" }}>
+        <SimpleGrid
+          cols={{ base: 1, md: 2 }}
+          spacing={{ base: "lg", md: 48 }}
+          style={{ alignItems: "center" }}
         >
-          <Text size="xs">{DISCLAIMER_SORTEO}</Text>
-        </Alert>
-      </Stack>
-    </Card>
+          <PremioVisual url={s.premioImageUrl} colorPrimario={colorPrimario} />
+
+          <Stack gap="md">
+            <Group gap="xs">
+              <ThemeIcon variant="light" size="lg" radius="md">
+                <IconGift className="size-5" stroke={1.75} />
+              </ThemeIcon>
+              <Text fw={600} tt="uppercase" fz="xs" c="dimmed" style={{ letterSpacing: "0.08em" }}>
+                Sorteo activo
+              </Text>
+            </Group>
+
+            <Title order={2} fz={{ base: 26, sm: 34 }} fw={800} lh={1.15}>
+              {s.premio}
+            </Title>
+
+            <Text c="dimmed">{s.nombre}</Text>
+
+            <Group gap="xs" wrap="wrap">
+              <Badge variant="light" styles={{ label: { textTransform: "none" } }}>
+                {num(s.totalParticipaciones)}{" "}
+                {s.totalParticipaciones === 1 ? "participación" : "participaciones"}
+              </Badge>
+              <Badge
+                variant="outline"
+                color="gray"
+                styles={{ label: { fontWeight: 400, textTransform: "none" } }}
+              >
+                Vigente hasta el {fecha(s.fechaFin)}
+              </Badge>
+              <CierreBadge fechaFin={s.fechaFin} />
+            </Group>
+
+            <Group gap={8} wrap="nowrap">
+              <IconTicket
+                className="size-4"
+                stroke={1.75}
+                color="var(--mantine-primary-color-filled)"
+              />
+              <Text size="sm">
+                Comprar en esta tienda es participar: cada compra suma tus tickets.
+              </Text>
+            </Group>
+
+            {s.basesTexto && (
+              <Text size="sm" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
+                {s.basesTexto}
+              </Text>
+            )}
+            {s.basesUrl && (
+              <Anchor href={s.basesUrl} target="_blank" rel="noreferrer" size="sm">
+                Ver las bases completas
+              </Anchor>
+            )}
+
+            <Alert
+              variant="light"
+              color="gray"
+              icon={<IconScale className="size-[18px]" />}
+              title="Responsabilidad del sorteo"
+            >
+              <Text size="xs">{DISCLAIMER_SORTEO}</Text>
+            </Alert>
+          </Stack>
+        </SimpleGrid>
+      </Container>
+    </Box>
+  );
+}
+
+/** Badge de cuenta regresiva; se oculta si el sorteo ya venció (degradación §5.2). */
+function CierreBadge({ fechaFin }: { fechaFin: Date }) {
+  const t = useCountdown(fechaFin);
+  if (t.terminado) return null;
+  return (
+    <Badge
+      variant="light"
+      classNames={{ label: "tabular-nums" }}
+      styles={{ label: { textTransform: "none" } }}
+    >
+      Cierra en {formatoCompacto(t)}
+    </Badge>
+  );
+}
+
+/** Imagen del premio, o un bloque de gradiente temático si no hay (degradación elegante §5.2). */
+function PremioVisual({
+  url,
+  colorPrimario,
+}: {
+  url: string | null;
+  colorPrimario: string | null;
+}) {
+  if (url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={url}
+        alt="Premio del sorteo"
+        style={{
+          width: "100%",
+          aspectRatio: "4 / 3",
+          objectFit: "cover",
+          borderRadius: "var(--mantine-radius-lg)",
+          display: "block",
+        }}
+      />
+    );
+  }
+  return (
+    <Box
+      className="flex items-center justify-center"
+      style={{
+        width: "100%",
+        aspectRatio: "4 / 3",
+        borderRadius: "var(--mantine-radius-lg)",
+        background: gradienteTematico(colorPrimario),
+      }}
+    >
+      <IconGift
+        className="size-16"
+        stroke={1.25}
+        color="var(--mantine-color-white)"
+        style={{ opacity: 0.9 }}
+      />
+    </Box>
   );
 }

@@ -1,10 +1,12 @@
-import { Alert, Anchor, Stack, Text, Title } from "@mantine/core";
+import { Alert, Anchor, Box, Container, Stack, Text, Title } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 import { type GetServerSideProps, type InferGetServerSidePropsType } from "next";
 import Head from "next/head";
 import Link from "next/link";
 
 import { CatalogoStorefront } from "~/components/storefront/catalogo";
+import { ComoFunciona } from "~/components/storefront/como-funciona";
+import { StorefrontHero } from "~/components/storefront/storefront-hero";
 import { SorteoStorefront } from "~/components/storefront/sorteo";
 import { StorefrontLayout } from "~/components/storefront/storefront-layout";
 import {
@@ -30,39 +32,36 @@ export default function HomePage({
   return <StorefrontHome branding={tenantBranding} />;
 }
 
-/** Home del storefront: aviso opcional + hero de la Tienda. Catálogo (F03) y sorteo (F05) cuelgan acá. */
+/**
+ * Home del storefront: las 7 secciones de la plantilla rica (design.md §5.1) — header + footer los
+ * pone el layout; acá van aviso (opcional), hero, catálogo, vitrina del sorteo y cómo funciona. Todo
+ * tematizado per-tenant y con degradación elegante (§5.2): sin aviso/hero-img/portada/premio/sorteo
+ * la sección degrada limpio (fallback de texto o gradiente temático), nunca un hueco.
+ */
 function StorefrontHome({ branding }: { branding: TenantBranding }) {
-  const heroTitulo = branding.heroTitulo ?? branding.nombre;
-  const heroSubtitulo = branding.heroSubtitulo ?? branding.descripcion;
-
   return (
     <StorefrontLayout branding={branding}>
-      <Stack gap="xl">
-        {branding.avisoTexto && (
-          <Alert
-            variant="light"
-            icon={<IconInfoCircle className="size-[18px]" />}
-            styles={{ message: { whiteSpace: "pre-wrap" } }}
-          >
-            {branding.avisoTexto}
-          </Alert>
-        )}
+      {branding.avisoTexto && (
+        <Box
+          py="xs"
+          style={{ borderBottom: "1px solid var(--mantine-color-default-border)" }}
+        >
+          <Container size="lg" px={{ base: "md", lg: "xl" }}>
+            <Alert
+              variant="light"
+              icon={<IconInfoCircle className="size-[18px]" />}
+              styles={{ message: { whiteSpace: "pre-wrap" } }}
+            >
+              {branding.avisoTexto}
+            </Alert>
+          </Container>
+        </Box>
+      )}
 
-        <Stack gap="sm">
-          <Title order={1} fz={{ base: 28, sm: 36 }} lh={1.15}>
-            {heroTitulo}
-          </Title>
-          {heroSubtitulo && (
-            <Text size="lg" c="dimmed" maw={640}>
-              {heroSubtitulo}
-            </Text>
-          )}
-        </Stack>
-
-        <SorteoStorefront />
-
-        <CatalogoStorefront />
-      </Stack>
+      <StorefrontHero branding={branding} />
+      <CatalogoStorefront colorPrimario={branding.colorPrimario} />
+      <SorteoStorefront colorPrimario={branding.colorPrimario} />
+      <ComoFunciona />
     </StorefrontLayout>
   );
 }

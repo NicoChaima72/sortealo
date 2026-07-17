@@ -1,4 +1,4 @@
-import { Button, Stack, Text, ThemeIcon, Title } from "@mantine/core";
+import { Button, Container, Stack, Text, ThemeIcon, Title } from "@mantine/core";
 import { IconMailCheck } from "@tabler/icons-react";
 import { type GetServerSideProps, type InferGetServerSidePropsType } from "next";
 import Link from "next/link";
@@ -26,22 +26,24 @@ export default function RetornoPage({
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <StorefrontLayout branding={tenantBranding}>
-      <Stack align="center" py="xl" gap="md" maw={480} mx="auto">
-        <ThemeIcon size={56} radius="xl" variant="light">
-          <IconMailCheck className="size-7" stroke={1.75} />
-        </ThemeIcon>
-        <Title order={1} fz="xl" ta="center">
-          ¡Gracias por tu compra!
-        </Title>
-        <Text c="dimmed" ta="center">
-          Estamos confirmando tu pago. Apenas quede confirmado, te llega un
-          correo con el enlace para descargar tu producto. Si no lo ves en unos
-          minutos, revisa tu carpeta de spam.
-        </Text>
-        <Button component={Link} href="/" variant="default" mt="sm">
-          Volver a la tienda
-        </Button>
-      </Stack>
+      <Container size="lg" py="xl" px={{ base: "md", lg: "xl" }}>
+        <Stack align="center" gap="md" maw={480} mx="auto">
+          <ThemeIcon size={56} radius="xl" variant="light">
+            <IconMailCheck className="size-7" stroke={1.75} />
+          </ThemeIcon>
+          <Title order={1} fz="xl" ta="center">
+            ¡Gracias por tu compra!
+          </Title>
+          <Text c="dimmed" ta="center">
+            Estamos confirmando tu pago. Apenas quede confirmado, te llega un
+            correo con el enlace para descargar tu producto. Si no lo ves en unos
+            minutos, revisa tu carpeta de spam.
+          </Text>
+          <Button component={Link} href="/" variant="default" mt="sm">
+            Volver a la tienda
+          </Button>
+        </Stack>
+      </Container>
     </StorefrontLayout>
   );
 }

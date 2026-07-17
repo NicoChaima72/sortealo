@@ -19,6 +19,7 @@ interface RaffleFake {
   fechaInicio: Date;
   fechaFin: Date;
   basesUrl: string | null;
+  premioImageUrl: string | null;
   basesSorteo: string | null; // del Tenant
   totalEntries: number;
 }
@@ -43,6 +44,7 @@ function fakeDb(raffles: RaffleFake[]) {
           fechaInicio: r.fechaInicio,
           fechaFin: r.fechaFin,
           basesUrl: r.basesUrl,
+          premioImageUrl: r.premioImageUrl,
           _count: { entries: r.totalEntries },
           tenant: { basesSorteo: r.basesSorteo },
         };
@@ -60,6 +62,7 @@ const raffle = (over: Partial<RaffleFake>): RaffleFake => ({
   fechaInicio: new Date("2026-07-01"),
   fechaFin: new Date("2026-08-01"),
   basesUrl: null,
+  premioImageUrl: null,
   basesSorteo: "Participan las compras pagadas…",
   totalEntries: 3,
   ...over,
@@ -83,6 +86,30 @@ describe("domain/checkout/getSorteoActivoStorefront (fake db, público, tenant-s
     expect(JSON.stringify(res)).not.toContain("@");
     expect(res).not.toHaveProperty("participantes");
     expect(res).not.toHaveProperty("entries");
+  });
+
+  // checkout.sorteo.storefront.004 — devuelve premioImageUrl (o null), sin filtrar correos (F02)
+  it("devuelve premioImageUrl del sorteo activo sin filtrar correos", async () => {
+    const conImagen = await getSorteoActivoStorefront({
+      db: fakeDb([
+        raffle({
+          tenantId: "A",
+          premioImageUrl: "https://pub.r2.dev/A/sorteo/r1/premio?v=2",
+        }),
+      ]),
+      tenantId: "A",
+    });
+    expect(conImagen?.premioImageUrl).toBe(
+      "https://pub.r2.dev/A/sorteo/r1/premio?v=2",
+    );
+    expect(JSON.stringify(conImagen)).not.toContain("@");
+
+    // Sin imagen de premio ⇒ null (el storefront degrada a gradiente temático, D7).
+    const sinImagen = await getSorteoActivoStorefront({
+      db: fakeDb([raffle({ tenantId: "A", premioImageUrl: null })]),
+      tenantId: "A",
+    });
+    expect(sinImagen?.premioImageUrl).toBeNull();
   });
 
   // checkout.sorteo.storefront.002 — sin sorteo ACTIVO ⇒ null

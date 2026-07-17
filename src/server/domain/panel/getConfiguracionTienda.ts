@@ -23,13 +23,20 @@ export async function getConfiguracionTienda({
   basesSorteo: string | null;
   heroTitulo: string | null;
   heroSubtitulo: string | null;
+  heroImageUrl: string | null;
   avisoTexto: string | null;
+  instagramUrl: string | null;
+  tiktokUrl: string | null;
+  whatsappUrl: string | null;
+  contactoEmail: string | null;
 }> {
   const tenantId = resolverTenantAutorizado({
     esOperador: acceso.esOperador,
     tenantIdsDeMembresia: acceso.tenantIds,
   });
 
+  // `logoUrl`/`heroImageUrl` se DEVUELVEN (para mostrar el asset actual en el uploader) pero se
+  // ESCRIBEN por el flujo de subida, no por guardarConfiguracionTienda (D4/I6). Jamás secretos.
   const tienda = await db.tenant.findUniqueOrThrow({
     where: { id: tenantId },
     select: {
@@ -42,7 +49,12 @@ export async function getConfiguracionTienda({
       basesSorteo: true,
       heroTitulo: true,
       heroSubtitulo: true,
+      heroImageUrl: true,
       avisoTexto: true,
+      instagramUrl: true,
+      tiktokUrl: true,
+      whatsappUrl: true,
+      contactoEmail: true,
     },
   });
 

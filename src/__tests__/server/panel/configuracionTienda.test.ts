@@ -38,20 +38,23 @@ describe("domain/panel/guardarConfiguracionTienda (fake db)", () => {
     return { db, getUpdateArgs: () => updateArgs };
   }
 
-  // panel.config.guardar.001 — persiste bases + plantilla SOLO en el tenant autorizado
-  it("guarda bases del sorteo + campos de plantilla en el tenant resuelto (no del input)", async () => {
+  // panel.config.guardar.001 — persiste bases + plantilla + redes SOLO en el tenant autorizado
+  it("guarda bases del sorteo + campos de plantilla + redes/contacto en el tenant resuelto (no del input)", async () => {
     const { db, getUpdateArgs } = fakeDb();
     await guardarConfiguracionTienda({
       db,
       acceso: acceso(["A"]),
       input: {
         descripcion: "Mi tienda",
-        logoUrl: "https://x.cl/logo.png",
         colorPrimario: "#4f46e5",
         basesSorteo: "Bases del sorteo: participan las compras pagadas…",
         heroTitulo: "Bienvenido a mi tienda",
         heroSubtitulo: "Libros con humor",
         avisoTexto: "Envío inmediato tras el pago.",
+        instagramUrl: "https://instagram.com/mitienda",
+        tiktokUrl: "https://tiktok.com/@mitienda",
+        whatsappUrl: "https://wa.me/56900000000",
+        contactoEmail: "hola@mitienda.cl",
       },
     });
     const args = getUpdateArgs()!;
@@ -59,10 +62,16 @@ describe("domain/panel/guardarConfiguracionTienda (fake db)", () => {
     expect(args.data.descripcion).toBe("Mi tienda");
     expect(args.data.colorPrimario).toBe("#4f46e5");
     expect(args.data.basesSorteo).toContain("Bases del sorteo");
-    // F06/D4: los 3 campos de plantilla nuevos se persisten (aditivo, no rompe lo previo).
     expect(args.data.heroTitulo).toBe("Bienvenido a mi tienda");
     expect(args.data.heroSubtitulo).toBe("Libros con humor");
     expect(args.data.avisoTexto).toBe("Envío inmediato tras el pago.");
+    // plantilla-rica F02/D2: redes + contacto del footer se persisten.
+    expect(args.data.instagramUrl).toBe("https://instagram.com/mitienda");
+    expect(args.data.tiktokUrl).toBe("https://tiktok.com/@mitienda");
+    expect(args.data.whatsappUrl).toBe("https://wa.me/56900000000");
+    expect(args.data.contactoEmail).toBe("hola@mitienda.cl");
+    // D4/I6: `logoUrl` NO se escribe por este use case (lo persiste el flujo de subida).
+    expect(args.data).not.toHaveProperty("logoUrl");
   });
 
   // panel.config.guardar.002 — campos vacíos ⇒ null (limpia el valor)
@@ -73,22 +82,28 @@ describe("domain/panel/guardarConfiguracionTienda (fake db)", () => {
       acceso: acceso(["A"]),
       input: {
         descripcion: "",
-        logoUrl: "",
         colorPrimario: "",
         basesSorteo: "",
         heroTitulo: "",
         heroSubtitulo: "",
         avisoTexto: "",
+        instagramUrl: "",
+        tiktokUrl: "",
+        whatsappUrl: "",
+        contactoEmail: "",
       },
     });
     const args = getUpdateArgs()!;
     expect(args.data.descripcion).toBeNull();
-    expect(args.data.logoUrl).toBeNull();
     expect(args.data.colorPrimario).toBeNull();
     expect(args.data.basesSorteo).toBeNull();
     expect(args.data.heroTitulo).toBeNull();
     expect(args.data.heroSubtitulo).toBeNull();
     expect(args.data.avisoTexto).toBeNull();
+    expect(args.data.instagramUrl).toBeNull();
+    expect(args.data.tiktokUrl).toBeNull();
+    expect(args.data.whatsappUrl).toBeNull();
+    expect(args.data.contactoEmail).toBeNull();
   });
 
   // panel.config.guardar.003 — sin membresía ⇒ FORBIDDEN, no escribe
@@ -100,12 +115,15 @@ describe("domain/panel/guardarConfiguracionTienda (fake db)", () => {
         acceso: acceso([]),
         input: {
           descripcion: "x",
-          logoUrl: "",
           colorPrimario: "",
           basesSorteo: "",
           heroTitulo: "",
           heroSubtitulo: "",
           avisoTexto: "",
+          instagramUrl: "",
+          tiktokUrl: "",
+          whatsappUrl: "",
+          contactoEmail: "",
         },
       }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -126,19 +144,24 @@ describe("domain/panel/getConfiguracionTienda (fake db)", () => {
   }
 
   // panel.config.get.001 — devuelve la config del tenant autorizado
-  it("devuelve nombre/slug/estado + config de plantilla + bases del tenant", async () => {
+  it("devuelve nombre/slug/estado + config de plantilla + redes/contacto + bases del tenant", async () => {
     const res = await getConfiguracionTienda({
       db: fakeDb({
         nombre: "Tienda A",
         slug: "a",
         estado: "PUBLICADA",
         descripcion: "desc",
-        logoUrl: null,
+        logoUrl: "https://pub.r2.dev/A/branding/logo?v=1",
         colorPrimario: "#4f46e5",
         basesSorteo: "bases…",
         heroTitulo: "Hola",
         heroSubtitulo: null,
+        heroImageUrl: "https://pub.r2.dev/A/branding/hero?v=1",
         avisoTexto: "aviso",
+        instagramUrl: "https://instagram.com/a",
+        tiktokUrl: null,
+        whatsappUrl: null,
+        contactoEmail: "hola@a.cl",
       }),
       acceso: acceso(["A"]),
     });
@@ -149,7 +172,10 @@ describe("domain/panel/getConfiguracionTienda (fake db)", () => {
       basesSorteo: "bases…",
       heroTitulo: "Hola",
       heroSubtitulo: null,
+      heroImageUrl: "https://pub.r2.dev/A/branding/hero?v=1",
       avisoTexto: "aviso",
+      instagramUrl: "https://instagram.com/a",
+      contactoEmail: "hola@a.cl",
     });
   });
 

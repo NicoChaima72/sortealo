@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   generarEscalaColor,
+  gradienteTematico,
   overrideDesdeBranding,
   type TenantBranding,
 } from "~/styles/tenantTheme";
@@ -21,7 +22,12 @@ const branding = (colorPrimario: string | null): TenantBranding => ({
   colorPrimario,
   heroTitulo: null,
   heroSubtitulo: null,
+  heroImageUrl: null,
   avisoTexto: null,
+  instagramUrl: null,
+  tiktokUrl: null,
+  whatsappUrl: null,
+  contactoEmail: null,
 });
 
 const ES_HEX = /^#[0-9a-f]{6}$/;
@@ -83,5 +89,36 @@ describe("styles/tenantTheme — overrideDesdeBranding", () => {
     const a = overrideDesdeBranding(branding("#4f46e5"));
     const b = overrideDesdeBranding(branding("#4f46e5"));
     expect(a).toEqual(b);
+  });
+});
+
+describe("styles/tenantTheme — gradienteTematico (degradación elegante, design.md §5.2)", () => {
+  const ES_GRADIENTE = /^linear-gradient\(/;
+
+  // storefront.gradiente.001 — con color de marca deriva de la escala `marca-N` (cero hex inline)
+  it("con colorPrimario hex usa las CSS vars de la escala `marca`, sin ningún hex inline", () => {
+    const g = gradienteTematico("#4f46e5");
+    expect(g).toMatch(ES_GRADIENTE);
+    expect(g).toContain("var(--mantine-color-marca-");
+    // Cero hex inline (design.md §9): el gradiente NO incrusta el color del tenant como literal.
+    expect(g).not.toContain("#");
+  });
+
+  // storefront.gradiente.002 — sin color de marca cae al primario base (siempre válido, sin imagen)
+  it("con colorPrimario null degrada al primario base de plataforma (produce salida válida)", () => {
+    const g = gradienteTematico(null);
+    expect(g).toMatch(ES_GRADIENTE);
+    expect(g).toContain("var(--mantine-primary-color-");
+    expect(g).not.toContain("#");
+  });
+
+  // storefront.gradiente.003 — hex inválido degrada como null (no rompe con dato malo)
+  it("con colorPrimario inválido degrada igual que null (no crashea)", () => {
+    expect(gradienteTematico("no-es-hex")).toBe(gradienteTematico(null));
+  });
+
+  // storefront.gradiente.004 — determinista (mismo input ⇒ mismo string, sirve SSR + cliente)
+  it("es determinista: mismo colorPrimario ⇒ mismo string", () => {
+    expect(gradienteTematico("#4f46e5")).toBe(gradienteTematico("#4f46e5"));
   });
 });

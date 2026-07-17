@@ -88,3 +88,13 @@ Paquetes instalados: `@mantine/core`, `@mantine/hooks`, `@mantine/form`, `@manti
 - El carrito del Comprador es estado de CLIENTE per-slug (localStorage `carrito:<slug>`, sin modelo `Cart`, ADR-0004). Cada `ItemCarrito` lleva `cantidad` (≥1); el contexto expone `agregar` (inicia en 1), `setCantidad` (clampeada a `[1, MAX_CANTIDAD_POR_ITEM]`) y `quitar`.
 - Ajustar cantidad → **`StepperCantidad`** (`src/components/storefront/stepper-cantidad.tsx`): par de `ActionIcon variant="default"` (−/+) con un `Text` `tabular-nums` en medio; deshabilita `−` en 1 y `+` en el tope; lee/escribe vía `useCarrito`, con `aria-label` en ambos botones. Reusado en carrito-drawer, catálogo, detalle y checkout.
 - **I4**: el stepper solo cuenta UNIDADES, nunca opera dinero. `MAX_CANTIDAD_POR_ITEM` se duplica a propósito entre cliente (`carrito.tsx`) y server (`checkout/schemas.ts`) — el cliente no puede importar código server; ambos lo documentan como espejo del `max` de Zod.
+
+## Subida de imágenes de marca (panel)
+
+- El panel sube assets públicos (logo/hero/portada/premio) por **presigned PUT + confirmación** (mismo patrón que el PDF), vía el hook `useSubirImagenMarca` (`~/components/admin/use-subir-imagen`). La allowlist de Content-Type (`CONTENT_TYPES_IMAGEN`) es ESPEJO del server (el cliente no importa código server; el server re-valida). El `<FileInput>` usa `accept={ACCEPT_IMAGEN}`.
+- Dos modos: **inmediato** (`AssetUploader` — el recurso ya existe: logo/hero/premio; sube al elegir archivo e invalida su query) y **diferido** (portada de producto — se sube DESPUÉS de crear/actualizar, porque la key es per-recurso y necesita el `productId`).
+
+## Degradación elegante de imágenes (storefront)
+
+- Toda imagen del storefront es opcional; su ausencia cae a un **gradiente temático** (`gradienteTematico` de `~/styles/tenantTheme`, derivado de la escala del `colorPrimario` vía CSS vars `--mantine-color-marca-*` / `--mantine-primary-color-*`) — **nunca un `<img>` roto** (design.md §5.2). Cero hex inline.
+- Texto/ícono de contraste SOBRE un gradiente: `c="white"` en componentes Mantine (token), pero `color="var(--mantine-color-white)"` en íconos Tabler (no pasan por el resolver de tokens de Mantine).

@@ -73,7 +73,12 @@ export async function resolverBrandingDesdeHost({
     colorPrimario: tienda.colorPrimario,
     heroTitulo: tienda.heroTitulo,
     heroSubtitulo: tienda.heroSubtitulo,
+    heroImageUrl: tienda.heroImageUrl,
     avisoTexto: tienda.avisoTexto,
+    instagramUrl: tienda.instagramUrl,
+    tiktokUrl: tienda.tiktokUrl,
+    whatsappUrl: tienda.whatsappUrl,
+    contactoEmail: tienda.contactoEmail,
   };
   return { zona: "storefront", branding };
 }

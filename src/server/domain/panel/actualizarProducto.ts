@@ -2,7 +2,6 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { type AccesoPanel, resolverTenantAutorizado } from "~/server/authPolicy";
 import { DomainError } from "~/server/domain/errors";
-import { textoOpcionalANull } from "~/server/domain/panel/_internal";
 import { type ActualizarProductoInput } from "~/server/domain/panel/schemas";
 
 /**
@@ -13,6 +12,9 @@ import { type ActualizarProductoInput } from "~/server/domain/panel/schemas";
  * "no existe", sin fuga de existencia (I1/ADR-0005). El precio se persiste como `Decimal`
  * (I4). Ya NO recibe `pdfPath` del input (murió el seam de texto de F05, I6): la ruta la
  * escribe únicamente `confirmarPdfProducto`.
+ *
+ * Tampoco recibe `portadaUrl` (plantilla-rica D4/I6): la portada es un asset del bucket público
+ * que escribe SOLO `confirmarImagenSubida`; editar el producto preserva la portada existente.
  *
  * Guard fail-closed (I7): no se puede **activar** (`activo: true`) un producto con `pdfPath`
  * null (PDF pendiente) ⇒ `INVALID`. Se verifica leyendo el producto scopeado por tenant
@@ -59,7 +61,8 @@ export async function actualizarProducto({
       titulo: input.titulo,
       descripcion: input.descripcion,
       precio: new Prisma.Decimal(input.precio),
-      portadaUrl: textoOpcionalANull(input.portadaUrl),
+      // portadaUrl NO se toca acá (D4/I6): la escribe solo confirmarImagenSubida. Editar el
+      // producto preserva su portada actual; una portada nueva la sobrescribe la subida.
       participaEnSorteo: input.participaEnSorteo, // opt-in al sorteo (ADR-0012/D1)
       activo: input.activo,
     },
