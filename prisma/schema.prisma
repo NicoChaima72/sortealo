@@ -137,6 +137,14 @@ model Tenant {
   // `Raffle.basesUrl` (F02), que es el enlace al ARCHIVO de bases (lo sube F03). Coexisten a
   // propósito: acá vive el borrador editable a nivel Tienda; el archivo final vive en el Sorteo.
   basesSorteo   String?
+  // ── Aceptación de los Términos de Servicio (F08/D2, ADR-0008). Los 3 se escriben JUNTOS en
+  // aceptarTos. Espejan el patrón de auditoría de Raffle (ejecutadoAt/ejecutadoPor), con una
+  // diferencia: acá es write-MANY (se sobrescriben al re-aceptar una versión nueva del ToS) — el
+  // historial legal completo se difiere a un modelo TosAcceptance en F10. El gate de publicación
+  // exige tosVersion === TOS_VERSION vigente. No queriables (se leen por el tenant ya resuelto) ⇒ sin @@index.
+  tosVersion     String?   // versión del ToS aceptada (ej. "2026-07-17"); null = nunca aceptó
+  tosAceptadoAt  DateTime? // timestamp de la última aceptación; null hasta aceptar
+  tosAceptadoPor String?   // snapshot del EMAIL del aceptante (durable si el User se borra, ADR-0004)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 

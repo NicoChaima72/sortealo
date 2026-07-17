@@ -14,12 +14,14 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import {
   IconAlertTriangle,
+  IconArrowRight,
   IconBook,
   IconBooks,
+  IconBuildingStore,
   IconLayoutDashboard,
   IconLogout2,
   IconSettings,
-  IconShoppingBag,
+  IconShieldLock,
   IconShoppingCart,
   IconTicket,
 } from "@tabler/icons-react";
@@ -29,6 +31,7 @@ import { useRouter } from "next/router";
 import { signOut } from "next-auth/react";
 import { type ComponentType, type ReactNode } from "react";
 
+import { CrearTienda } from "~/components/admin/crear-tienda";
 import { api } from "~/utils/api";
 
 type IconCmp = ComponentType<{ className?: string; stroke?: number | string }>;
@@ -96,6 +99,18 @@ function NavbarContent({
             />
           );
         })}
+        {/* Sección del Operador de plataforma: solo visible con el rol (F08/F04). */}
+        {esOperador && (
+          <NavLink
+            component={Link}
+            href="/admin/operador"
+            label="Operador"
+            leftSection={<IconShieldLock className="size-[18px]" stroke={1.75} />}
+            active={isActive(pathname, "/admin/operador")}
+            onClick={onNavigate}
+            variant="light"
+          />
+        )}
       </div>
 
       <Divider />
@@ -125,28 +140,31 @@ function NavbarContent({
   );
 }
 
-/** Empty state cuando la cuenta no tiene una Tienda asignada (D2/fail-closed). */
-function SinTienda() {
+/**
+ * Empty state para un Operador de plataforma SIN Tienda propia (F08): las páginas del
+ * Organizador (Resumen/Productos/…) no aplican, pero su superficie es el panel del Operador.
+ * Un Organizador nuevo SIN Tienda ve el formulario de alta (`CrearTienda`), no esto.
+ */
+function SinTiendaOperador() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
       <ThemeIcon size={48} radius="xl" variant="light" color="gray">
-        <IconShoppingBag className="size-6" stroke={1.75} />
+        <IconBuildingStore className="size-6" stroke={1.75} />
       </ThemeIcon>
       <Text mt="md" size="lg" fw={600}>
-        Tu cuenta no tiene una tienda asignada
+        No administras una tienda propia
       </Text>
       <Text mt={6} size="sm" c="dimmed" className="max-w-sm">
-        Iniciaste sesión correctamente, pero todavía no administras ninguna
-        tienda. Pídele al equipo que te asigne acceso a tu tienda para empezar a
-        operar.
+        Tu cuenta es Operador de plataforma. Supervisa todas las tiendas desde
+        el panel del Operador.
       </Text>
       <Button
+        component={Link}
+        href="/admin/operador"
         mt="xl"
-        variant="default"
-        leftSection={<IconLogout2 className="size-4" />}
-        onClick={() => void signOut({ callbackUrl: "/login" })}
+        rightSection={<IconArrowRight className="size-4" />}
       >
-        Cerrar sesión
+        Ir al panel del Operador
       </Button>
     </div>
   );
@@ -258,7 +276,11 @@ export function AdminLayout({
             ) : acceso.isError ? (
               <ErrorAcceso onRetry={() => void acceso.refetch()} />
             ) : sinTienda ? (
-              <SinTienda />
+              esOperador ? (
+                <SinTiendaOperador />
+              ) : (
+                <CrearTienda />
+              )
             ) : (
               children
             )}

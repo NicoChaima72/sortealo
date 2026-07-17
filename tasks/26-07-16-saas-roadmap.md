@@ -901,3 +901,36 @@ Para F01 (los demás en el planning de cada fase):
   dev/checkout*) eliminadas. Gates 215/216 (1 skip). Drift de docs aplicado (helper fecha()).
   REVISABLE: identidad de plataforma sigue pendiente (apex neutral); branding demo de los seed;
   carrito sin subtotal client-side (respeta I4). El "mini-wix enfocado" está vivo.
+- [2026-07-17 00:00] [planner-grill] **F08 (self-service de tenants + panel del Operador) planificada**
+  en su propio task file `tasks/26-07-17-selfservice-operador.md` (status planning). Sin grill (criterio
+  + supuestos revisables, instrucción del usuario). 4 features: alta self-service de Tienda (slug
+  validado con `esSlugValido`+reservados+único, crea Tenant CONFIGURACION + TenantMembership en $tx);
+  aceptación de ToS (3 campos aditivos en `Tenant` — `tosVersion`/`tosAceptadoAt`/`tosAceptadoPor` —
+  espejando la auditoría de `Raffle`, NO modelo aparte; ToS = texto versionado en repo); checklist de
+  publicación (no wizard) + publicar/despublicar con gate ADR-0008 (ToS + Flow + ≥1 producto activo con
+  PDF + bases si hay sorteo activo); panel del Operador (listar todas + suspender/reactivar, solo
+  estado, no edita contenido). Reusa panelProcedure/authPolicy/use cases del panel de F05. Un solo `db
+  push` aditivo. **AWAITING USER APPROVAL** en el task file de F08.
+- [2026-07-17 05:10] [feature-implementer] **[F08] IMPLEMENTADA** (contrato nocturno, visto bueno dado).
+  F01..F04 completas en `tasks/26-07-17-selfservice-operador.md`. Schema: 3 campos ToS aditivos en Tenant
+  (schema-guardian APPROVE + db push aditivo). Backend: `domain/tenants/` (crearTienda $tx→CONFIGURACION
+  + membership con guard D8 recontado en la tx; aceptarTos; núcleo puro `_publicacion` = gate ADR-0008
+  ÚNICO reusado por getEstadoPublicacion [checklist] y publicarTienda [recomputado server-side I2];
+  despublicarTienda) + `domain/operador/` (listar/suspender/reactivar gateados por esOperador, tenantId
+  del input SELECCIONA no autoriza I1/I5) + `tos/tos.ts` (texto ToS versionado, BORRADOR revisable) +
+  `tenancy/slugTienda` (reservados, reusa esSlugValido). UI Mantine: form de alta, checklist + ToS modal
+  + publicar/despublicar, panel Operador nuevo. Router `operador` nuevo. Gate VERDE: tsc+lint+vitest
+  254→255/256 (+40 tests F08, +1 skip). schema-guardian + backend + frontend + change-set reviewers
+  verdes (2 blockers corregidos: carrera D8 en crearTienda; badge de estado reusa EstadoTiendaBadge).
+  Verificación :3001: wiring fail-closed OK; E2E autenticado (login Google) queda para feature-tester/
+  usuario. Sin commit (instrucción). REVISABLE: texto ToS borrador (validación legal = F10); 2 drafts
+  de drift de frontend-conventions (whitespace-pre-wrap; estado "no autorizado") sin aplicar.
+- [2026-07-17 11:50] [orquestador] F08 verificada: panel del Operador lista todas las tiendas
+  (autora/prueba) con estado, conteos y acción suspender/reactivar (operador-only, tenantId
+  selecciona no autoriza). Alta self-service (crearTienda → CONFIGURACION + membresía en $tx),
+  checklist de publicación con gate ADR-0008 (ToS+FlowCredential+producto activo con PDF+bases si
+  hay sorteo), ToS 3 campos en Tenant (espeja sorteo auditable), suspender/reactivar. 2 blockers de
+  reviewers corregidos (carrera en crearTienda, badge reusado). Gate 255/256. Drift docs aplicado
+  (whitespace-pre-wrap; 4ª rama "no autorizado"). No muté seeds publicados para no tumbar storefronts.
+  REVISABLE: texto ToS = borrador operativo (validación legal = F10). CON ESTO EL MVP FUNCIONAL ESTÁ
+  COMPLETO salvo F07 (piloto en prod) y F10 (go-live) que dependen de externos.

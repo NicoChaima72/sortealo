@@ -16,6 +16,13 @@ import { guardarConfiguracionTienda } from "~/server/domain/panel/guardarConfigu
 import { guardarCredencialFlow } from "~/server/domain/panel/guardarCredencialFlow";
 import { listarProductosDelPanel } from "~/server/domain/panel/listarProductosDelPanel";
 import { listarVentas } from "~/server/domain/panel/listarVentas";
+import { aceptarTos } from "~/server/domain/tenants/aceptarTos";
+import { crearTienda } from "~/server/domain/tenants/crearTienda";
+import { despublicarTienda } from "~/server/domain/tenants/despublicarTienda";
+import { getEstadoPublicacion } from "~/server/domain/tenants/getEstadoPublicacion";
+import { publicarTienda } from "~/server/domain/tenants/publicarTienda";
+import { crearTiendaInput } from "~/server/domain/tenants/schemas";
+import { TOS_TEXTO, TOS_VERSION } from "~/server/tos/tos";
 import {
   actualizarProductoInput,
   confirmarPdfProductoInput,
@@ -42,6 +49,44 @@ export const panelRouter = createTRPCRouter({
   // El layout consulta esto para decidir qué renderizar (Tiendas del usuario + rol).
   getAccesoActual: panelProcedure.query(({ ctx }) =>
     runDomain(() => getAccesoActual({ db: ctx.db, acceso: ctx.acceso })),
+  ),
+
+  // ── Alta self-service de Tienda (F08/F01) ────────────────────────────────
+  // Un usuario logueado SIN Tienda crea la suya (slug + nombre). El `userId` de la
+  // membresía sale del acceso server-side, jamás del input (I1). Crea Tenant (CONFIGURACION)
+  // + TenantMembership en una $transaction (D1/D8).
+  crearTienda: panelProcedure
+    .input(crearTiendaInput)
+    .mutation(({ ctx, input }) =>
+      runDomain(() => crearTienda({ db: ctx.db, acceso: ctx.acceso, input })),
+    ),
+
+  // ── Términos de Servicio (F08/F02, ADR-0008) ─────────────────────────────
+  // El TEXTO vive versionado en el repo (D3): la UI lo renderiza antes de aceptar. `aceptarTos`
+  // graba la aceptación (quién/cuándo/versión) sobre la Tienda del acceso (I1) — es requisito del
+  // gate de publicación.
+  getTos: panelProcedure.query(() => ({
+    version: TOS_VERSION,
+    texto: TOS_TEXTO,
+  })),
+
+  aceptarTos: panelProcedure.mutation(({ ctx }) =>
+    runDomain(() => aceptarTos({ db: ctx.db, acceso: ctx.acceso })),
+  ),
+
+  // ── Publicación: checklist + publicar/despublicar (F08/F03, ADR-0008) ─────
+  // `getEstadoPublicacion` es la única fuente de verdad del checklist Y del gate; `publicarTienda`
+  // RECOMPUTA el gate server-side (I2). Transiciones scopeadas por membresía (I1).
+  getEstadoPublicacion: panelProcedure.query(({ ctx }) =>
+    runDomain(() => getEstadoPublicacion({ db: ctx.db, acceso: ctx.acceso })),
+  ),
+
+  publicarTienda: panelProcedure.mutation(({ ctx }) =>
+    runDomain(() => publicarTienda({ db: ctx.db, acceso: ctx.acceso })),
+  ),
+
+  despublicarTienda: panelProcedure.mutation(({ ctx }) =>
+    runDomain(() => despublicarTienda({ db: ctx.db, acceso: ctx.acceso })),
   ),
 
   // ── Productos (F02) ──────────────────────────────────────────────────────

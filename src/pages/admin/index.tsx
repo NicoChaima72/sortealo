@@ -10,6 +10,7 @@ import { type GetServerSideProps } from "next";
 import Link from "next/link";
 
 import { AdminLayout } from "~/components/admin/admin-layout";
+import { ChecklistPublicacion } from "~/components/admin/checklist-publicacion";
 import { EstadoBadge } from "~/components/admin/estado-badge";
 import { StatCard } from "~/components/admin/stat-card";
 import { clp, fechaHora, num } from "~/lib/formato";
@@ -39,6 +40,10 @@ export default function AdminDashboard() {
       title="Resumen"
       description="Una mirada rápida a cómo va tu tienda."
     >
+      <div className="mb-4">
+        <ChecklistPublicacion />
+      </div>
+
       {resumen.isLoading ? (
         <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing="md">
           {[0, 1, 2, 3].map((i) => (
