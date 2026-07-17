@@ -50,8 +50,8 @@ npm run dev                 # ⚠️ UNA sola instancia — dos next dev corromp
 |---|---|
 | Instrucciones para agentes / reglas de oro | [`CLAUDE.md`](CLAUDE.md) |
 | Vocabulario del dominio (Tienda/`Tenant`, Organizador, `Product`…) | [`CONTEXT.md`](CONTEXT.md) |
-| Decisiones de arquitectura (ADR 0001–0014) | [`docs/adr/`](docs/adr/) |
-| Decisiones aún abiertas (#5–#6) | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) |
+| Decisiones de arquitectura (ADR 0001–0015) | [`docs/adr/`](docs/adr/) |
+| Decisiones aún abiertas (#6) | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) |
 | Roadmap vigente (10 fases; hito piloto = F07) | [`tasks/26-07-16-saas-roadmap.md`](tasks/26-07-16-saas-roadmap.md) |
 | Índice de tareas activas | [`tasks/INDEX.md`](tasks/INDEX.md) |
 | Convenciones por capa | [`docs/agents/`](docs/agents/) |

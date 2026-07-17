@@ -17,10 +17,10 @@ ADR en `docs/adr/` y sacarla de esta lista.
 > parte "buzones del dominio" de la antigua #2 quedó absorbida en la #4 (dominio).
 > La numeración de las restantes se conserva (#3–#6) porque ADRs y roadmap la referencian.
 
-> **Resuelta el 2026-07-17**: **#4 dominio de la plataforma → `sorteatelo.cl`**, comprado en
-> NIC Chile por el usuario ([ADR-0014](adr/0014-dominio-plataforma-sorteatelo-cl.md)). La #5
-> (hosting) sigue abierta; su requisito wildcard ahora aplica sobre `*.sorteatelo.cl`, y la
-> delegación de nameservers + verificación de Resend quedan gated por ella.
+> **Resueltas el 2026-07-17**: **#4 dominio de la plataforma → `sorteatelo.cl`**, comprado en
+> NIC Chile por el usuario ([ADR-0014](adr/0014-dominio-plataforma-sorteatelo-cl.md));
+> **#5 hosting → Vercel + Supabase** ([ADR-0015](adr/0015-hosting-vercel-db-supabase.md)),
+> con nameservers delegados a Vercel y wildcard `*.sorteatelo.cl` cubierto. Solo queda abierta la #6.
 
 ## 3. Modelo LLM por defecto para Hermes — RETIRADA (2026-07-17)
 
@@ -37,9 +37,9 @@ Detrás de la interfaz de [ADR-0003](adr/0003-hermes-llm-agnostico.md). Candidat
 bloqueaba (buzones, verificación de Resend, `NEXTAUTH_URL`) queda ahora gated solo por la #5
 (delegación de DNS al hosting elegido).
 
-## 5. Hosting / despliegue — ABIERTA
+## ~~5. Hosting / despliegue~~ — RESUELTA (2026-07-17)
 
-Criterio: plan barato o gratuito acorde al bajo volumen. La mantención (~$40.000/mes) debe cubrirlo con holgura. (Nota: el stack T3 encaja bien con Vercel, pero no está decidido.) _Nota pivote SaaS_: el hosting **debe soportar wildcard subdomains + certificados wildcard** ([ADR-0007](adr/0007-resolucion-de-tenant-por-subdominio.md)) y middleware por host; verificar límites/costos de dominios wildcard en el plan elegido.
+**→ Vercel (app) + Supabase (PostgreSQL)**, promovida a [ADR-0015](adr/0015-hosting-vercel-db-supabase.md). Wildcard `*.sorteatelo.cl` cubierto vía nameservers de Vercel. Transitorios anotados en el ADR: plan Hobby (no comercial — subir a Pro antes de vender) y DB dev = DB prod (separar antes de F10).
 
 ## 6. Marca de agua en los PDFs (MVP sí/no) — ABIERTA
 
