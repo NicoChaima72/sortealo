@@ -1,6 +1,6 @@
-# sortealo
+# sorteatelo
 
-> Nombre de trabajo del repo (codename histórico: `libros-iselk`) — el nombre comercial definitivo de la plataforma sigue pendiente (decisión abierta #4); `sortealo` es el candidato natural si se confirma con el dominio.
+> Plataforma **Sortéatelo** — dominio `sorteatelo.cl` (decisión #4 cerrada, [ADR-0014](docs/adr/0014-dominio-plataforma-sorteatelo-cl.md)). Codename histórico del repo: `libros-iselk` (sigue siendo el nombre de la carpeta local); la estilización de marca (logo, paleta, tipografía) está pendiente de la sesión de marca.
 
 **SaaS multi-tenant de tiendas con sorteo.** Organizadores crean su cuenta, configuran su Tienda sobre una plantilla (logo, colores, textos), suben productos digitales (MVP: PDF), montan un sorteo promocional y venden — cada tienda en su propio **subdominio**, cobrando con **su propia cuenta de Flow.cl** (BYO-Flow: la plataforma nunca mueve dinero de terceros).
 
@@ -50,12 +50,12 @@ npm run dev                 # ⚠️ UNA sola instancia — dos next dev corromp
 |---|---|
 | Instrucciones para agentes / reglas de oro | [`CLAUDE.md`](CLAUDE.md) |
 | Vocabulario del dominio (Tienda/`Tenant`, Organizador, `Product`…) | [`CONTEXT.md`](CONTEXT.md) |
-| Decisiones de arquitectura (ADR 0001–0010) | [`docs/adr/`](docs/adr/) |
-| Decisiones aún abiertas (#3–#6) | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) |
+| Decisiones de arquitectura (ADR 0001–0014) | [`docs/adr/`](docs/adr/) |
+| Decisiones aún abiertas (#5–#6) | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) |
 | Roadmap vigente (10 fases; hito piloto = F07) | [`tasks/26-07-16-saas-roadmap.md`](tasks/26-07-16-saas-roadmap.md) |
 | Índice de tareas activas | [`tasks/INDEX.md`](tasks/INDEX.md) |
 | Convenciones por capa | [`docs/agents/`](docs/agents/) |
-| Línea gráfica (marca pendiente; theming per-tenant) | [`docs/design.md`](docs/design.md) |
+| Línea gráfica (estilización de marca pendiente; theming per-tenant) | [`docs/design.md`](docs/design.md) |
 
 El trabajo no trivial fluye por el harness de subagentes (`planner`/`domain-planner` → `feature-implementer` → `feature-tester`, con satélites `schema-guardian`, `backend-reviewer`, `frontend-reviewer`, `change-set-reviewer`) — ver `CLAUDE.md` § Harness.
 

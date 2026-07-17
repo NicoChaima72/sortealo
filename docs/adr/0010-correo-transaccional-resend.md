@@ -7,7 +7,7 @@ Razón: (a) capa gratuita de 3.000 correos/mes — órdenes de magnitud sobre el
 ## Consecuencias
 
 - El envío sigue siendo un **service** (`src/server/services/`) con la config inyectada (API key vía `src/env.js`); Resend es un adapter reemplazable.
-- La verificación del dominio remitente requiere el **dominio de la Plataforma** (decisión abierta #4) — no bloquea el desarrollo: en dev se usa el remitente de prueba de Resend.
+- La verificación del dominio remitente requiere el **dominio de la Plataforma** — resuelto: `sorteatelo.cl` ([ADR-0014](0014-dominio-plataforma-sorteatelo-cl.md)); los registros DKIM/SPF se agregan al delegar el DNS (decisión #5, hosting). No bloquea el desarrollo: en dev se usa el remitente de prueba de Resend.
 - El disclaimer de responsabilidad ([ADR-0008](0008-responsabilidad-legal-del-sorteo-del-organizador.md)) aplica también al correo: el comprador debe poder distinguir que compra al Organizador, no a la Plataforma.
-- La necesidad (b) de la decisión #2 original — **buzones del dominio** (`contacto@...`) — NO la resuelve Resend; queda ligada a la decisión #4 (dominio) y se resuelve al configurarlo (Zoho/Workspace/etc.).
+- La necesidad (b) de la decisión #2 original — **buzones del dominio** (`contacto@sorteatelo.cl`) — NO la resuelve Resend; se resuelve al configurar el DNS del dominio (Cloudflare Email Routing / Zoho free, ver ADR-0014).
 - API key de Resend en env vars; jamás en logs.

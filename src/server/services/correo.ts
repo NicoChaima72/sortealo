@@ -13,8 +13,9 @@
  * (I3) — ni siquiera cuando Resend responde un error.
  *
  * En el MVP la Plataforma envía desde su remitente de PRUEBA (`onboarding@resend.dev`) en nombre
- * del tenant (formato "Tienda X · vía Sortealo", reply-to del Organizador) hasta que la decisión
- * abierta #4 (dominio de la plataforma) habilite un dominio verificado. Ver ADR-0010/0008.
+ * del tenant (formato "Tienda X · vía Sortéatelo", reply-to del Organizador). El dominio ya existe
+ * (`sorteatelo.cl`, ADR-0014); el remitente real se habilita al delegar el DNS y verificar el
+ * dominio en Resend (gated por la decisión #5, hosting). Ver ADR-0010/0008.
  */
 
 /** Endpoint único de envío de Resend (la superficie que usamos: un POST). */

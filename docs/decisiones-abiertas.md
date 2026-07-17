@@ -17,6 +17,11 @@ ADR en `docs/adr/` y sacarla de esta lista.
 > parte "buzones del dominio" de la antigua #2 quedó absorbida en la #4 (dominio).
 > La numeración de las restantes se conserva (#3–#6) porque ADRs y roadmap la referencian.
 
+> **Resuelta el 2026-07-17**: **#4 dominio de la plataforma → `sorteatelo.cl`**, comprado en
+> NIC Chile por el usuario ([ADR-0014](adr/0014-dominio-plataforma-sorteatelo-cl.md)). La #5
+> (hosting) sigue abierta; su requisito wildcard ahora aplica sobre `*.sorteatelo.cl`, y la
+> delegación de nameservers + verificación de Resend quedan gated por ella.
+
 ## 3. Modelo LLM por defecto para Hermes — RETIRADA (2026-07-17)
 
 **Hermes salió del producto por decisión del usuario** — la decisión de modelo LLM ya no aplica.
@@ -26,9 +31,11 @@ El ADR-0003 queda como registro histórico. Texto original:
 
 Detrás de la interfaz de [ADR-0003](adr/0003-hermes-llm-agnostico.md). Candidatos por costo/calidad: Google Gemini (plan gratis), Claude Haiku (~6 pesos/post, alta calidad), DeepSeek / Kimi (muy baratos). Requiere API de pago por uso. Costo absorbido por la mantención; marginal al volumen. _Nota pivote SaaS_: Hermes pasa a ser feature **por-tenant** — al elegir modelo, decidir también quién absorbe el costo por tenant (¿incluido? ¿limitado?).
 
-## 4. Nombre de dominio — ABIERTA
+## ~~4. Nombre de dominio~~ — RESUELTA (2026-07-17)
 
-`.cl` o `.com`. Nombre por definir. Bloquea: buzones del dominio (`contacto@...` — herencia de la antigua #2), verificación del remitente de Resend ([ADR-0010](adr/0010-correo-transaccional-resend.md)), branding (`docs/design.md`), config de NextAuth (`NEXTAUTH_URL`). _Nota pivote SaaS_: ahora es el **dominio de la Plataforma** (ya no lo compra la autora — ella opera en un subdominio como tenant piloto) y **debe soportar wildcard subdomains** `*.dominio` con certificado wildcard ([ADR-0007](adr/0007-resolucion-de-tenant-por-subdominio.md)). El nombre es de la plataforma, no del fandom.
+**→ `sorteatelo.cl`**, promovida a [ADR-0014](adr/0014-dominio-plataforma-sorteatelo-cl.md). Lo que
+bloqueaba (buzones, verificación de Resend, `NEXTAUTH_URL`) queda ahora gated solo por la #5
+(delegación de DNS al hosting elegido).
 
 ## 5. Hosting / despliegue — ABIERTA
 

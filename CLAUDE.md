@@ -1,4 +1,6 @@
-# libros-iselk
+# sorteatelo
+
+> Repo `NicoChaima72/sorteatelo` — plataforma **Sortéatelo** (`sorteatelo.cl`, ADR-0014). Codename histórico: `libros-iselk` (aún el nombre de la carpeta local y de recursos de infra dev como la DB local; el bucket R2 y el OAuth client se llaman `sortealo-dev`).
 
 **SaaS multi-tenant de tiendas con sorteo** (pivote 2026-07-16, ADR-0005): Organizadores crean su cuenta, configuran su Tienda sobre una plantilla (logo/colores/textos — NO builder visual), suben productos digitales (MVP: PDF), montan su sorteo promocional y venden — cada tienda en su **subdominio**, cobrando con **su propia cuenta de Flow** (BYO-Flow). La autora ARMY original del encargo es el **tenant #1 / piloto**, y su tienda operativa es un hito con fecha propia (F07 del roadmap). Lo desarrolla y opera un freelancer (el **Operador de plataforma**).
 

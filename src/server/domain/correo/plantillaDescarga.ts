@@ -14,10 +14,10 @@
  */
 
 /**
- * Nombre visible de la Plataforma en el remitente y el disclaimer. Placeholder de marca (identidad
- * pendiente, decisión abierta #4) — UN solo lugar para cambiarlo (D6).
+ * Nombre visible de la Plataforma en el remitente y el disclaimer (marca "Sortéatelo",
+ * dominio sorteatelo.cl — ADR-0014) — UN solo lugar para cambiarlo (D6).
  */
-export const MARCA_PLATAFORMA = "Sortealo";
+export const MARCA_PLATAFORMA = "Sortéatelo";
 
 /**
  * Remitente de PRUEBA de Resend, usado hasta que la decisión #4 (dominio de la plataforma) habilite

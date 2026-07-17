@@ -34,7 +34,7 @@ describe("services/correo — fail-fast de config", () => {
 
     await expect(
       correo.enviarCorreo({
-        from: "T · vía Sortealo <onboarding@resend.dev>",
+        from: "T · vía Sortéatelo <onboarding@resend.dev>",
         to: "fan@example.cl",
         subject: "s",
         text: "t",
@@ -52,7 +52,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
     const correo = crearCorreoService({ apiKey: API_KEY, fetchImpl });
 
     const res = await correo.enviarCorreo({
-      from: "Tienda ARMY · vía Sortealo <onboarding@resend.dev>",
+      from: "Tienda ARMY · vía Sortéatelo <onboarding@resend.dev>",
       to: "fan@example.cl",
       replyTo: "organizadora@tienda.cl",
       subject: "Tu compra en Tienda ARMY",
@@ -69,7 +69,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
 
     const enviado = JSON.parse(init.body) as Record<string, unknown>;
     expect(enviado).toMatchObject({
-      from: "Tienda ARMY · vía Sortealo <onboarding@resend.dev>",
+      from: "Tienda ARMY · vía Sortéatelo <onboarding@resend.dev>",
       to: "fan@example.cl",
       reply_to: "organizadora@tienda.cl", // snake_case exigido por la API de Resend
       subject: "Tu compra en Tienda ARMY",
@@ -86,7 +86,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
     const correo = crearCorreoService({ apiKey: API_KEY, fetchImpl });
 
     await correo.enviarCorreo({
-      from: "T · vía Sortealo <onboarding@resend.dev>",
+      from: "T · vía Sortéatelo <onboarding@resend.dev>",
       to: "fan@example.cl",
       subject: "s",
       text: "t",
@@ -112,7 +112,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
 
     const err = await correo
       .enviarCorreo({
-        from: "T · vía Sortealo <onboarding@resend.dev>",
+        from: "T · vía Sortéatelo <onboarding@resend.dev>",
         to: "no-sirve",
         subject: "s",
         text: "t",
@@ -136,7 +136,7 @@ describe("services/correo — enviarCorreo (POST a Resend)", () => {
 
     await expect(
       correo.enviarCorreo({
-        from: "T · vía Sortealo <onboarding@resend.dev>",
+        from: "T · vía Sortéatelo <onboarding@resend.dev>",
         to: "fan@example.cl",
         subject: "s",
         text: "t",
@@ -167,16 +167,16 @@ describe("services/correo — envío real contra Resend (integración, opt-in)",
     async () => {
       const correo = crearCorreoService({ apiKey: process.env.RESEND_API_KEY });
       const { id } = await correo.enviarCorreo({
-        from: "Sortealo (prueba) · vía Sortealo <onboarding@resend.dev>",
+        from: "Sortéatelo (prueba) · vía Sortéatelo <onboarding@resend.dev>",
         // El email del dueño de la cuenta Resend: único destinatario permitido con el
         // remitente de prueba sin dominio verificado (ver el header del describe).
         to: "nikochaima72@gmail.com",
         subject: "Prueba de integración — correo transaccional (F04)",
         text:
-          "Este es un envío de prueba del service de correo de Sortealo (F04). " +
+          "Este es un envío de prueba del service de correo de Sortéatelo (F04). " +
           "Si lo recibiste, el circuito Resend real funciona.",
         html:
-          "<p>Este es un envío de prueba del service de correo de <strong>Sortealo</strong> (F04).</p>" +
+          "<p>Este es un envío de prueba del service de correo de <strong>Sortéatelo</strong> (F04).</p>" +
           "<p>Si lo recibiste, el circuito Resend real funciona.</p>",
       });
       expect(typeof id).toBe("string");

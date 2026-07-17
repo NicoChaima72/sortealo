@@ -9,13 +9,13 @@ import {
 
 /**
  * Tests del helper PURO de plantilla del correo de descarga (F04/D5/D6). Verifica el contenido
- * exigido — from "Tienda · vía Sortealo", un enlace por ítem, aviso de expiración, disclaimer de
+ * exigido — from "Tienda · vía Sortéatelo", un enlace por ítem, aviso de expiración, disclaimer de
  * responsabilidad (ADR-0008) — y que NUNCA se filtra un `pdfPath`/key del bucket (el helper solo
  * conoce los enlaces `/api/descargas/<token>` que le pasa el use case).
  */
 
 describe("domain/correo/plantillaDescarga — construirFrom (D6)", () => {
-  // correo.from.001 — remitente con nombre "Tienda · vía Sortealo <remitente>"
+  // correo.from.001 — remitente con nombre "Tienda · vía Sortéatelo <remitente>"
   it("arma el from con el nombre de la Tienda + marca de plataforma + remitente de prueba", () => {
     expect(construirFrom("Tienda ARMY")).toBe(
       `Tienda ARMY · vía ${MARCA_PLATAFORMA} <${REMITENTE_CORREO}>`,
