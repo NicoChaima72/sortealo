@@ -82,6 +82,17 @@ referencia desde sus Validaciones. Marcado `[x]` solo por el feature-tester.
   SSR anónimo (count 0), `pagebuilder.puedoEditar` anónimo → `{puedeEditar:false}`; falta el flujo
   dueña-logueada-ve-banner con browser-verify.*
 
+- [ ] **pagebuilder.login-entry.001** — (F09b) En `autora.localhost:3001` y `prueba.localhost:3001`, el
+  FOOTER muestra POST-HIDRATACIÓN un enlace discreto "Iniciar sesión" (chrome neutro, no el color del
+  tenant); su `href` apunta al APEX `/login?callbackUrl=<URL actual de la tienda, encodeada>`. Con sesión
+  (dev lvh.me tras `/api/dev/login`) el enlace cambia a "Mi panel" → apex `/admin`. El HTML SSR anónimo NO
+  contiene ni "Iniciar sesión" ni "Mi panel" (idéntico con/sin cookie ⇒ cacheable, I5). En lvh.me/prod el
+  ciclo completo (click → login apex → volver logueada a la tienda → ver banner F09) funciona; en localhost
+  la cookie es host-only (el enlace apunta bien pero la sesión no cruza). (Plan F09b E2E — page-builder) —
+  *implementer verificó vía curl: "Iniciar sesión"/"Mi panel" AUSENTES del SSR anónimo (0/0, I5 ✓), footer
+  intacto; helpers de URL testeados (apex + callbackUrl encodeado). Falta el check visual del enlace + href
+  en el DOM con browser-verify.*
+
 - [ ] ⏭️ **pagebuilder.wildcard.001** — PENDIENTE (feature-tester 2026-07-18: requiere `NEXT_PUBLIC_PLATFORM_DOMAIN=lvh.me` + reinicio del server; no ejecutado para no alterar la config del usuario) — (dev con `NEXT_PUBLIC_PLATFORM_DOMAIN=lvh.me` + hosts) `GET
   lvh.me:3001/api/dev/login?slug=autora` setea la cookie `next-auth.session-token` con `Domain=.lvh.me`;
   luego `autora.lvh.me:3001` resuelve la sesión (cookie compartida) — se ve el banner "Editar mi tienda"

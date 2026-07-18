@@ -10,6 +10,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { type ReactNode } from "react";
 
+import { AccesoPlataforma } from "~/components/storefront/acceso-plataforma";
 import { BannerEditarTienda } from "~/components/storefront/banner-editar-tienda";
 import { CarritoProvider } from "~/components/storefront/carrito";
 import {
@@ -210,15 +211,21 @@ function Footer({ branding }: { branding: TenantBranding }) {
             )}
           </Group>
 
-          <Text
-            size="xs"
-            c="dimmed"
+          <Group
+            justify="space-between"
+            align="center"
+            gap="md"
+            wrap="wrap"
             pt="md"
             style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
           >
-            Esta tienda es operada de forma independiente por su responsable, que
-            responde por los productos y las promociones que ofrece.
-          </Text>
+            <Text size="xs" c="dimmed" maw={520}>
+              Esta tienda es operada de forma independiente por su responsable, que
+              responde por los productos y las promociones que ofrece.
+            </Text>
+            {/* Puerta de entrada al login/panel de plataforma (F09b): chrome neutro, post-hidratación. */}
+            <AccesoPlataforma slug={branding.slug} />
+          </Group>
         </Stack>
       </Container>
     </Box>

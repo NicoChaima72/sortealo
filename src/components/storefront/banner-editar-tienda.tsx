@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { env } from "~/env";
 import { debeMostrarBanner } from "~/lib/pagebuilder/banner";
+import { construirUrlApex } from "~/lib/urlApex";
 import { api } from "~/utils/api";
 
 /**
@@ -58,6 +59,11 @@ function hrefPanel(): string {
   if (typeof window === "undefined" || !apex || apex === "localhost") {
     return "/admin";
   }
-  const puerto = window.location.port ? `:${window.location.port}` : "";
-  return `${window.location.protocol}//${apex}${puerto}/admin`;
+  // Fuente única con F09b: la URL al apex la arma `construirUrlApex` (no string-building inline).
+  return construirUrlApex({
+    protocol: window.location.protocol,
+    apex,
+    puerto: window.location.port,
+    path: "/admin",
+  });
 }
