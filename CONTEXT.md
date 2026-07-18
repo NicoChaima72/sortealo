@@ -69,6 +69,10 @@ si falta, la sección degrada limpio (sin imagen ⇒ gradiente temático, nunca 
 oculta el ícono; sin sorteo ⇒ no aparece la sección), nunca un `<img>` roto ni un campo vacío. La
 estructura oficial vive en `docs/design.md` §5 (fuente de verdad visual). _Evitar_: builder, editor,
 tema custom, "múltiples plantillas" (hoy hay UNA; que sean varias seleccionables es puerta abierta post-MVP).
+**Evolución aceptada (2026-07-17, page builder — visto bueno del usuario):** la Plantilla pasa a ser
+la **semilla** de la [[Página de tienda]]: el documento inicial con las secciones actuales, que después
+se edita por [[Sección]]es sobre un catálogo cerrado de [[Widget]]s. Sigue SIN ser un builder visual
+drag-and-drop (eso continúa fuera).
 
 ### Asset de marca (imagen pública de marketing)
 Una **imagen pública** que personaliza el storefront de una [[Tienda]]: **logo**, **imagen de hero**,
@@ -92,6 +96,60 @@ del contrato con la plataforma).
 ### Disclaimer del sorteo
 El aviso **visible al [[Comprador]]** en el storefront de una Tienda con sorteo activo: el
 responsable del sorteo es el [[Organizador]] detrás de la tienda, no la [[Plataforma]] (ADR-0008).
+
+---
+
+## Página de la tienda (page builder)
+
+> **Aceptado 2026-07-17** (plan `tasks/26-07-17-page-builder.md`, ADR-0016..0019) — visto bueno
+> del usuario al plan del carril A (con Q1 = switch de render antes del piloto F07).
+
+### Página de tienda (`StorefrontPage`)
+La página pública de una [[Tienda]] en su [[Subdominio]], definida por un [[Documento de página]].
+Existe en dos estados simultáneos: el [[Borrador]] (donde se edita) y la versión **publicada** (la
+única que ve el [[Comprador]]). Hoy hay una por Tienda (la home); que haya varias es puerta abierta.
+_Evitar_: landing, home page, "el sitio" (ambiguo con la Tienda).
+
+### Documento de página
+La descripción completa de una [[Página de tienda]]: su tema, sus [[Sección]]es ordenadas y sus
+[[Overlay]]s. Referencia productos y sorteo **por identidad** — jamás copia precios, títulos ni datos
+del dominio (ADR-0017): el catálogo y el dinero viven en sus tablas. _Evitar_: layout, template (la
+[[Plantilla]] es la semilla, no el documento).
+
+### Widget
+Un **tipo** de bloque configurable del catálogo cerrado que ofrece la [[Plataforma]] (hero, catálogo,
+vitrina del sorteo, cómo funciona…). Cada Widget define qué props admite y cómo degrada si falta un
+dato; **no existe** Widget de HTML/CSS/código libre (ADR-0018). _Evitar_: plugin, bloque custom,
+componente (término de implementación).
+
+### Sección
+La **instancia** de un [[Widget]] en el flujo vertical de una [[Página de tienda]], con su
+configuración y una identidad estable (se edita "por nombre", sobrevive a reordenamientos). El orden
+de las Secciones ES el orden de la página. _Evitar_: bloque, fila, módulo.
+
+### Overlay
+La instancia de un [[Widget]] que flota **fuera** del flujo vertical de la página: barra de aviso
+arriba, botón flotante de WhatsApp. _Evitar_: popup, modal.
+
+### Borrador (de la Página)
+El estado editable del [[Documento de página]]: TODAS las ediciones (Operador vía MCP, chat futuro)
+ocurren sobre el Borrador. Invisible para el [[Comprador]]; visible solo vía preview autorizada.
+_Evitar_: "guardar" como sinónimo de publicar.
+
+### Publicar (la Página)
+La acción **explícita y humana** que convierte el [[Borrador]] en la versión publicada — lo único que
+el storefront público renderiza. Publicar es el checkpoint contra ediciones defectuosas o envenenadas
+de un editor automático (ADR-0018). _Evitar_: autopublicar, deploy.
+
+### Registro de widgets
+El catálogo cerrado y versionado de los [[Widget]]s que existen, con su validación: la **única**
+fuente de qué puede aparecer en un [[Documento de página]] (ADR-0016). Un contenido que el Registro
+no reconoce no se guarda ni se renderiza. _Evitar_: whitelist informal, lista de componentes.
+
+### Editor MCP
+El primer editor de la [[Página de tienda]]: una superficie de herramientas tipadas con la que el
+[[Operador de plataforma]] (y después un chat IA) edita el [[Borrador]] por operaciones sobre
+[[Sección]]es — nunca HTML, nunca publica por sí solo. _Evitar_: builder, editor visual.
 
 ---
 

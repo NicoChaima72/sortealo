@@ -1,0 +1,388 @@
+/*
+ * Prototipo de identidad "El Talonario" (sesión frontend-design 2026-07-17).
+ * SANDBOX: estos estilos viven solo bajo /prototipo — la paleta de plataforma
+ * sigue PENDIENTE en docs/design.md hasta el visto bueno del usuario.
+ *
+ * Sistema: estética de impreso — papel manila, tinta, amarillo lotería,
+ * bordes duros + sombra dura desplazada (nada de gradientes ni sombras difusas),
+ * perforaciones de talonario como separadores, números en mono estampado.
+ */
+
+.root {
+  --papel: #f6efe3;
+  --papel-card: #fffdf8;
+  --papel-hundido: #efe6d4;
+  --tinta: #2a231b;
+  --tinta-suave: #6e6353;
+  --tinta-tenue: #a39682;
+  --linea: rgba(42, 35, 27, 0.22);
+  --amarillo: #ffc530;
+  --amarillo-hover: #f5b814;
+  --teal: #1d7a70;
+  --teal-fondo: rgba(29, 122, 112, 0.1);
+  --ambar-sello: #a06b08;
+  --ambar-fondo: rgba(160, 107, 8, 0.1);
+  --rojo-sello: #c03e2e;
+  --rojo-fondo: rgba(192, 62, 46, 0.08);
+
+  background: var(--papel);
+  color: var(--tinta);
+  min-height: 100vh;
+}
+
+/* ---------- utilidades del sistema impreso ---------- */
+
+/* Etiqueta mono estampada: eyebrows, series, cabeceras de tabla */
+.etiqueta {
+  font-family: var(--fuente-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+}
+
+/* Resaltado de marcador amarillo dentro de un titular (sin gradiente: bloque pleno) */
+.marcador {
+  background: var(--amarillo);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0 0.14em;
+}
+
+/* Carta impresa: borde duro + sombra dura desplazada */
+.impreso {
+  background: var(--papel-card);
+  border: 2px solid var(--tinta);
+  border-radius: 8px;
+  box-shadow: 5px 5px 0 rgba(42, 35, 27, 0.9);
+}
+
+.impresoSuave {
+  background: var(--papel-card);
+  border: 1.5px solid var(--linea);
+  border-radius: 8px;
+}
+
+/* Línea de perforación entre secciones */
+.perforacion {
+  border: none;
+  border-top: 2px dashed var(--linea);
+  margin: 0;
+}
+
+/* Sello: caja mono inclinada con borde, como timbre de goma */
+.sello {
+  display: inline-block;
+  font-family: var(--fuente-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  padding: 2px 8px;
+  transform: rotate(-2deg);
+}
+
+/* ---------- botones ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--fuente-texto);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tinta);
+  background: var(--amarillo);
+  border: 2px solid var(--tinta);
+  border-radius: 8px;
+  padding: 13px 26px;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 4px 4px 0 var(--tinta);
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
+}
+.btn:hover {
+  background: var(--amarillo-hover);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--tinta);
+}
+.btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--tinta);
+}
+.btn:focus-visible {
+  outline: 3px solid var(--teal);
+  outline-offset: 3px;
+}
+
+.btnSecundario {
+  composes: btn;
+  background: var(--papel-card);
+  box-shadow: none;
+}
+.btnSecundario:hover {
+  background: var(--papel-hundido);
+  transform: none;
+  box-shadow: none;
+}
+.btnSecundario:active {
+  transform: none;
+}
+
+/* ---------- talonario vivo (firma del hero) ---------- */
+
+.talonario {
+  composes: impreso;
+  overflow: hidden;
+}
+
+.talonarioCabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 2px solid var(--tinta);
+}
+
+.talonarioGrilla {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--linea);
+  gap: 1.5px;
+  border-bottom: 2px dashed var(--linea);
+}
+
+.numero {
+  aspect-ratio: 5 / 4;
+  background: var(--papel-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: var(--fuente-mono);
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  position: relative;
+}
+.numeroLibre {
+  composes: numero;
+  color: var(--tinta-tenue);
+}
+.numeroVendido {
+  composes: numero;
+  color: var(--tinta);
+}
+.numeroVendido small {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--tinta-suave);
+}
+.numeroTuyo {
+  composes: numero;
+  background: var(--amarillo);
+  color: var(--tinta);
+}
+.numeroTuyo small {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+.numeroGanador::after {
+  content: "¡SALE!";
+  position: absolute;
+  inset: auto;
+  font-family: var(--fuente-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  border: 1.5px solid var(--teal);
+  border-radius: 4px;
+  padding: 1px 6px;
+  background: var(--papel-card);
+  transform: rotate(-8deg) translateY(-14px);
+}
+
+.talonarioPie {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+}
+
+/* ---------- boleto CTA final ---------- */
+
+.boleto {
+  composes: impreso;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  overflow: hidden;
+}
+.boletoTalon {
+  border-left: 2px dashed var(--tinta);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 28px;
+  background: var(--amarillo);
+  text-align: center;
+}
+@media (max-width: 640px) {
+  .boleto {
+    grid-template-columns: 1fr;
+  }
+  .boletoTalon {
+    border-left: none;
+    border-top: 2px dashed var(--tinta);
+  }
+}
+
+/* ---------- FAQ ---------- */
+
+.faqItem {
+  composes: impresoSuave;
+  padding: 0 20px;
+}
+.faqItem summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 16px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.faqItem summary::-webkit-details-marker {
+  display: none;
+}
+.faqItem summary::after {
+  content: "+";
+  font-family: var(--fuente-mono);
+  font-size: 20px;
+  color: var(--tinta-suave);
+  flex: none;
+}
+.faqItem[open] summary::after {
+  content: "–";
+}
+.faqItem p {
+  margin: 0;
+  padding: 0 0 18px;
+  color: var(--tinta-suave);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ---------- sellos de estado (semántica de comercio) ---------- */
+
+.selloPagado {
+  composes: sello;
+  color: var(--teal);
+  background: var(--teal-fondo);
+  transform: none;
+}
+.selloPendiente {
+  composes: sello;
+  color: var(--ambar-sello);
+  background: var(--ambar-fondo);
+  transform: none;
+}
+.selloFallido {
+  composes: sello;
+  color: var(--rojo-sello);
+  background: var(--rojo-fondo);
+  transform: none;
+}
+
+/* ---------- panel ---------- */
+
+.panelNavItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--tinta-suave);
+  text-decoration: none;
+  border: 1.5px solid transparent;
+}
+.panelNavItem:hover {
+  background: var(--papel-hundido);
+}
+.panelNavItemActivo {
+  composes: panelNavItem;
+  background: var(--amarillo);
+  color: var(--tinta);
+  font-weight: 600;
+  border-color: var(--tinta);
+}
+
+.kpi {
+  composes: impresoSuave;
+  padding: 16px 18px;
+}
+.kpiValor {
+  font-family: var(--fuente-mono);
+  font-size: 26px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.tabla th {
+  font-family: var(--fuente-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+  text-align: left;
+  padding: 10px 16px;
+  border-bottom: 2px solid var(--linea);
+}
+.tabla td {
+  padding: 12px 16px;
+  border-bottom: 1.5px dashed var(--linea);
+}
+.tabla tr:last-child td {
+  border-bottom: none;
+}
+.monto {
+  font-family: var(--fuente-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .btnSecundario {
+    transition: none;
+  }
+}
