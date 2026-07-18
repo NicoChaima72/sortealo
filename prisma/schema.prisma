@@ -166,6 +166,8 @@ model Tenant {
   raffleEntries  RaffleEntry[] // efectos post-pago F02
   downloadGrants DownloadGrant[] // efectos post-pago F02
   memberships    TenantMembership[] // Organizadores que administran esta Tienda (F05, S6)
+  storefrontPages StorefrontPage[] // Página(s) de tienda del page builder (ADR-0016)
+  storefrontPageVersions StorefrontPageVersion[] // Snapshots de publicación (F12, ADR-0016)
 }
 
 // Credenciales Flow propias del Organizador (BYO-Flow, ADR-0006). 1-1 con Tenant.
@@ -367,4 +369,57 @@ model DownloadGrant {
   @@unique([orderId, productId]) // idempotencia: un grant por (orden, producto); orderId ya es tenant-bound
   @@index([tenantId])
   @@index([productId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Page builder (carril A, ADR-0016/0017/0018). Aprobado por schema-guardian
+// (APPROVE con onDelete: Cascade; aplicado con db push ADITIVO — tabla nueva).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Página de tienda como Documento JSON (ADR-0016). Una fila por (tenantId, slug='home').
+// El storefront público lee SOLO publishedJson (ADR-0016/I5); el Borrador (draftJson) lo escriben
+// el MCP/use cases y se copia a published al Publicar (acción humana explícita, I6). `version` =
+// lock optimista del borrador (mutaciones con expectedVersion, I10). tenantId columna real (FK +
+// índice vía prefijo del unique), jamás dentro del JSON (ADR-0005/I1). Referencias-no-copias: el
+// JSON no persiste precios ni datos del dominio (ADR-0017/I2). Ver CONTEXT.md § Página de la tienda.
+//
+// onDelete: Cascade — config del storefront, composición intrínseca del agregado Tenant SIN vida
+// propia (mismo criterio que FlowCredential). No es registro de plata ni auditable ⇒ NO aplica el
+// Restrict del dominio comercial; regenerable desde las columnas de Tenant (documentoInicial).
+model StorefrontPage {
+  id            String    @id @default(cuid())
+  tenantId      String
+  slug          String    @default("home") // ruta de la página dentro de la Tienda; 'home' = raíz
+  draftJson     Json // Documento de Página en edición (validado por PageDocumentSchema al escribir); nunca null (lo siembra documentoInicial)
+  publishedJson Json? // último Documento publicado; null hasta la 1ª publicación
+  version       Int       @default(1) // lock optimista del borrador (expectedVersion)
+  publishedAt   DateTime? // timestamp de la última publicación; null hasta publicar
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug]) // una página por (Tienda, ruta); el prefijo [tenantId] cubre lookups tenant-scoped
+}
+
+// Snapshot APPEND-ONLY del Documento publicado, uno por cada Publicar (ADR-0016 §Consecuencias, F12).
+// Historial + rollback: "copiá una revisión vieja al draft y republicá". `publicarPagina` SOLO appendea
+// (nunca update/delete) dentro de su $transaction (I10). onDelete: Cascade — historia de config del
+// storefront subordinada a StorefrontPage (mismo criterio Cascade que StorefrontPage y FlowCredential);
+// NO es registro de plata: el blindaje real lo dan los FK Restrict de Order/Payment/Product, que ya
+// hacen indeleble a un tenant comercial. Sin FK directa a StorefrontPage: la historia se ancla al par
+// (tenantId, slug) para sobrevivir a una eventual recreación de la fila StorefrontPage. Inmutable ⇒ sin
+// updatedAt. Ver CONTEXT.md § Publicar.
+model StorefrontPageVersion {
+  id          String   @id @default(cuid())
+  tenantId    String
+  slug        String   @default("home") // qué página (espeja StorefrontPage.slug)
+  revision    Int // ordinal MONOTÓNICO por (tenantId, slug): la N-ésima publicación; COALESCE(max,0)+1 en la $transaction de publicarPagina. Handle estable para UI ("v3") y rollback
+  documento   Json // snapshot del Documento publicado en ese instante (== StorefrontPage.publishedJson al publicar; ya schema-válido)
+  publishedBy String? // snapshot del email/label del que publicó (auditoría durable si el User se borra, ADR-0004; MVP: "operador" vía MCP)
+  createdAt   DateTime @default(now()) // instante del Publicar (ES el publishedAt: la fila se inserta AL publicar)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug, revision]) // garantiza la monotonía del ordinal + lista/ordena el historial; el prefijo cubre lookups por página/tenant y sirve ORDER BY revision DESC por index scan
 }

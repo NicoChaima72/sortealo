@@ -17,15 +17,17 @@ import {
 } from "@tabler/icons-react";
 
 import { useSorteoActivo } from "~/components/storefront/use-sorteo-activo";
+import { type HeroProps } from "~/lib/pagebuilder/widgets";
 import { gradienteTematico, type TenantBranding } from "~/styles/tenantTheme";
 
 /**
- * Hero de la plantilla rica (plantilla-rica F04, design.md §5.1 pto 2). Dos columnas en desktop /
- * apilado en móvil. Izquierda: eyebrow ("Sorteo abierto" solo si hay sorteo), titular grande
- * (`heroTitulo` con fallback a `nombre`, §5.2), subtítulo (`heroSubtitulo` con fallback a
- * `descripcion`), CTA que baja al catálogo, y 3 badges de confianza (copy FIJO de plataforma).
- * Derecha: imagen de hero del tenant; sin ella, un **gradiente temático** derivado del color de
- * marca (degradación elegante §5.2, cero hex inline §9) — nunca un hueco ni un `<img>` roto.
+ * Hero del page builder (widget `hero`, F05/ADR-0016; plantilla-rica F04, design.md §5.1 pto 2). Las
+ * props vienen del Documento de Página (`props`); el `branding` del Tenant aporta los FALLBACKS
+ * (nombre/descripcion/color) resueltos server-side — NO se copian al documento (I2/I11). Izquierda:
+ * eyebrow ("Sorteo abierto" si hay sorteo y `mostrarBadgeSorteo`), titular (`props.titulo` con
+ * fallback a `nombre`, §5.2), subtítulo (`props.subtitulo` con fallback a `descripcion`), CTA
+ * configurable (ancla + texto), 3 badges de confianza (copy FIJO). Derecha: `props.imagenUrl`; sin
+ * ella, gradiente temático (degradación elegante §5.2, cero hex inline §9).
  */
 
 /** Badges de confianza — copy FIJO de plataforma (design.md §5.1 pto 2). */
@@ -35,10 +37,18 @@ const BADGES_CONFIANZA = [
   { icon: IconTicket, texto: "Tu ticket al toque" },
 ] as const;
 
-export function StorefrontHero({ branding }: { branding: TenantBranding }) {
+export function StorefrontHero({
+  props,
+  branding,
+}: {
+  props: HeroProps;
+  branding: TenantBranding;
+}) {
   const sorteo = useSorteoActivo();
-  const titulo = branding.heroTitulo ?? branding.nombre;
-  const subtitulo = branding.heroSubtitulo ?? branding.descripcion;
+  const titulo = props.titulo ?? branding.nombre;
+  const subtitulo = props.subtitulo ?? branding.descripcion;
+  const ctaHref = props.ctaAncla === "sorteo" ? "#sorteo" : "#catalogo";
+  const ctaTexto = props.ctaTexto ?? "Ver el catálogo";
 
   return (
     <Box component="section" py={{ base: "xl", md: 48 }}>
@@ -49,7 +59,7 @@ export function StorefrontHero({ branding }: { branding: TenantBranding }) {
           style={{ alignItems: "center" }}
         >
           <Stack gap="lg">
-            {sorteo.data && (
+            {sorteo.data && props.mostrarBadgeSorteo && (
               <Badge
                 variant="light"
                 size="lg"
@@ -72,13 +82,8 @@ export function StorefrontHero({ branding }: { branding: TenantBranding }) {
             )}
 
             <Group gap="sm">
-              <Button
-                component="a"
-                href="#catalogo"
-                size="md"
-                radius="md"
-              >
-                Ver el catálogo
+              <Button component="a" href={ctaHref} size="md" radius="md">
+                {ctaTexto}
               </Button>
             </Group>
 
@@ -94,21 +99,33 @@ export function StorefrontHero({ branding }: { branding: TenantBranding }) {
             </Group>
           </Stack>
 
-          <HeroVisual branding={branding} />
+          <HeroVisual
+            imagenUrl={props.imagenUrl ?? null}
+            alt={branding.nombre}
+            colorPrimario={branding.colorPrimario}
+          />
         </SimpleGrid>
       </Container>
     </Box>
   );
 }
 
-/** Imagen de hero del tenant, o un gradiente temático si no hay (degradación elegante §5.2). */
-function HeroVisual({ branding }: { branding: TenantBranding }) {
-  if (branding.heroImageUrl) {
+/** Imagen de hero del documento, o un gradiente temático si no hay (degradación elegante §5.2). */
+function HeroVisual({
+  imagenUrl,
+  alt,
+  colorPrimario,
+}: {
+  imagenUrl: string | null;
+  alt: string;
+  colorPrimario: string | null;
+}) {
+  if (imagenUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={branding.heroImageUrl}
-        alt={branding.nombre}
+        src={imagenUrl}
+        alt={alt}
         style={{
           width: "100%",
           aspectRatio: "4 / 3",
@@ -126,7 +143,7 @@ function HeroVisual({ branding }: { branding: TenantBranding }) {
         width: "100%",
         aspectRatio: "4 / 3",
         borderRadius: "var(--mantine-radius-lg)",
-        background: gradienteTematico(branding.colorPrimario),
+        background: gradienteTematico(colorPrimario),
       }}
     />
   );

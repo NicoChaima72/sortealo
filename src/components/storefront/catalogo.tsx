@@ -17,36 +17,44 @@ import Link from "next/link";
 import { useCarrito } from "~/components/storefront/carrito";
 import { StepperCantidad } from "~/components/storefront/stepper-cantidad";
 import { clp } from "~/lib/formato";
+import { type CatalogoProps } from "~/lib/pagebuilder/widgets";
 import { gradienteTematico } from "~/styles/tenantTheme";
 import { api, type RouterOutputs } from "~/utils/api";
 
 /** Tipo derivado del backend (no redeclarar el shape a mano). */
-type ProductoCatalogo = RouterOutputs["checkout"]["listarProductos"][number];
+type ProductoCatalogo =
+  RouterOutputs["checkout"]["listarProductosDeCatalogo"][number];
 
 /**
- * Catálogo rico del storefront (plantilla-rica F04, design.md §5.1 pto 3): grid de tarjetas con
- * portada (imagen), título, precio (`tabular-nums`, CLP vía `~/lib/formato`, I4), badge "Sorteo" si
- * `participaEnSorteo`, y agregar / stepper de cantidad (reusa `StepperCantidad`). Card sin portada ⇒
- * placeholder temático (gradiente derivado del color de marca + inicial, degradación elegante §5.2).
- * Reusa `checkout.listarProductos` (tenant-scoped server-side, I1) y resuelve los 3 estados.
+ * Catálogo del page builder (widget `catalogo`, F05/ADR-0016; plantilla-rica F04, design.md §5.1 pto
+ * 3): grid de tarjetas con portada, título, precio (`tabular-nums`, CLP, I4), badge "Sorteo" y
+ * agregar/stepper de cantidad. Las props vienen del Documento (`props.titulo`/`modo`/`productoIds`/
+ * `columnas`). Reusa `checkout.listarProductosDeCatalogo` (tenant-scoped server-side, I1; referencias
+ * ajenas/inactivas descartadas en silencio, D6). Card sin portada ⇒ placeholder temático (§5.2).
  */
 export function CatalogoStorefront({
+  props,
   colorPrimario,
 }: {
+  props: CatalogoProps;
   colorPrimario: string | null;
 }) {
-  const productos = api.checkout.listarProductos.useQuery();
+  const productos = api.checkout.listarProductosDeCatalogo.useQuery({
+    modo: props.modo,
+    productoIds: props.productoIds,
+  });
+  const cols = { base: 1, sm: 2, md: props.columnas };
 
   return (
     <Box component="section" id="catalogo" py={{ base: "xl", md: 48 }}>
       <Container size="lg" px={{ base: "md", lg: "xl" }}>
         <Stack gap="lg">
           <Title order={2} fz={{ base: 24, sm: 30 }} fw={700}>
-            Catálogo
+            {props.titulo}
           </Title>
 
           {productos.isLoading ? (
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+            <SimpleGrid cols={cols} spacing="lg">
               {[0, 1, 2].map((i) => (
                 <Skeleton key={i} height={320} radius="md" />
               ))}
@@ -76,7 +84,7 @@ export function CatalogoStorefront({
               </Text>
             </Stack>
           ) : (
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+            <SimpleGrid cols={cols} spacing="lg">
               {productos.data.map((producto) => (
                 <TarjetaProducto
                   key={producto.id}

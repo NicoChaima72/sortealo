@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { CSP_HEADER, construirCSP } from "~/server/security/csp";
 import { configPlataformaDesdeEnv } from "~/server/tenancy/configPlataforma";
 import { aplicarHeaderDeTenant } from "~/server/tenancy/headerTenant";
 import { parsearHost } from "~/server/tenancy/parsearHost";
@@ -25,6 +26,10 @@ import { parsearHost } from "~/server/tenancy/parsearHost";
  * 1. Garantizar que `x-tenant-slug` es SIEMPRE server-authored (mata el spoofing
  *    de tenant por header antes de que alguien construya algo encima).
  * 2. Ser el punto donde F06 colgará el rewrite del storefront al subdominio.
+ * 3. Emitir la **CSP** (F07/D9, ADR-0018): arranca en Report-Only para no romper
+ *    los estilos inline de Mantine ni el HMR; con la cookie wildcard (ADR-0019)
+ *    es control de aislamiento de sesión, no solo anti-XSS. La política vive en
+ *    `~/server/security/csp` (pura, testeada); acá solo se cabla al header.
  *
  * Un host que no resuelve NO se rechaza acá: sin DB no se puede distinguir
  * "slug inexistente" de "tienda suspendida", y la respuesta neutral de ADR-0007
@@ -33,9 +38,17 @@ import { parsearHost } from "~/server/tenancy/parsearHost";
 export function middleware(req: NextRequest) {
   const zona = parsearHost(req.headers.get("host"), configPlataformaDesdeEnv());
 
-  return NextResponse.next({
+  const res = NextResponse.next({
     request: { headers: aplicarHeaderDeTenant(req.headers, zona) },
   });
+
+  // CSP en Report-Only (F07/ADR-0018): reporta violaciones sin bloquear.
+  res.headers.set(
+    CSP_HEADER,
+    construirCSP({ esDev: process.env.NODE_ENV !== "production" }),
+  );
+
+  return res;
 }
 
 export const config = {
@@ -44,6 +57,12 @@ export const config = {
    * propósito: el saneo del header debe cubrir también al borde tRPC y a los
    * webhooks; si un path quedara fuera del matcher, entraría con el header tal
    * como lo mandó el cliente.
+   *
+   * La entrada `"/"` EXPLÍCITA es imprescindible (F07): el patrón de lookahead
+   * `/((?!…).*)` NO matchea el root exacto `/` en Next 14 — sin ella, el
+   * storefront home (la página MÁS importante a proteger con la CSP) quedaba
+   * fuera del middleware. Se descubrió al cablear la CSP: el header no salía en
+   * `/` aunque sí en `/api/*` y `/<slug-de-página>`.
    */
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/", "/((?!_next/static|_next/image|favicon.ico).*)"],
 };

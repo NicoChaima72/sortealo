@@ -4,9 +4,11 @@ import { getProductoStorefront } from "~/server/domain/checkout/getProductoStore
 import { getSorteoActivoStorefront } from "~/server/domain/checkout/getSorteoActivoStorefront";
 import { iniciarCheckout } from "~/server/domain/checkout/iniciarCheckout";
 import { listarProductos } from "~/server/domain/checkout/listarProductos";
+import { resolverCatalogo } from "~/server/domain/checkout/resolverCatalogo";
 import {
   getProductoStorefrontInput,
   iniciarCheckoutInput,
+  listarProductosDeCatalogoInput,
 } from "~/server/domain/checkout/schemas";
 import { env } from "~/env";
 import { crearFlowServiceDeTenant } from "~/server/pago/flowDeTenant";
@@ -26,6 +28,22 @@ export const checkoutRouter = createTRPCRouter({
   listarProductos: tenantProcedure.query(({ ctx }) =>
     runDomain(() => listarProductos({ db: ctx.db, tenantId: ctx.tenant.id })),
   ),
+
+  // Resolver de catálogo del page builder (F05): una sección `catalogo` del documento pasa su
+  // `modo`+`productoIds`; el `tenantId` sale del contexto (I1), nunca del input. Referencias ajenas/
+  // inactivas se descartan en silencio (D6). `modo:'todos'` es equivalente a `listarProductos`.
+  listarProductosDeCatalogo: tenantProcedure
+    .input(listarProductosDeCatalogoInput)
+    .query(({ ctx, input }) =>
+      runDomain(() =>
+        resolverCatalogo({
+          db: ctx.db,
+          tenantId: ctx.tenant.id,
+          modo: input.modo,
+          productoIds: input.productoIds,
+        }),
+      ),
+    ),
 
   getProductoStorefront: tenantProcedure
     .input(getProductoStorefrontInput)

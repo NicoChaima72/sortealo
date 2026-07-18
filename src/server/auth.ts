@@ -11,6 +11,9 @@ import GoogleProvider from "next-auth/providers/google";
 import { env } from "~/env";
 import { resolverGuard } from "~/server/authPolicy";
 import { db } from "~/server/db";
+import { validarCallbackUrl } from "~/server/sesion/callbackUrl";
+import { resolverDominioCookieSesion } from "~/server/sesion/dominioCookie";
+import { configPlataformaDesdeEnv } from "~/server/tenancy/configPlataforma";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -34,6 +37,20 @@ declare module "next-auth" {
 }
 
 /**
+ * Sesión al WILDCARD (F08/D11, ADR-0019). El apex se resuelve UNA vez al cargar el módulo (es
+ * `NEXT_PUBLIC_*`, inlineado en build; en prod `configPlataformaDesdeEnv` hace fail-fast si falta).
+ * El `Domain` de la cookie sale de acá; el `secure`/`__Secure-` solo en producción (https).
+ */
+const configPlataforma = configPlataformaDesdeEnv();
+const dominioCookieSesion = resolverDominioCookieSesion(configPlataforma);
+// `secure`/`__Secure-` con la MISMA heurística que el `useSecureCookies` interno de NextAuth (prod O
+// `NEXTAUTH_URL` https) — así la cookie de sesión no queda desalineada con las cookies csrf/callback
+// de NextAuth en el flujo de prueba real de Google vía túnel cloudflared (https con NODE_ENV=dev).
+const cookieSegura =
+  env.NODE_ENV === "production" ||
+  (env.NEXTAUTH_URL?.startsWith("https://") ?? false);
+
+/**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
  *
  * @see https://next-auth.js.org/configuration/options
@@ -54,10 +71,29 @@ export const authOptions: NextAuthOptions = {
         id: user.id,
       },
     }),
+    // callbackUrl validado contra `*.<apex>` (F08/D11, ADR-0019): con la cookie al wildcard, un
+    // redirect sin validar sería open-redirect. Reusa `parsearHost` (no una lista paralela).
+    redirect: ({ url, baseUrl }) =>
+      validarCallbackUrl({ url, baseUrl, config: configPlataforma }),
   },
   adapter: PrismaAdapter(db) as Adapter,
   pages: {
     signIn: "/login",
+  },
+  // Cookie de sesión al WILDCARD (F08/D11, ADR-0019). Mismo NOMBRE que el default de NextAuth (las
+  // sesiones vigentes no se invalidan) + `Domain=.<apex>` para compartir entre subdominios. En
+  // localhost dev `domain` es `undefined` (host-only, sin cambio); el wildcard dev usa `lvh.me` (R3).
+  cookies: {
+    sessionToken: {
+      name: `${cookieSegura ? "__Secure-" : ""}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: cookieSegura,
+        domain: dominioCookieSesion,
+      },
+    },
   },
   providers: [
     GoogleProvider({

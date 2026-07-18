@@ -44,3 +44,18 @@ export const getProductoStorefrontInput = z.object({
 export type GetProductoStorefrontInput = z.infer<
   typeof getProductoStorefrontInput
 >;
+
+/**
+ * Input del resolver de catálogo del page builder (F05): `modo` + `productoIds` de la sección de
+ * catálogo del documento. El `tenantId` con el que se scopea NO viene acá — sale del contexto
+ * (subdominio, I1). Los `productoIds` son referencias públicas (el documento publicado es público);
+ * la seguridad es el scoping por tenant del contexto, no ocultar estos ids.
+ */
+export const listarProductosDeCatalogoInput = z.object({
+  modo: z.enum(["todos", "seleccion"]),
+  productoIds: z.array(z.string().cuid()).max(60).optional(),
+});
+
+export type ListarProductosDeCatalogoInput = z.infer<
+  typeof listarProductosDeCatalogoInput
+>;

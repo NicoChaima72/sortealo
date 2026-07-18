@@ -36,6 +36,7 @@ function fakeDb(slugsExistentes: string[] = [], membresiasExistentes = 0) {
   const slugs = new Set(slugsExistentes);
   let tenantCreado: CreadoTenant | null = null;
   let membershipCreada: { userId: string; tenantId: string } | null = null;
+  let pageCreada: { data: Record<string, unknown> } | null = null;
 
   const tx = {
     tenant: {
@@ -60,6 +61,13 @@ function fakeDb(slugsExistentes: string[] = [], membresiasExistentes = 0) {
         return { id: "membership-nueva", ...data };
       },
     },
+    // Page builder (R5): la Tienda nace con su StorefrontPage en la misma $transaction.
+    storefrontPage: {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        pageCreada = { data };
+        return { id: "page-nueva", ...data };
+      },
+    },
   };
 
   const db = {
@@ -70,6 +78,7 @@ function fakeDb(slugsExistentes: string[] = [], membresiasExistentes = 0) {
     db,
     getTenantCreado: () => tenantCreado,
     getMembershipCreada: () => membershipCreada,
+    getPageCreada: () => pageCreada,
   };
 }
 
@@ -91,6 +100,30 @@ describe("domain/tenants/crearTienda (fake db stateful, alta self-service)", () 
     const membership = getMembershipCreada()!;
     expect(membership.userId).toBe("u1"); // del acceso server-side (I1)
     expect(membership.tenantId).toBe(tenant.id); // liga a la Tienda recién creada
+  });
+
+  // tenants.alta.005 — R5: la Tienda nace con su StorefrontPage (draft=published=documentoInicial)
+  it("crea la StorefrontPage inicial en la misma transacción (draft = published = documento inicial)", async () => {
+    const { db, getPageCreada, getTenantCreado } = fakeDb();
+    await crearTienda({
+      db,
+      acceso: acceso([], "u1"),
+      input: { slug: "mi-tienda", nombre: "Mi Tienda" },
+    });
+    const page = getPageCreada()!;
+    expect(page).not.toBeNull();
+    expect(page.data.tenantId).toBe(getTenantCreado()!.id); // liga a la Tienda recién creada
+    // draft y published son el MISMO documento inicial (se publica de una, F05/R5).
+    expect(page.data.draftJson).toEqual(page.data.publishedJson);
+    const doc = page.data.draftJson as { schemaVersion: number; secciones: { tipo: string }[] };
+    expect(doc.schemaVersion).toBe(1);
+    expect(doc.secciones.map((s) => s.tipo)).toEqual([
+      "hero",
+      "catalogo",
+      "sorteo_vitrina",
+      "como_funciona",
+    ]);
+    expect(page.data.publishedAt).toBeInstanceOf(Date);
   });
 
   // tenants.alta.002a — slug con formato inválido ⇒ INVALID (no toca la DB)

@@ -19,15 +19,16 @@ import {
 } from "~/components/storefront/use-countdown";
 import { useSorteoActivo } from "~/components/storefront/use-sorteo-activo";
 import { fecha, num } from "~/lib/formato";
+import { type SorteoVitrinaProps } from "~/lib/pagebuilder/widgets";
 import { gradienteTematico } from "~/styles/tenantTheme";
 
 /**
- * Vitrina del sorteo del storefront (plantilla-rica F04, design.md §5.1 pto 4; ADR-0008). Aparece
- * SOLO si hay un sorteo ACTIVO (degradación elegante §5.2: sin sorteo ⇒ sin sección ni countdown).
- * Muestra la imagen del premio (o un gradiente temático si no hay), nombre/premio/fechas, el conteo
- * de participaciones (TICKETS, sin correos — privacidad ADR-0004), "comprar = participar" y el
- * DISCLAIMER fijo de plataforma OBLIGATORIO (I8/D7/ADR-0008): el responsable del sorteo es el
- * Organizador, no la plataforma. No es configurable por tenant. Consume la query pública compartida.
+ * Vitrina del sorteo (widget `sorteo_vitrina`, F05/ADR-0016; plantilla-rica F04, design.md §5.1 pto
+ * 4; ADR-0008). Aparece SOLO si hay un sorteo ACTIVO (auto-oculto §5.2: sin sorteo ⇒ sin sección). El
+ * premio/nombre/fechas/conteo se resuelven server-side (NO en el documento, I2). Las props del
+ * documento controlan `mostrarBases` (texto de bases del Organizador) y `estiloConteo`. El conteo es
+ * de TICKETS (sin correos — privacidad ADR-0004). El DISCLAIMER (I8/ADR-0008) NO es configurable: se
+ * muestra SIEMPRE con sorteo activo, sin importar las props.
  */
 
 /** Disclaimer FIJO de plataforma (redacción legal fina se ajusta con abogado en F10, ADR-0008). */
@@ -37,8 +38,10 @@ const DISCLAIMER_SORTEO =
   "organiza el sorteo ni responde por su ejecución. Revisa las bases antes de participar.";
 
 export function SorteoStorefront({
+  props,
   colorPrimario,
 }: {
+  props: SorteoVitrinaProps;
   colorPrimario: string | null;
 }) {
   const sorteo = useSorteoActivo();
@@ -82,11 +85,24 @@ export function SorteoStorefront({
 
             <Text c="dimmed">{s.nombre}</Text>
 
+            {props.estiloConteo === "destacado" && (
+              <Group gap={8} align="baseline">
+                <Text fz={{ base: 32, sm: 40 }} fw={800} className="tabular-nums">
+                  {num(s.totalParticipaciones)}
+                </Text>
+                <Text size="sm" c="dimmed">
+                  {s.totalParticipaciones === 1 ? "participación" : "participaciones"}
+                </Text>
+              </Group>
+            )}
+
             <Group gap="xs" wrap="wrap">
-              <Badge variant="light" styles={{ label: { textTransform: "none" } }}>
-                {num(s.totalParticipaciones)}{" "}
-                {s.totalParticipaciones === 1 ? "participación" : "participaciones"}
-              </Badge>
+              {props.estiloConteo === "badge" && (
+                <Badge variant="light" styles={{ label: { textTransform: "none" } }}>
+                  {num(s.totalParticipaciones)}{" "}
+                  {s.totalParticipaciones === 1 ? "participación" : "participaciones"}
+                </Badge>
+              )}
               <Badge
                 variant="outline"
                 color="gray"
@@ -108,12 +124,12 @@ export function SorteoStorefront({
               </Text>
             </Group>
 
-            {s.basesTexto && (
+            {props.mostrarBases && s.basesTexto && (
               <Text size="sm" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
                 {s.basesTexto}
               </Text>
             )}
-            {s.basesUrl && (
+            {props.mostrarBases && s.basesUrl && (
               <Anchor href={s.basesUrl} target="_blank" rel="noreferrer" size="sm">
                 Ver las bases completas
               </Anchor>

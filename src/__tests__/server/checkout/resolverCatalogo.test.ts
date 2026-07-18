@@ -1,0 +1,102 @@
+import { Prisma, type PrismaClient } from "@prisma/client";
+import { describe, expect, it } from "vitest";
+
+import { resolverCatalogo } from "~/server/domain/checkout/resolverCatalogo";
+
+/**
+ * Tests del resolver de RENDER del catálogo (F05, ADR-0016/0017). Verifica que descarta lo
+ * inactivo/ajeno, respeta el orden del documento en `modo:'seleccion'`, y computa el precio como
+ * número (dato derivado server-side). Fake db que emula el filtrado de Prisma.
+ */
+
+interface ProductoFake {
+  id: string;
+  tenantId: string;
+  titulo: string;
+  descripcion: string;
+  precio: Prisma.Decimal;
+  portadaUrl: string | null;
+  participaEnSorteo: boolean;
+  activo: boolean;
+  createdAt: Date;
+}
+
+const dec = (v: string) => new Prisma.Decimal(v);
+
+const prod = (over: Partial<ProductoFake>): ProductoFake => ({
+  id: "p",
+  tenantId: "A",
+  titulo: "Producto",
+  descripcion: "d",
+  precio: dec("3000"),
+  portadaUrl: null,
+  participaEnSorteo: false,
+  activo: true,
+  createdAt: new Date(),
+  ...over,
+});
+
+function fakeDb(productos: ProductoFake[]) {
+  return {
+    product: {
+      findMany: async ({
+        where,
+        orderBy,
+      }: {
+        where: { tenantId: string; activo?: boolean; id?: { in: string[] } };
+        orderBy?: { createdAt: "desc" };
+      }) => {
+        let res = productos.filter(
+          (p) =>
+            p.tenantId === where.tenantId &&
+            (where.activo === undefined || p.activo === where.activo) &&
+            (where.id === undefined || where.id.in.includes(p.id)),
+        );
+        if (orderBy?.createdAt === "desc") {
+          res = [...res].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        }
+        return res;
+      },
+    },
+  } as unknown as PrismaClient;
+}
+
+describe("domain/checkout/resolverCatalogo (render del page builder)", () => {
+  // page.render.resolver.001 — modo 'todos' devuelve solo activos del tenant, precio como número
+  it("modo 'todos' devuelve los activos del tenant con precio numérico", async () => {
+    const db = fakeDb([
+      prod({ id: "act", activo: true, precio: dec("3000") }),
+      prod({ id: "inact", activo: false }),
+      prod({ id: "ajeno", tenantId: "B" }),
+    ]);
+    const res = await resolverCatalogo({ db, tenantId: "A", modo: "todos" });
+    expect(res.map((p) => p.id)).toEqual(["act"]);
+    expect(res[0]!.precio).toBe(3000); // dato derivado server-side (Decimal ⇒ number)
+    expect(typeof res[0]!.precio).toBe("number");
+  });
+
+  // page.render.resolver.002 — modo 'seleccion' respeta el orden del documento y descarta ajeno/inactivo
+  it("modo 'seleccion' respeta el orden del documento y descarta ajeno/inactivo", async () => {
+    const db = fakeDb([
+      prod({ id: "p1", tenantId: "A", activo: true }),
+      prod({ id: "p2", tenantId: "A", activo: true }),
+      prod({ id: "p3inact", tenantId: "A", activo: false }),
+      prod({ id: "pajeno", tenantId: "B", activo: true }),
+    ]);
+    // El documento pide [p2, p1, p3inact, pajeno]; el resolver devuelve [p2, p1] en ESE orden.
+    const res = await resolverCatalogo({
+      db,
+      tenantId: "A",
+      modo: "seleccion",
+      productoIds: ["p2", "p1", "p3inact", "pajeno"],
+    });
+    expect(res.map((p) => p.id)).toEqual(["p2", "p1"]);
+  });
+
+  // page.render.resolver.003 — seleccion sin ids ⇒ vacío
+  it("modo 'seleccion' sin productoIds ⇒ catálogo vacío", async () => {
+    const db = fakeDb([prod({ id: "p1", tenantId: "A" })]);
+    expect(await resolverCatalogo({ db, tenantId: "A", modo: "seleccion", productoIds: [] })).toEqual([]);
+    expect(await resolverCatalogo({ db, tenantId: "A", modo: "seleccion" })).toEqual([]);
+  });
+});

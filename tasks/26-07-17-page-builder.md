@@ -1,6 +1,6 @@
 ---
 slug: page-builder
-status: implementing              # planning | implementing | testing | done
+status: testing              # planning | implementing | testing | done
 owner: nicolas
 created: 2026-07-17
 related_adrs: [ADR-0016, ADR-0017, ADR-0018, ADR-0019, ADR-0005, ADR-0007, ADR-0008, ADR-0012, ADR-0013]
@@ -9,51 +9,51 @@ related_context: [Página de tienda, Documento de página, Sección, Widget, Ove
 features:
   - id: F01
     behavior: "Modelo StorefrontPage en Prisma: draftJson/publishedJson (jsonb), version (lock optimista), @@unique([tenantId, slug]), tenantId columna real con FK e índice"
-    state: not_started
+    state: active
 
   - id: F02
     behavior: "PageDocumentSchema Zod: discriminated union con registro de widgets semilla (hero, catalogo, sorteo_vitrina, como_funciona) + root/tema + overlays[], enums cerrados y límites"
-    state: not_started
+    state: active
 
   - id: F03
     behavior: "Factory pura documentoInicial(branding) que reproduce la plantilla actual desde columnas de Tenant + backfill idempotente de tenants existentes (draft y published)"
-    state: not_started
+    state: active
 
   - id: F04
     behavior: "Use cases src/server/domain/pagebuilder/: getPagina, aplicarMutacionPagina (add/move/remove/update_props/set_theme/apply), publicarPagina — tenancy server-side, referencias validadas, lock optimista"
-    state: not_started
+    state: active
 
   - id: F05
     behavior: "Storefront público renderiza desde publishedJson (switch exhaustivo, tipo desconocido no crashea) + preview del Borrador solo con token"
-    state: not_started
+    state: active
 
   - id: F06
     behavior: "MCP /api/mcp (Streamable HTTP stateless, Bearer MCP_OPERADOR_TOKEN): tools de lectura, mutación direccionada por id y publish, direccionadas por storeSlug"
-    state: not_started
+    state: active
 
   - id: F07
     behavior: "CSP estricta en middleware (Report-Only → enforcing) + contrato de embeds iframe sandbox (helper único construirEmbedSrc)"
-    state: not_started
+    state: active
 
   - id: F08
     behavior: "Sesión al wildcard (Domain=.<apex> por env) + validación de callbackUrl + dev cross-subdominio con lvh.me y CredentialsProvider dev-only"
-    state: not_started
+    state: active
 
   - id: F09
     behavior: "Banner 'Editar mi tienda' client-side post-hidratación vía puedoEditar() (TenantMembership server-side), sin matar el cache público"
-    state: not_started
+    state: active
 
   - id: F10
     behavior: "Widgets pro de conversión: contador_tickets, urgencia_countdown, whatsapp_flotante, aviso_barra (overlays incluidos; migra el avisoTexto actual)"
-    state: not_started
+    state: active
 
   - id: F11
     behavior: "Widgets pro de confianza: testimonios, ganadores, faq, video, embed_social — iframe-only sobre el contrato de F07"
-    state: not_started
+    state: active
 
   - id: F12
     behavior: "Snapshots StorefrontPageVersion append-only al publicar + rollback (copiar versión vieja al draft)"
-    state: not_started
+    state: active
 ---
 
 # Page builder por secciones/widgets (carril A)
@@ -127,8 +127,8 @@ el seam de theming (D13), que este carril respeta pero no documenta.
 ### F01 — Modelo StorefrontPage
 
 **Vitest** (integration):
-- [ ] Se persiste 1 fila por `(tenantId, slug)`; el duplicado es rechazado por el unique compuesto
-- [ ] `tenantId` referencia a Tenant con FK e índice; el documento round-tripea jsonb sin pérdida
+- [ ] Se persiste 1 fila por `(tenantId, slug)`; el duplicado es rechazado por el unique compuesto — `src/__tests__/server/schema/storefrontPage.test.ts::page.schema.001`
+- [ ] `tenantId` referencia a Tenant con FK e índice; el documento round-tripea jsonb sin pérdida — `src/__tests__/server/schema/storefrontPage.test.ts::page.schema.002`
 
 **E2E**:
 - [ ] (no aplica — backend-only)
@@ -136,10 +136,10 @@ el seam de theming (D13), que este carril respeta pero no documenta.
 ### F02 — PageDocumentSchema + registro
 
 **Vitest**:
-- [ ] El documento semilla completo parsea OK (golden doc)
-- [ ] Se rechazan: `tipo` desconocido, props fuera de límite, campos extra, y cualquier intento de widget `html`/`embedCode`/`iframeSrc` (no existen en la union)
-- [ ] `defaultProps` de CADA widget del registro parsea contra su propio `propsSchema` (test generativo sobre el registro)
-- [ ] `overlays[]` solo admite tipos de overlay; `secciones[]` solo tipos de sección
+- [ ] El documento semilla completo parsea OK (golden doc) — `src/__tests__/server/pagebuilder/schema.test.ts::page.doc.001`
+- [ ] Se rechazan: `tipo` desconocido, props fuera de límite, campos extra, y cualquier intento de widget `html`/`embedCode`/`iframeSrc` (no existen en la union) — `src/__tests__/server/pagebuilder/schema.test.ts::page.doc.002`
+- [ ] `defaultProps` de CADA widget del registro parsea contra su propio `propsSchema` (test generativo sobre el registro) — `src/__tests__/server/pagebuilder/schema.test.ts::page.doc.003`
+- [ ] `overlays[]` solo admite tipos de overlay; `secciones[]` solo tipos de sección — `src/__tests__/server/pagebuilder/schema.test.ts::page.doc.004`
 
 **E2E**:
 - [ ] (no aplica — backend-only)
@@ -147,9 +147,9 @@ el seam de theming (D13), que este carril respeta pero no documenta.
 ### F03 — Factory + backfill
 
 **Vitest**:
-- [ ] `documentoInicial(branding)` es pura y reproduce las secciones actuales (con branding completo y con branding vacío ⇒ degradación elegante)
-- [ ] Backfill idempotente: 2ª corrida no duplica ni pisa un draft ya editado
-- [ ] Tras backfill, todo tenant tiene draft y published que parsean contra `PageDocumentSchema`
+- [ ] `documentoInicial(branding)` es pura y reproduce las secciones actuales (con branding completo y con branding vacío ⇒ degradación elegante) — `src/__tests__/server/pagebuilder/factory.test.ts::page.factory.001,002,003,004`
+- [ ] Backfill idempotente: 2ª corrida no duplica ni pisa un draft ya editado — `src/__tests__/scripts/backfillStorefrontPages.test.ts::page.backfill.002,003`
+- [ ] Tras backfill, todo tenant tiene draft y published que parsean contra `PageDocumentSchema` — `src/__tests__/scripts/backfillStorefrontPages.test.ts::page.backfill.001`
 
 **E2E**:
 - [ ] (no aplica — backend-only; la equivalencia visual se valida en F05)
@@ -157,10 +157,10 @@ el seam de theming (D13), que este carril respeta pero no documenta.
 ### F04 — Use cases pagebuilder
 
 **Vitest**:
-- [ ] `aplicarMutacionPagina` rechaza `productoId` de OTRO tenant con `NOT_FOUND` indistinguible del inexistente (R1/H1)
-- [ ] `expectedVersion` desactualizada ⇒ error estructurado SIN escribir; con la correcta ⇒ escribe e incrementa `version`
-- [ ] Cada mutación (add/move/remove/update_props/set_theme/apply) deja un documento que parsea; una mutación inválida no muta nada
-- [ ] `publicarPagina` copia draft→published atómico; el published previo queda reemplazado solo al publicar (guardar borrador NO toca published)
+- [ ] `aplicarMutacionPagina` rechaza `productoId` de OTRO tenant con `NOT_FOUND` indistinguible del inexistente (R1/H1) — `src/__tests__/server/pagebuilder/useCases.test.ts::page.uc.004`
+- [ ] `expectedVersion` desactualizada ⇒ error estructurado SIN escribir; con la correcta ⇒ escribe e incrementa `version` — `src/__tests__/server/pagebuilder/useCases.test.ts::page.uc.002,003`
+- [ ] Cada mutación (add/move/remove/update_props/set_theme/apply) deja un documento que parsea; una mutación inválida no muta nada — `src/__tests__/server/pagebuilder/mutaciones.test.ts::page.mut.001-008` + `useCases.test.ts::page.uc.005`
+- [ ] `publicarPagina` copia draft→published atómico; el published previo queda reemplazado solo al publicar (guardar borrador NO toca published) — `src/__tests__/server/pagebuilder/useCases.test.ts::page.uc.006`
 
 **E2E**:
 - [ ] (no aplica — backend-only)
@@ -168,74 +168,74 @@ el seam de theming (D13), que este carril respeta pero no documenta.
 ### F05 — Render desde published + preview
 
 **Vitest**:
-- [ ] El resolver de render descarta productos inactivos/ajenos y computa datos derivados server-side
-- [ ] Documento con `tipo` desconocido renderiza el resto sin crash
-- [ ] Migrate-on-read: nodo `v` viejo se migra puro al leer sin escribir a DB
+- [ ] El resolver de render descarta productos inactivos/ajenos y computa datos derivados server-side — `src/__tests__/server/checkout/resolverCatalogo.test.ts::page.render.resolver.001,002,003`
+- [ ] Documento con `tipo` desconocido renderiza el resto sin crash — `src/__tests__/server/pagebuilder/migrate.test.ts::page.render.migrate.002,003,004`
+- [ ] Migrate-on-read: nodo `v` viejo se migra puro al leer sin escribir a DB — `src/__tests__/server/pagebuilder/migrate.test.ts::page.render.migrate.001`
 
 **E2E** (browser):
-- [ ] La tienda seed renderiza desde `publishedJson` visualmente equivalente al storefront actual (autora y prueba, aislamiento entre tenants intacto)
-- [ ] La preview del Borrador solo abre con token; sin token ⇒ 404 neutral
+- [ ] La tienda seed renderiza desde `publishedJson` visualmente equivalente al storefront actual (autora y prueba, aislamiento entre tenants intacto) — `tasks/e2e-storefront.md#storefront.pagebuilder.render.001` (implementer smoke-verificó SSR; falta pixel-compare browser-verify)
+- [ ] La preview del Borrador solo abre con token; sin token ⇒ 404 neutral — `tasks/e2e-storefront.md#storefront.pagebuilder.preview.001` (implementer smoke-verificó vía curl)
 
 ### F06 — MCP /api/mcp
 
 **Vitest**:
-- [ ] Sin/mal Bearer ⇒ 401 y ninguna tool ejecuta
-- [ ] Las tools direccionan por `storeSlug` (jamás `tenantId` crudo) y reusan los use cases de F04
-- [ ] Mutación inválida ⇒ `DomainError` estructurado en la respuesta MCP y el draft no cambia
+- [ ] Sin/mal Bearer ⇒ 401 y ninguna tool ejecuta — `src/__tests__/server/mcp/tools.test.ts::mcp.auth.001` (+ runtime-verificado: curl sin Bearer → 401)
+- [ ] Las tools direccionan por `storeSlug` (jamás `tenantId` crudo) y reusan los use cases de F04 — `src/__tests__/server/mcp/tools.test.ts::mcp.tenant.001,mcp.tools.001,002,004,005`
+- [ ] Mutación inválida ⇒ `DomainError` estructurado en la respuesta MCP y el draft no cambia — `src/__tests__/server/mcp/tools.test.ts::mcp.tools.003`
 
 **E2E** (asistido):
-- [ ] Sesión MCP real (cliente MCP) contra el tenant seed: leer outline, agregar/mover/editar una sección, publicar, y ver el cambio en el subdominio
+- [ ] Sesión MCP real (cliente MCP) contra el tenant seed: leer outline, agregar/mover/editar una sección, publicar, y ver el cambio en el subdominio — `tasks/e2e-storefront.md#pagebuilder.mcp.001` (implementer verificó transporte+auth+handshake+tools/list vía curl: 401 sin Bearer, initialize OK, 10 tools listables)
 
 ### F07 — CSP + contrato de embeds
 
 **Vitest**:
-- [ ] `construirEmbedSrc` acepta solo IDs/handles válidos por regex y hosts de la allowlist exacta; input basura ⇒ rechazo
-- [ ] El header CSP emitido contiene `frame-ancestors 'none'`, `object-src 'none'` y la allowlist de `frame-src`
+- [ ] `construirEmbedSrc` acepta solo IDs/handles válidos por regex y hosts de la allowlist exacta; input basura ⇒ rechazo — `src/__tests__/server/pagebuilder/embeds.test.ts::page.embed.001-005`
+- [ ] El header CSP emitido contiene `frame-ancestors 'none'`, `object-src 'none'` y la allowlist de `frame-src` — `src/__tests__/server/security/csp.test.ts::page.csp.001,002,003` (+ runtime-verificado: header presente en `/` de autora/prueba/apex)
 
 **E2E**:
-- [ ] Storefront y panel navegan sin violaciones CSP en consola (fase Report-Only) antes de pasar a enforcing
+- [ ] Storefront y panel navegan sin violaciones CSP en consola (fase Report-Only) antes de pasar a enforcing — `tasks/e2e-storefront.md#pagebuilder.csp.001` (implementer verificó que el header Report-Only sale en `/` vía curl; falta el check de consola sin violaciones con browser-verify)
 
 ### F08 — Sesión wildcard + dev
 
 **Vitest**:
-- [ ] `callbackUrl` fuera de `*.<apex>` es rechazada (no open-redirect); dentro del wildcard pasa
-- [ ] El dominio de cookie sale de env; en producción exige `.sorteatelo.cl`
+- [ ] `callbackUrl` fuera de `*.<apex>` es rechazada (no open-redirect); dentro del wildcard pasa — `src/__tests__/server/sesion/wildcard.test.ts::page.wildcard.cb.001,002,003`
+- [ ] El dominio de cookie sale de env; en producción exige `.sorteatelo.cl` — `src/__tests__/server/sesion/wildcard.test.ts::page.wildcard.cookie.001` (mapeo apex→`.apex`; el fail-fast "prod exige apex" lo garantiza `configPlataformaDesdeEnv`, ya testeado en tenancy)
 
 **E2E** (dev, lvh.me):
-- [ ] Login en el apex `lvh.me` ⇒ la sesión se ve en `autora.lvh.me` (cookie compartida); `CredentialsProvider` NO existe con build de producción
+- [ ] Login en el apex `lvh.me` ⇒ la sesión se ve en `autora.lvh.me` (cookie compartida); el login dev NO existe con build de producción — `tasks/e2e-storefront.md#pagebuilder.wildcard.001` (implementer verificó: app bootea con la config de cookie nueva, `/api/dev/login?slug=autora` crea sesión DB + setea cookie; en localhost el Domain es host-only por diseño — el wildcard real necesita `lvh.me`)
 
 ### F09 — Banner "Editar mi tienda"
 
 **Vitest**:
-- [ ] `puedoEditar()` ignora todo tenant hint del cliente: resuelve por host saneado + sesión + `TenantMembership`
-- [ ] El HTML SSR anónimo del storefront es idéntico con y sin cookie (cacheable)
+- [ ] `puedoEditar()` ignora todo tenant hint del cliente: resuelve por host saneado + sesión + `TenantMembership` — `src/__tests__/server/pagebuilder/puedoEditar.test.ts::page.editar.001,002,003`
+- [ ] El HTML SSR anónimo del storefront es idéntico con y sin cookie (cacheable) — `src/__tests__/server/pagebuilder/puedoEditar.test.ts::page.editar.004,005` (banner client-only via `debeMostrarBanner`; runtime-verificado: banner AUSENTE del SSR HTML anónimo)
 
 **E2E**:
-- [ ] La dueña logueada ve el banner en SU tienda; no lo ve en una tienda ajena; el visitante anónimo nunca lo ve
+- [ ] La dueña logueada ve el banner en SU tienda; no lo ve en una tienda ajena; el visitante anónimo nunca lo ve — `tasks/e2e-storefront.md#pagebuilder.banner.001` (implementer verificó: banner ausente del SSR anónimo, `puedoEditar` anónimo → false; falta el flujo dueña-logueada con browser-verify)
 
 ### F10 — Widgets pro de conversión
 
 **Vitest**:
-- [ ] `contador_tickets`: conteo server-side del sorteo ACTIVO, sin sorteo ⇒ oculto, jamás expone correos (ADR-0004)
-- [ ] `urgencia_countdown` vencido ⇒ auto-oculto; `whatsapp_flotante`/`aviso_barra` sin dato ⇒ ocultos
-- [ ] Migración de `avisoTexto` → overlay `aviso_barra` idempotente
+- [ ] `contador_tickets`: conteo server-side del sorteo ACTIVO, sin sorteo ⇒ oculto, jamás expone correos (ADR-0004) — `src/__tests__/server/pagebuilder/widgetsPro.test.ts::page.pro.001` (schema); conteo sin PII = `getSorteoActivoStorefront` (ya testeado, F05); auto-oculto sin sorteo = render (E2E)
+- [ ] `urgencia_countdown` vencido ⇒ auto-oculto; `whatsapp_flotante`/`aviso_barra` sin dato ⇒ ocultos — `src/__tests__/server/pagebuilder/widgetsPro.test.ts::page.pro.002,003,004` (schemas); el auto-oculto es render (E2E)
+- [ ] Migración de `avisoTexto` → overlay `aviso_barra` idempotente — `src/__tests__/server/pagebuilder/widgetsPro.test.ts::page.pro.006,007` + `src/__tests__/scripts/migrarAvisoAOverlay.test.ts::page.pro.migra.001,002,003`
 
 **E2E**:
-- [ ] Widget agregado vía MCP visible en el subdominio tras publicar (y NO antes)
+- [ ] Widget agregado vía MCP visible en el subdominio tras publicar (y NO antes) — `tasks/e2e-storefront.md#pagebuilder.widgets-pro.001` (implementer verificó: migración de aviso corrida en DB real, autora renderiza el `aviso_barra` overlay; falta agregar-widget-vía-MCP + ver-tras-publicar con browser-verify)
 
 ### F11 — Widgets pro de confianza
 
 **Vitest**:
-- [ ] `embed_social`/`video`: solo iframe con sandbox exacto de ADR-0018 (sin `allow-forms`/`allow-top-navigation`), `src` construida por `construirEmbedSrc`
-- [ ] `testimonios`/`ganadores`/`faq`: límites de items/longitud; el texto se renderiza plano (nunca HTML interpretado)
+- [ ] `embed_social`/`video`: solo iframe con sandbox exacto de ADR-0018 (sin `allow-forms`/`allow-top-navigation`), `src` construida por `construirEmbedSrc` — `src/__tests__/server/pagebuilder/widgetsConfianza.test.ts::page.conf.004,005,006` (src via construirEmbedSrc; el sandbox exacto = `<EmbedFrame>`, ya testeado/revisado en F07)
+- [ ] `testimonios`/`ganadores`/`faq`: límites de items/longitud; el texto se renderiza plano (nunca HTML interpretado) — `src/__tests__/server/pagebuilder/widgetsConfianza.test.ts::page.conf.001,002,003` (rechazo de campo HTML por `.strict`)
 
 **E2E**:
-- [ ] Un embed de YouTube/TikTok renderiza en iframe sandbox sin violaciones CSP; facade carga el iframe recién al interactuar
+- [ ] Un embed de YouTube/TikTok renderiza en iframe sandbox sin violaciones CSP; facade carga el iframe recién al interactuar — `tasks/e2e-storefront.md#pagebuilder.embeds.001` (implementer verificó vía preview: video con FACADE lazy renderiza + faq + testimonios en autora draft; falta el click-carga-iframe + sandbox-sin-violaciones con browser-verify)
 
 ### F12 — Snapshots + rollback
 
 **Vitest**:
-- [ ] Publicar appendea `StorefrontPageVersion` (nunca update/delete); rollback copia una versión al draft y exige re-publicar
+- [ ] Publicar appendea `StorefrontPageVersion` (nunca update/delete); rollback copia una versión al draft y exige re-publicar — `src/__tests__/server/pagebuilder/useCases.test.ts::page.uc.006,007` (append + revisión monotónica) + `src/__tests__/server/pagebuilder/versionado.test.ts::page.ver.001,002,003` (rollback al draft + NOT_FOUND + list) + `src/__tests__/server/schema/storefrontPage.test.ts::page.schema.003` (unique compuesto DB-backed)
 
 **E2E**:
 - [ ] (no aplica — backend-only; el efecto se observa vía F05)
@@ -283,3 +283,17 @@ el seam de theming (D13), que este carril respeta pero no documenta.
 - [2026-07-17 00:00] [planner-grill] Desvíos deliberados respecto de la síntesis: screenshot del draft en MCP diferido (R2, sustituido por preview tokenizada adelantada a F05); mapeo semillas = 4 secciones + chrome fijo (R1); gate explícito entre fases (R6). Todo REVISABLE.
 - [2026-07-17 00:00] [planner-grill] Q1 (única pregunta estructural, al usuario): ¿el switch de render a `publishedJson` (Fase 0+1) entra ANTES del go-live del piloto F07, o se congela el storefront actual para el piloto y el builder corre detrás? Recomendación del planner: entrar antes — el backfill produce un published equivalente 1:1 y el switch se valida con la equivalencia visual de F05; congelar duplicaría el camino de render. **AWAITING USER APPROVAL** (plan completo + Q1 + ADRs/vocabulario propuestos).
 - [2026-07-17 19:20] [orquestador] **VISTO BUENO del usuario al plan completo** ("hagamos lo que tú recomiendes"): ADRs 0016–0019 pasan a `aceptado`, vocabulario CONTEXT.md aceptado, PD1–PD6 y R1–R7 aprobados. **Q1 resuelta: switch de render ANTES del piloto F07** (recomendación aceptada). Contrato nocturno: el usuario delega la ejecución overnight — los gates R6 entre fases se ejercen con feature-tester + reviewers en verde en lugar de esperar al usuario despierto; decisiones nuevas no cubiertas → REVISABLE en Bitácora. status → implementing.
+- [2026-07-17 20:19] [feature-implementer] Arranca implementación (contrato nocturno: Fase 0 F01–F03 → Fase 1 F04–F07 → Fase 2 F08–F09 → Fase 3 F10–F12, sin esperar al usuario entre fases; gates R6 con tsc+lint+vitest+reviewers). Features pendientes: F01..F12. Read pass completo: CLAUDE.md, ADRs 0016–0019 + 0005/0007/0008/0012/0013, conventions (backend/prisma/data-fetching), síntesis, schema.prisma, storefront (index/componentes/getStorefrontProps/tenantTheme), tenancy (parsearHost/resolverTenant/slugTienda/headerTenant/configPlataforma), dominio (crearTienda/checkout use cases/errors/runDomain/trpc/panel router), seed-tenants, vitest.config (DB remota Supabase = dev=prod, tests DB-backed contra ella), env.js, _app.tsx, formato.ts. Decisiones REVISABLES tomadas antes de escribir: (a) la capa PURA del documento (schema Zod, registro de widgets, tipos, migrate-on-read, factory) vive en `src/lib/pagebuilder/` — NO en `~/server` — porque el render del storefront (cliente) necesita los tipos y `~/styles/tenantTheme.ts` prohíbe importar `~/server` en código que corre en cliente; los use cases (F04) sí van en `src/server/domain/pagebuilder/` e importan de `~/lib/pagebuilder/`. (b) ids de nodo del SEED deterministas (`sec-hero`, etc.) para que `documentoInicial` sea pura/determinista (test F03); mutaciones futuras (F04) usan `crypto.randomUUID()`. (c) union de secciones explícita con literales (tipos precisos por rama para el switch de render) + registro paralelo para defaults/v/categoría, con test generativo de exhaustividad. (d) `overlays[]` vacío en F02 (`z.array(z.never())`, solo acepta `[]`) hasta que F10 agregue widgets de overlay. (e) tema (`root.props`) mínimo/vacío este fase: la fuente de verdad del theme sigue en columnas `Tenant` (out-of-scope moverlo). (f) chrome (header/footer/aviso/carrito) sigue leyendo columnas `Tenant` (R1: chrome fijo); solo las 4 secciones pasan a doc-driven.
+- [2026-07-18 01:08] [feature-implementer] **IMPLEMENTACIÓN COMPLETA — F01..F12 escritas, todos los reviewers verdes. status → testing.** Contrato nocturno cumplido: implementé las 4 fases en orden (Fase 0 F01–F03, Fase 1 F04–F07, Fase 2 F08–F09, Fase 3 F10–F12) sin esperar al usuario, con TDD por feature. **Regresión final: 106/106 vitest verde** (surface carril A, 19 archivos), `tsc`(carril A)+`next lint` limpios. Reviewers: schema-guardian (F01, F12) + backend-reviewer (F02+F03, F04, F06, F07, F08, F12) + frontend-reviewer (F05, F09, F10, F11) — TODOS APPROVE (los REQUEST_CHANGES de F08 fueron 100% deuda de doc, resueltos con `docs/dev-wildcard-session.md`). Side-effects corridos en la DB real (idempotentes): backfill de páginas (F03) + migración de aviso→overlay (F10). Verificaciones runtime en :3001: switch de render equivalente (autora/prueba), preview tokenizada, MCP (12 tools, 401/handshake/tools-list), CSP Report-Only en `/`, login dev wildcard, banner ausente del SSR anónimo, widgets F10/F11 renderizando (aviso overlay + video facade + faq + testimonios vía preview). **Para el feature-tester**: correr la batería vitest completa + los E2E de `tasks/e2e-storefront.md` (IDs `pagebuilder.*` — todos con smoke del implementer anotado, falta browser-verify). **Para el usuario/domain-planner** (fuera de mi scope de edición): (a) addendums a ADR-0016 (rollback = excepción a I10) y ADR-0019 (dev-login endpoint ≠ CredentialsProvider); (b) 5 drifts sugeridos para `docs/agents/*-conventions.md` (patrón switch-por-union+registro, auto-oculto sin 3-estados, chrome post-hidratación, chrome neutro de plataforma, facade lazy de embeds); (c) vocabulario nuevo de CONTEXT.md ya estaba aceptado en el plan. **NOTA**: el gate compartido `check:types` queda rojo por `tailwind.test.ts` de CARRIL B (su WIP), NO de carril A — todo mi código compila limpio. NO commiteé/pusheé (el orquestador commitea por fase). NO toqué INDEX.md (otro agente). Snapshots + rollback (ADR-0016/D4). `schema-guardian` **APPROVE** del modelo `StorefrontPageVersion` (append-only, `revision` ordinal MONOTÓNICO por (tenantId,slug) en vez de reusar el lock del draft, `@@unique([tenantId,slug,revision])`, onDelete Cascade, un solo timestamp, sin FK directa a StorefrontPage → historia durable anclada a (tenantId,slug)). Aplicado con `db:push` ADITIVO. `publicarPagina`: computa `revision=max+1` y appendea el snapshot DENTRO de la misma `$transaction` del publish (I10), con el `@@unique` como backstop de carrera; pasa `publishedBy`. `revertirPagina` (rollback): copia una revisión vieja al BORRADOR (no al publicado) + bumpea el lock; exige re-publicar (D4/I6). `listarVersiones`: historial desc, solo metadatos. MCP: `publish_page` pasa `publicadoPor:"operador"` + tools nuevas `list_versions`/`rollback_page` (12 tools totales, verificado runtime vía tools/list). Tests: versionado 3 + useCases +2 (append monotónico) + tools +2 (wrappers MCP) + schema DB-backed page.schema.003 (unique compuesto contra la DB real). `backend-reviewer` **APPROVE**: I10 atómico, append-only, I6 (rollback al draft), I1 tenancy, layering. **NIT-1 corregido** (revertirPagina devolvía `page.version+1` pre-write, potencialmente stale bajo carrera → ahora captura el `version` REAL del `update` atómico). **NIT-3 corregido** (agregué tests dedicados de los 2 wrappers MCP). **NIT-2 (REVISABLE, anotado)**: el rollback es la EXCEPCIÓN INTENCIONAL a I10 — bumpea el lock INCONDICIONALMENTE (es un override del Operador que invalida ediciones pendientes); documentado en el código y acá; sugiere addendum en ADR-0016 (fuera de mi scope de edición de ADRs). `tsc`(carril A)+`next lint` limpios.
+- [2026-07-18 00:33] [feature-implementer] **F10 implementada** (arranca Fase 3). Widgets PRO de conversión. Registro (widgets.ts) += 4: `contador_tickets`+`urgencia_countdown` (secciones), `whatsapp_flotante`+`aviso_barra` (overlays). `schema.ts`: `SeccionNodeSchema` += 2 secciones; `OverlayNodeSchema` pasó de `z.never()` a discriminated union real (aviso_barra + whatsapp_flotante). Componentes: contador (conteo server-side via useSorteoActivo, `num()` no clp, auto-oculto sin sorteo, sin PII), urgencia (useCountdown aislado en componente interno para no llamar hook condicional, auto-oculto vencido), whatsapp (FAB, color de MARCA no verde crudo, oculto sin número), aviso (barra texto plano I3, descartable). `render-pagina.tsx`: 2 casos de sección nuevos + `RenderOverlay` (aviso arriba del flujo, whatsapp FAB fixed) con candado `never`; `leerDocumentoParaRender` ahora rescata overlays tolerante. **Migración avisoTexto→overlay** (R1): `conAvisoBarra` puro idempotente (factory.ts) + `scripts/migrar-aviso-a-overlay.ts` (núcleo+wrapper); `index.tsx` dejó de renderizar el aviso del chrome (ahora overlay). BrandingSemilla += `avisoTexto?` (opcional, no rompe callers); backfill+SSR-fallback lo pasan. **Corrida en DB real**: migración migró el aviso de autora (idempotente 2ª corrida). **Runtime**: autora renderiza el `aviso_barra` overlay ("Recibes el PDF por correo") + hero, prueba 200, sin crash. Tests: widgetsPro 7 + migrarAviso 3 (+ schema/factory/migrate ajustados). `frontend-reviewer` **APPROVE** (Naming A, Tests A): sin hex, num() para conteo, FAB sin verde crudo, auto-oculto correcto, hook aislado, texto plano I3, a11y. NIT cosmético (inline whitespace-pre-wrap) NO atendido (consistente con sorteo.tsx existente). Drift sugerido +1: "auto-oculto silencioso (retry:false, sin 3-estados) para secciones decorativas". **NOTA CROSS-CARRIL**: carril B co-editó `index.tsx` (mi zona render) para meter `LandingPlataforma` en el apex — transitoriamente quedó roto (imports huérfanos) pero carril B lo cerró solo; mis cambios de render (RenderPagina con overlays) sobrevivieron intactos. `tsc`(carril A)+`next lint` limpios.
+- [2026-07-18 00:18] [feature-implementer] **F09 implementada — cierra Fase 2.** Banner "Editar mi tienda" (ADR-0019/D11/D13). (1) `puedoEditar` use case (`src/server/domain/pagebuilder/puedoEditar.ts`): autorización por `TenantMembership`/Operador server-side; `tenantId` del host (I1), jamás input. (2) Router `pagebuilder.puedoEditar` (tenantProcedure; anónimo→false sin tocar DB) + registrado en root.ts. (3) `debeMostrarBanner` puro (`src/lib/pagebuilder/banner.ts`) = `montado && puedeEditar`. (4) `BannerEditarTienda` (client): monta post-hidratación (`useState`+`useEffect`), query con `enabled: montado` ⇒ NO toca el SSR; chrome NEUTRO de plataforma (`dark.7`/`white`, NUNCA el color del tenant, D13); linkea al panel del apex. Agregado al `StorefrontLayout`. Tests `puedoEditar.test.ts` 5/5. **Verificación runtime**: banner AUSENTE del SSR HTML anónimo (count 0 ⇒ HTML idéntico con/sin cookie ⇒ CDN-cacheable, R5); `pagebuilder.puedoEditar` anónimo → `{puedeEditar:false}`. `frontend-reviewer` **APPROVE**: R5 (cache) + D13 (neutro) correctos, sin hydration mismatch, autorización 100% server-side, cero any. NIT cosmético corregido (orden de hooks estado→query→efecto). `tsc`(carril A)+`next lint` limpios. **DRIFTS SUGERIDOS (NO aplicados, Step 4.5 — `frontend-conventions.md` requiere OK del user Y carril B lo está editando en paralelo)**: (a) patrón "chrome post-hidratación gateado por autz server-side"; (b) excepción a "resolver 3 estados" para chrome opcional no-autoritativo (fail-closed silencioso); (c) "chrome neutro de plataforma" (dark.7) como precedente; (d) [de F05] "componente resuelto por switch sobre union discriminada + props tipadas del documento". Los 4 quedan como draft para que el user apruebe consolidarlos.
+- [2026-07-18 00:13] [feature-implementer] **F08 implementada** (arranca Fase 2). Sesión al wildcard (ADR-0019). (1) `src/server/sesion/dominioCookie.ts`: `resolverDominioCookieSesion(config)` puro (apex→`.apex`, localhost→undefined host-only). (2) `src/server/sesion/callbackUrl.ts`: `validarCallbackUrl` puro anti open-redirect (reusa `parsearHost`; rechaza host ajeno, protocol-relative `//`, suffix-trick `apex.evil.com`, subdominio anidado `a.b.apex`, URL corrupta → cae al baseUrl). (3) `auth.ts`: `cookies.sessionToken` con MISMO nombre default de NextAuth (no invalida sesiones vigentes) + `Domain=.<apex>`; `cookieSegura` alineado con la heurística `useSecureCookies` de NextAuth (prod O NEXTAUTH_URL https — fix del NIT del cloudflared dev); callback `redirect` valida callbackUrl. (4) `src/pages/api/dev/login.ts`: login DEV-ONLY (404 prod, 405 no-GET) que crea Session de DB para el dueño de la tienda + setea cookie wildcard — REVISABLE: reemplaza el CredentialsProvider del ADR (incompatible con adapter de DB, NextAuth fuerza JWT). Tests `wildcard.test.ts` 4/4. **Verificación runtime**: app bootea con la config nueva; `/api/dev/login?slug=autora` → 200 crea sesión (autora dueño=nikochaima72) + cookie; POST→405; localhost host-only por diseño. `backend-reviewer` veredicto **REQUEST_CHANGES pero SOLO deuda de documentación — ningún hallazgo de auth/código es blocker** (cookie name/flags OK, fail-closed prod OK, open-redirect cubierto, tenancy server-side OK). Fixes aplicados: cookieSegura alineado + GET gate + **creé `docs/dev-wildcard-session.md`** (satisface el "doc de dev" del paso 8 del plan). **PENDIENTES fuera de mi scope de edición (Step 4.5) — para el usuario/domain-planner**: (a) addendum en `docs/adr/0019` documentando que el dev-login real es un endpoint (no CredentialsProvider) — lo dejé notado en `dev-wildcard-session.md` y en el docstring del endpoint; (b) opcional: nota dev en `docs/agents/backend-conventions.md` (drift que requiere OK del user). NIT opcional no atendido: test DB-backed de `dev/login` (dev-only, no exigido por Validaciones). `tsc`(carril A)+`next lint` limpios.
+- [2026-07-18 00:03] [feature-implementer] **GATE R6 — Fase 0+1 (F01–F07) cerrada.** Corrida completa del surface carril A: **74/74 vitest verde** (13 archivos: storefrontPage schema DB-backed, pagebuilder schema/factory/mutaciones/useCases/migrate/embeds, checkout/resolverCatalogo, storefront/previewToken, security/csp, mcp/tools, scripts/backfill, tenants/crearTienda). `next lint` limpio. `tsc` limpio para TODO carril A (único error del repo = `tailwind.test.ts` de carril B, ver nota F07). Reviewers: schema-guardian (F01) + backend-reviewer (F02+F03, F04, F06, F07) + frontend-reviewer (F05) — TODOS **APPROVE**. Verificaciones runtime en :3001: switch de render (autora/prueba HTTP 200 equivalentes), preview tokenizada (token→draft+noindex, malo→404), MCP (401/initialize/tools-list 10 tools), CSP (Report-Only en `/`). Por CONTRATO NOCTURNO no espero visto bueno del usuario: CONTINÚO a Fase 2 (F08–F09) y Fase 3 (F10–F12).
+- [2026-07-18 00:02] [feature-implementer] **F07 implementada — cierra Fase 1.** (1) `src/lib/pagebuilder/embeds.ts`: `construirEmbedSrc(red, ref)` helper ÚNICO — valida red (allowlist cerrada youtube/tiktok/instagram) + ref (regex por red) y construye la src a un HOST EXACTO; basura ⇒ null (nunca HTML/iframeSrc crudo, I3/I4). `ORIGENES_EMBED` = fuente única de la allowlist. (2) `src/server/security/csp.ts`: `construirCSP({esDev})` puro — `frame-ancestors 'none'` + `object-src 'none'` + `connect-src 'self'` (+ws en dev) + `frame-src` = 'self' + ORIGENES_EMBED + `base-uri 'self'`; header **Report-Only** de arranque (D9: no rompe estilos inline de Mantine ni HMR). (3) `middleware.ts` emite la CSP. (4) `<EmbedFrame>` (embed-frame.tsx): iframe con sandbox EXACTO de ADR-0018 (`allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox`, SIN allow-forms/allow-top-navigation; allow sin cam/mic/geo; referrerpolicy+lazy) — contrato listo, sin consumidores hasta F11. **BUG DESCUBIERTO Y CORREGIDO**: el middleware NUNCA corría en el root `/` — el matcher `/((?!...).*)` no matchea el root exacto en Next 14; el `x-tenant-slug` que setea nunca se consumía en `/` (el contexto tRPC re-parsea el host) así que pasó inadvertido. Agregué `"/"` explícito al matcher ⇒ la CSP (y el saneo) ahora cubren la home del storefront (la página más importante). **Verificación runtime :3001**: header Report-Only presente en `/` de autora/prueba/apex con todas las directivas; storefronts siguen 200 (Report-Only no bloquea). Tests: embeds 5, csp 3. `backend-reviewer` **APPROVE** (A/A/A): sandbox literal ADR-0018, CSP correcta, edge-safe, matcher fix justificado. NIT corregido: `EmbedFrame.red` tipado a `RedEmbed` (no `string`) para F11. **⚠️ NOTA CROSS-CARRIL**: tras el fix, `tsc --noEmit` muestra UN error en `src/__tests__/config/tailwind.test.ts:25` (`config.theme?.screens` no existe) — es de **carril B** (tienen `tailwind.config.ts`, `theme.ts`, admin, `_app/_document`, `login`, `design.md`, `frontend-conventions.md` modificados en su WIP). NO es de carril A: TODO mi código compila limpio (el único `error TS` es del archivo owned por carril B). El gate compartido `check:types` quedará rojo hasta que carril B cierre su cambio de tailwind — el orquestador coordina ambos carriles al commit.
+- [2026-07-17 23:44] [feature-implementer] **F06 implementada.** Editor MCP en `/api/mcp` — PRIMERA ruta App Router del repo (R4): `src/app/api/mcp/[transport]/route.ts` (runtime nodejs, `mcp-handler` + `@modelcontextprotocol/sdk` 1.26 ya instalado, Streamable HTTP stateless `disableSse` sin Redis). 10 tools: get_page (outline+JSON+version), list_widget_types, list_products, add/move/remove/update_section_props/set_theme/apply_page (mutaciones), publish_page. Gate Bearer `MCP_OPERADOR_TOKEN` (god-mode Operador) ANTES de mcp-handler ⇒ sin/mal Bearer 401 sin ejecutar tool. `src/server/mcp/auth.ts` (`verificarBearer` puro, fail-closed, ahora CONSTANT-TIME via sha256+timingSafeEqual) + `src/server/mcp/tools.ts` (cada tool resuelve `tenantId` por `storeSlug` server-side I1 y delega en use cases F04 — CERO lógica propia; DomainError→resultado estructurado isError para autocorrección del LLM). MCP escribe SOLO borrador; publish_page = checkpoint humano I6; sin efectos fuera del documento I12 (`DbMcp` acota el tipo a tenant/storefrontPage/product/$transaction). Env `MCP_OPERADOR_TOKEN` en env.js+runtimeEnv+.env.example. **Verificación runtime :3001 vía curl**: 401 sin/mal Bearer, `initialize` OK (serverInfo sorteatelo-pagebuilder), `tools/list` = las 10 tools. Tests `tools.test.ts` 7/7 (auth fail-closed, tenant por slug, get_page, mutación válida escribe+incrementa, mutación inválida INVALID sin escribir, list_products tenant-scoped, publish). `backend-reviewer` **APPROVE** (A/A/A): I1/I6/I12 respetados, layering (borde fino + delega F04), env correcta, errores estructurados. 2 NITs corregidos: (a) Bearer constant-time (sha256+timingSafeEqual), (b) comentario display-only en precio de list_products. `tsc`+`next lint` limpios. Archivos: `route.ts`, `auth.ts`, `tools.ts`, `env.js`, `.env`/`.env.example`, `tools.test.ts`.
+- [2026-07-17 23:27] [feature-implementer] **F05 implementada.** Switch de render a `publishedJson`. (1) SSR: `getStorefrontProps.cargarDocumentoParaRender` carga el doc (published o borrador-en-preview) tenant-scoped por `tenant.slug`, con fallback ON-THE-FLY a `documentoInicial(branding)` si falta la fila (R5); lectura TOLERANTE `leerDocumentoParaRender` (descarta secciones podridas/tipo desconocido, I9). (2) `RenderPagina` (nuevo componente): switch exhaustivo `tipo → componente` con candado `never` en compilación + tolerancia I9 en runtime. (3) Los 4 componentes semilla adaptados a props tipadas del documento + fallbacks server-side del branding (nombre/color, NO copiados I2): hero (titulo/subtitulo/imagenUrl/ctaAncla/ctaTexto/mostrarBadgeSorteo), catalogo (titulo/modo/productoIds/columnas vía nuevo `checkout.listarProductosDeCatalogo`), sorteo (mostrarBases/estiloConteo; Disclaimer NO configurable I8), como_funciona (titulo/pasos con icono enum; sin pasos ⇒ 3 fijos). (4) Resolver de render `resolverCatalogo` (checkout domain, tenant-scoped, descarta ajeno/inactivo en silencio D6, orden del doc en seleccion). (5) Preview: `resolverModoPreview` puro + env `STOREFRONT_PREVIEW_TOKEN`; `?preview=<token>` sirve el Borrador (banner + robots noindex), token inválido ⇒ 404 neutral. `index.tsx` chrome (aviso) sigue leyendo columnas (R1). Migrate-on-read `migrarDocumento` (normaliza nodo legacy sin `v`→v1, puro). Archivos: `render-pagina.tsx` (nuevo), `storefront-hero/catalogo/sorteo/como-funciona.tsx` (adaptados), `index.tsx`, `getStorefrontProps.ts`, `previewToken.ts` (nuevo), `resolverCatalogo.ts` (nuevo), `migrate.ts`, `checkout` router+schemas, `env.js`, `.env`/`.env.example`. **Verificación en vivo :3001** (crítica, contrato): autora + prueba renderizan HTTP 200 con el hero del seed + secciones (equivalencia SSR); preview token válido→200+banner+noindex, malo→404, sin token→200 sin banner. Tests: resolverCatalogo 3, previewToken 3, migrate 5 (+ los de F02-F04). `frontend-reviewer` **APPROVE** (sin blockers): equivalencia visual preservada, sin hex inline, clp+tabular-nums, degradación elegante, data-fetching 3-estados, cero any. NIT corregido: candado de exhaustividad `never` en `render-pagina.tsx` (F10/F11 no podrán olvidar una rama). `tsc`+`next lint` limpios. **DRIFT SUGERIDO (NO aplicado, Step 4.5)**: `docs/agents/frontend-conventions.md` no documenta el patrón nuevo "componente resuelto por switch sobre union discriminada + registro de widgets con props tipadas inyectadas del documento (`{ props: XProps, ...fallbacksDelTenant }`)". F10/F11 lo repetirán. Draft para que el user apruebe consolidarlo cuando revise la fase — no lo aplico sin visto bueno.
+- [2026-07-17 23:12] [feature-implementer] **F04 implementada** (arranca Fase 1). Use cases en `src/server/domain/pagebuilder/`: `getPagina` (lee draft/published + migrate-on-read, NOT_FOUND si no publicado), `aplicarMutacionPagina` (carga → lock optimista por `expectedVersion` → transform puro → `validarReferencias` tenant-scoped → `updateMany` CONDICIONAL por version que cierra la carrera lectura→escritura I10), `publicarPagina` (draft→published en `$transaction`, condicional por version). Transform puro `mutaciones.ts` (`aplicarMutacion`: add/move/remove/update_props/set_theme/apply_page — cada rama revalida el doc COMPLETO contra `PageDocumentSchema` I3; INVALID por shape, NOT_FOUND por id inexistente; ids nuevos con `randomUUID`). `_referencias.ts`: productoIds del catálogo `modo:seleccion` validados contra el tenant (`product.findMany where tenantId`), un id ajeno o inexistente da el MISMO NOT_FOUND (H1/D6/I2). `src/lib/pagebuilder/migrate.ts`: `parsearDocumento` (estricto, editar) + `leerDocumentoParaRender` (tolerante, descarta secciones podridas — para F05) + `migrarDocumento` (identidad hoy). Input Zod `schemas.ts` (union por `accion`). Archivos: 6 en `src/server/domain/pagebuilder/` + `src/lib/pagebuilder/migrate.ts` + tests `mutaciones.test.ts` (13) + `useCases.test.ts` (8). `backend-reviewer` **APPROVE** (A/A/A) — verificó I1/I2/I3/I10, layering, códigos de error. 2 NITs corregidos: (a) docstring de `schemas.ts` aclarado (`expectedVersion` es param hermano, no dentro de la union); (b) `publicarPagina` pasó de read-then-write a `updateMany` condicional por version (cierra carrera, consistente con la mutación). Re-corridos 21/21 verde, `tsc` limpio.
+- [2026-07-17 20:38] [feature-implementer] **Cierre Fase 0 (F01–F03).** `backend-reviewer` veredicto **APPROVE-with-nits** (Compliance B, Naming A, Tests A) sobre F02+F03: I1/I2/I3 respetados (tenancy server-side en crearTienda, referencias-no-copias, `.strict()` + sin tipos html/embed), layering correcto (`src/lib/pagebuilder/` puro con precedente `src/lib/*` y `tenantTheme.ts`), script núcleo+wrapper al pie de la letra, purity confirmada. NIT-1 (la factory hardcodeaba defaultProps de 3/4 widgets en vez de leer `WIDGET_REGISTRY` — contradecía el docstring "fuente única") y NIT-2 (dup del validador de url) → **AMBOS corregidos**: `documentoInicial` ahora consume `WIDGET_REGISTRY.<tipo>.defaultProps`/`.v` (solo el hero mezcla overrides de branding encima) y reusa `urlPublica` exportado de `widgets.ts`. Re-corridos: 25/25 verde (schema 10 + factory 4 + backfill 3 + crearTienda 8), `tsc --noEmit` limpio. **Fase 0 lista** (gate R6): schema aplicado + backfill corrido en la DB real + reviewers verdes. Sigo a Fase 1 (F04) sin esperar al usuario, por contrato nocturno.
+- [2026-07-17 20:33] [feature-implementer] **F03 implementada.** (1) Factory pura `src/lib/pagebuilder/factory.ts` — `documentoInicial(branding)` reproduce las 4 secciones semilla desde `{ heroTitulo, heroSubtitulo, heroImageUrl }` con ids deterministas (`sec-hero`/`sec-catalogo`/`sec-sorteo`/`sec-como-funciona`), degradación elegante (overrides omitidos si la columna es null ⇒ render cae al Tenant, I2/I11), recorte defensivo de textos largos y descarte de imagenUrl inválida (el backfill nunca falla), y `PageDocumentSchema.parse()` de su propia salida como garantía. (2) `crearTienda` (R5): crea la `StorefrontPage` (draft=published=documentoInicial, publishedAt=now) en la MISMA `$transaction` — actualicé su fake db + agregué `tenants.alta.005`. (3) Backfill `scripts/backfill-storefront-pages.ts` (núcleo `backfillPaginas({db})` + wrapper `main()`, `process.loadEnvFile()`, npm `backfill:pages`): idempotente (guard por existencia de fila `(tenantId,'home')`, jamás pisa un draft editado). **Corrido contra la DB real Supabase**: 1ª corrida creó páginas de `autora` y `prueba`; 2ª corrida = 0 creadas (idempotencia confirmada en vivo). No cambia el render hasta F05. Archivos: `src/lib/pagebuilder/factory.ts`, `src/server/domain/tenants/crearTienda.ts`, `scripts/backfill-storefront-pages.ts`, `package.json`, `src/__tests__/server/pagebuilder/factory.test.ts`, `src/__tests__/scripts/backfillStorefrontPages.test.ts`, `src/__tests__/server/tenants/crearTienda.test.ts`. Vitest filtrado: factory 4/4, backfill 3/3, crearTienda 8/8. `tsc --noEmit` limpio (incl. asignación `PageDocument`→columna `Json`, sin cast). Reviewer al cierre de Fase 0 (siguiente entrada).
+- [2026-07-17 20:28] [feature-implementer] **F02 implementada.** Capa PURA en `src/lib/pagebuilder/`: `widgets.ts` (registro `WIDGET_REGISTRY` = fuente única: props Zod + defaultProps + `v` + categoría, con helper `definirWidget` que ata defaultProps↔schema en compile-time; enums cerrados `CTA_ANCLAS`/`ICONOS_PASO`; `.strict()` en cada objeto ⇒ campos extra rechazados, sin HTML libre I3) y `schema.ts` (`SeccionNodeSchema` = discriminated union explícita con literales para tipos precisos por rama; `OverlayNodeSchema` = `z.never()` hasta F10; `PageDocumentSchema` = `{ schemaVersion, root:{props:tema}, secciones, overlays }` estricto con topes 50/10). Widgets semilla: hero, catalogo (modo todos/seleccion + productoIds referencias I2), sorteo_vitrina (sin datos del Raffle, resuelto server-side), como_funciona. Archivos: `src/lib/pagebuilder/widgets.ts`, `src/lib/pagebuilder/schema.ts`, `src/__tests__/server/pagebuilder/schema.test.ts`. Vitest filtrado 10/10 verde (page.doc.001 golden; 002 rechazos tipo desconocido/límite/campos extra/html-embed; 003 generativo defaultProps + exhaustividad union↔registro; 004 separación secciones/overlays). `tsc --noEmit` limpio (la union discriminada narrowea props por tipo). Reviewer: se difiere backend-reviewer al cierre de Fase 0 (revisa F02+F03 juntos con la factory/backfill; F01 ya lo vio schema-guardian) — el plan lista change-set-reviewer al cierre de fase.
+- [2026-07-17 20:24] [feature-implementer] **F01 implementada.** `schema-guardian` APPROVE (veredicto A/A/A): `StorefrontPage { id, tenantId, slug @default("home"), draftJson Json, publishedJson Json?, version Int @default(1), publishedAt DateTime?, createdAt, updatedAt }` con `@@unique([tenantId, slug])`, FK `onDelete: Cascade` (config sin vida propia, mismo criterio que FlowCredential — NO Restrict; el blindaje de plata ya lo dan los FK Restrict de Order/Payment/Product) e índice de tenantId vía prefijo del unique (sin `@@index` extra). Back-relation `Tenant.storefrontPages`. `publishedBy` (audit de quién publica) diferido a `StorefrontPageVersion` (F12), anotado como puerta abierta por schema-guardian. Aplicado con `npm run db:push` ADITIVO (tabla nueva, sin `--accept-data-loss`) contra la DB Supabase; client regenerado. Reinicié el dev server (:3001) para tomar el client nuevo (killed PID 10068 → relanzado PID 41408). Archivos: `prisma/schema.prisma`, `src/__tests__/server/schema/storefrontPage.test.ts`. Vitest filtrado: 2/2 verde (page.schema.001 unique compuesto + defaults; page.schema.002 FK + round-trip jsonb + back-relation). Reviewer de cierre: schema-guardian (feature schema-only ⇒ no requiere backend-reviewer; el plan lista backend-reviewer para F04/F06/F07/F08).

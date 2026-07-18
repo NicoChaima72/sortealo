@@ -81,6 +81,17 @@ export const env = createEnv({
     // borde cae a `NEXTAUTH_URL` (que ya apunta a la app) — `APP_URL` desacopla el correo
     // del auth y permite un puerto de dev distinto (:3001) sin tocar NEXTAUTH_URL.
     APP_URL: z.string().url().optional(),
+    // Token de PREVIEW del Borrador del page builder (F05, ADR-0016). El storefront público lee
+    // SOLO publishedJson; con `?preview=<STOREFRONT_PREVIEW_TOKEN>` sirve el Borrador para que el
+    // Operador lo revise antes de publicar. Opcional: ausente ⇒ preview deshabilitada (cualquier
+    // `?preview` ⇒ 404 neutral). Secreto de baja sensibilidad (solo abre un draft ya del tenant),
+    // pero no se loguea. Distinto por entorno.
+    STOREFRONT_PREVIEW_TOKEN: z.string().optional(),
+    // Token Bearer del Editor MCP del page builder (F06/PD5, ADR-0016). El endpoint `/api/mcp` es
+    // GOD-MODE del OPERADOR: quien lo presente edita el Borrador de CUALQUIER tienda (elige por
+    // `storeSlug`). SECRETO fuerte, jamás se loguea. Opcional: ausente ⇒ el MCP responde 401 a todo
+    // (fail-closed). OAuth per-tenant queda para fase Pro. El MCP escribe Borrador; publicar es humano.
+    MCP_OPERADOR_TOKEN: z.string().optional(),
   },
 
   /**
@@ -122,6 +133,8 @@ export const env = createEnv({
     R2_PUBLIC_BASE_URL: process.env.R2_PUBLIC_BASE_URL,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     APP_URL: process.env.APP_URL,
+    STOREFRONT_PREVIEW_TOKEN: process.env.STOREFRONT_PREVIEW_TOKEN,
+    MCP_OPERADOR_TOKEN: process.env.MCP_OPERADOR_TOKEN,
     NEXT_PUBLIC_PLATFORM_DOMAIN: process.env.NEXT_PUBLIC_PLATFORM_DOMAIN,
   },
   /**

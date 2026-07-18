@@ -10,63 +10,95 @@ import {
   Title,
 } from "@mantine/core";
 import {
+  IconBolt,
+  IconClock,
   IconDownload,
+  IconGift,
+  IconShieldCheck,
   IconShoppingBag,
+  IconSparkles,
   IconTicket,
+  type IconProps,
 } from "@tabler/icons-react";
+import { type ComponentType } from "react";
+
+import { type ComoFuncionaProps } from "~/lib/pagebuilder/widgets";
 
 /**
- * Sección "Cómo funciona" (plantilla-rica F04, design.md §5.1 pto 5): 3 pasos con copy FIJO de
- * plataforma (comprar → recibir el PDF → entrar al sorteo). No depende de datos del tenant ⇒
- * SIEMPRE presente (buena para conversión). Tematizada por el color de marca vía tokens del theme.
+ * Sección "Cómo funciona" (widget `como_funciona`, F05/ADR-0016; plantilla-rica F04, design.md §5.1
+ * pto 5). Sin `props.pasos` ⇒ los 3 pasos FIJOS de plataforma (comprar → recibir el PDF → entrar al
+ * sorteo). Con pasos ⇒ los del documento, cada uno con su `icono` (enum cerrado mapeado acá — nunca
+ * string libre) y textos con límite. No depende de datos del tenant ⇒ SIEMPRE presente.
  */
 
-const PASOS = [
+/** Mapa del enum `ICONOS_PASO` (documento) al ícono Tabler (render). Enum cerrado ⇒ sin string libre. */
+const ICONOS: Record<string, ComponentType<IconProps>> = {
+  compra: IconShoppingBag,
+  descarga: IconDownload,
+  ticket: IconTicket,
+  regalo: IconGift,
+  escudo: IconShieldCheck,
+  rayo: IconBolt,
+  chispa: IconSparkles,
+  reloj: IconClock,
+};
+
+/** Los 3 pasos FIJOS de plataforma (fallback cuando el documento no define `pasos`). */
+const PASOS_FIJOS = [
   {
-    icon: IconShoppingBag,
+    icono: "compra",
     titulo: "Compra tu producto",
     desc: "Elige lo que quieres, paga de forma segura con tu tarjeta. No necesitas crear una cuenta.",
   },
   {
-    icon: IconDownload,
+    icono: "descarga",
     titulo: "Recibe tu descarga",
     desc: "Te llega al correo el enlace para descargar tu producto al instante, apenas se confirma el pago.",
   },
   {
-    icon: IconTicket,
+    icono: "ticket",
     titulo: "Entra al sorteo",
     desc: "Si el producto participa, tu compra suma tickets al sorteo de la tienda automáticamente.",
   },
-] as const;
+];
 
-export function ComoFunciona() {
+export function ComoFunciona({ props }: { props: ComoFuncionaProps }) {
+  const pasos =
+    props.pasos && props.pasos.length > 0 ? props.pasos : PASOS_FIJOS;
+
   return (
     <Box component="section" id="como-funciona" py={{ base: "xl", md: 48 }}>
       <Container size="lg" px={{ base: "md", lg: "xl" }}>
         <Stack gap="lg">
           <Title order={2} fz={{ base: 24, sm: 30 }} fw={700}>
-            Cómo funciona
+            {props.titulo}
           </Title>
 
-          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg">
-            {PASOS.map(({ icon: Icon, titulo, desc }, i) => (
-              <Card key={titulo} withBorder radius="md" padding="lg">
-                <Stack gap="sm">
-                  <Group gap="sm" wrap="nowrap">
-                    <ThemeIcon variant="light" size="xl" radius="md">
-                      <Icon className="size-6" stroke={1.75} />
-                    </ThemeIcon>
-                    <Text fz={28} fw={800} c="dimmed" className="tabular-nums">
-                      {i + 1}
+          <SimpleGrid
+            cols={{ base: 1, sm: pasos.length >= 3 ? 3 : pasos.length }}
+            spacing="lg"
+          >
+            {pasos.map((paso, i) => {
+              const Icono = ICONOS[paso.icono] ?? IconSparkles;
+              return (
+                <Card key={`${paso.titulo}-${i}`} withBorder radius="md" padding="lg">
+                  <Stack gap="sm">
+                    <Group gap="sm" wrap="nowrap">
+                      <ThemeIcon variant="light" size="xl" radius="md">
+                        <Icono className="size-6" stroke={1.75} />
+                      </ThemeIcon>
+                      <Text fz={28} fw={800} c="dimmed" className="tabular-nums">
+                        {i + 1}
+                      </Text>
+                    </Group>
+                    <Text fw={600}>{paso.titulo}</Text>
+                    <Text size="sm" c="dimmed">
+                      {paso.desc}
                     </Text>
-                  </Group>
-                  <Text fw={600}>{titulo}</Text>
-                  <Text size="sm" c="dimmed">
-                    {desc}
-                  </Text>
-                </Stack>
-              </Card>
-            ))}
+                  </Stack>
+                </Card>
+              );
+            })}
           </SimpleGrid>
         </Stack>
       </Container>

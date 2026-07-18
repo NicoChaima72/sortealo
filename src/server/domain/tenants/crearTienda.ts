@@ -1,5 +1,6 @@
 import { type PrismaClient } from "@prisma/client";
 
+import { documentoInicial } from "~/lib/pagebuilder/factory";
 import { type AccesoPanel } from "~/server/authPolicy";
 import { DomainError } from "~/server/domain/errors";
 import { type CrearTiendaInput } from "~/server/domain/tenants/schemas";
@@ -98,6 +99,24 @@ export async function crearTienda({
 
     await tx.tenantMembership.create({
       data: { userId: acceso.userId, tenantId: tenant.id }, // userId del acceso (I1)
+    });
+
+    // La Tienda nace con su Página de tienda (page builder, R5/ADR-0016): draft = published =
+    // documento inicial (una Tienda nueva no tiene branding aún ⇒ hero sin overrides). En la MISMA
+    // $transaction: sin Tienda sin Página. El storefront público lee `publishedJson` (F05), así que
+    // se publica el documento inicial de una vez (equivalente a la plantilla vacía actual).
+    const doc = documentoInicial({
+      heroTitulo: null,
+      heroSubtitulo: null,
+      heroImageUrl: null,
+    });
+    await tx.storefrontPage.create({
+      data: {
+        tenantId: tenant.id,
+        draftJson: doc,
+        publishedJson: doc,
+        publishedAt: new Date(),
+      },
     });
 
     return { id: tenant.id, slug: tenant.slug };
