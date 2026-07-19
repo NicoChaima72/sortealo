@@ -83,4 +83,34 @@ describe("pagebuilder/migrate — migrate-on-read + lectura tolerante", () => {
       "como_funciona",
     ]);
   });
+
+  // page.render.migrate.006 — el TemaPagina (`root.props`) SOBREVIVE la lectura tolerante (regresión
+  // del BUG modo:oscuro: antes `leerDocumentoParaRender` descartaba root.props a `{}` ⇒ modo/radio/
+  // tipografía nunca llegaban al render público/preview). Cierra esa puerta.
+  it("preserva el TemaPagina (root.props: modo/radio/tipografía) al leer para render", () => {
+    const base = docCompleto();
+    const conTema = {
+      ...base,
+      root: { props: { modo: "oscuro", radio: "completo", tipografia: "editorial" } },
+    };
+    const doc = leerDocumentoParaRender(conTema);
+    expect(doc.root.props.modo).toBe("oscuro");
+    expect(doc.root.props.radio).toBe("completo");
+    expect(doc.root.props.tipografia).toBe("editorial");
+    // Y las secciones siguen intactas (el rescate del tema no las afecta).
+    expect(doc.secciones.map((s) => s.tipo)).toContain("hero");
+  });
+
+  // page.render.migrate.007 — un `root.props` PODRIDO cae a defaults SIN tumbar las secciones
+  // (robustez I9: un tema inválido no debe perder el contenido de la página).
+  it("con root.props inválido cae a defaults del tema sin perder las secciones", () => {
+    const base = docCompleto();
+    const conTemaMalo = {
+      ...base,
+      root: { props: { modo: "neón", radio: 999 } }, // fuera del enum / tipo
+    };
+    const doc = leerDocumentoParaRender(conTemaMalo);
+    expect(doc.root.props.modo).toBe("claro"); // default del TemaSchema
+    expect(doc.secciones.map((s) => s.tipo)).toContain("hero"); // secciones NO se pierden
+  });
 });

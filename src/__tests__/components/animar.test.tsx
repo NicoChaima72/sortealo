@@ -4,7 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { Animar, useCountUp } from "~/components/storefront/animar";
+import { Animar, useCountUp, valorCountUp } from "~/components/storefront/animar";
 import {
   EstiloSeccionSchema,
   PRESETS_ENTRADA,
@@ -65,6 +65,27 @@ describe("animar — SSR-visible (I-D)", () => {
     const html = renderToStaticMarkup(createElement(Contador));
     expect(html).toContain("1234");
     expect(html.toLowerCase()).not.toContain("opacity:0");
+  });
+});
+
+describe("animar — useCountUp sigue al objetivo async (BUG meta_progreso/contador)", () => {
+  // anim.006 — el valor se DERIVA del objetivo (objetivo * progreso). En REPOSO (progreso=1, el
+  // estado inicial y el final del count-up) el valor mostrado = objetivo, para CUALQUIER objetivo.
+  // Regresión del bug: `useCountUp` sembraba `useState(objetivo)` con el 0 del 1er render (query
+  // async de `useSorteoActivo`) y no se recuperaba al resolver a N. Al derivar el valor del objetivo
+  // vigente, cuando el objetivo pasa de 0 → N en reposo, el valor mostrado pasa de 0 → N.
+  it("en reposo (progreso=1) el valor mostrado es el objetivo vigente (0 → N)", () => {
+    // Simula la resolución async del objetivo: la query pasa de 0 (cargando) a 2 (real).
+    expect(valorCountUp(0, 1)).toBe(0); // 1er render: objetivo aún 0
+    expect(valorCountUp(2, 1)).toBe(2); // resuelto: el valor SIGUE al objetivo (no queda en 0)
+    expect(valorCountUp(500, 1)).toBe(500);
+  });
+
+  // anim.007 — durante el count-up el valor interpola 0 → objetivo por el progreso (0 → 1)
+  it("durante el count-up el valor interpola con el progreso", () => {
+    expect(valorCountUp(500, 0)).toBe(0); // arranque del count-up
+    expect(valorCountUp(500, 0.5)).toBe(250); // mitad
+    expect(valorCountUp(500, 1)).toBe(500); // fin = valor final
   });
 });
 

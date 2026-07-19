@@ -82,16 +82,18 @@ referencia desde sus Validaciones. Marcado `[x]` solo por el feature-tester.
   SSR anónimo (count 0), `pagebuilder.puedoEditar` anónimo → `{puedeEditar:false}`; falta el flujo
   dueña-logueada-ve-banner con browser-verify.*
 
-- [ ] **pagebuilder.login-entry.001** — (F09b) En `autora.localhost:3001` y `prueba.localhost:3001`, el
+- [x] **pagebuilder.login-entry.001** ✅ 2026-07-19 (feature-tester browser-verify Playwright) — (F09b) En `autora.localhost:3001` y `prueba.localhost:3001`, el
   FOOTER muestra POST-HIDRATACIÓN un enlace discreto "Iniciar sesión" (chrome neutro, no el color del
   tenant); su `href` apunta al APEX `/login?callbackUrl=<URL actual de la tienda, encodeada>`. Con sesión
   (dev lvh.me tras `/api/dev/login`) el enlace cambia a "Mi panel" → apex `/admin`. El HTML SSR anónimo NO
   contiene ni "Iniciar sesión" ni "Mi panel" (idéntico con/sin cookie ⇒ cacheable, I5). En lvh.me/prod el
   ciclo completo (click → login apex → volver logueada a la tienda → ver banner F09) funciona; en localhost
   la cookie es host-only (el enlace apunta bien pero la sesión no cruza). (Plan F09b E2E — page-builder) —
-  *implementer verificó vía curl: "Iniciar sesión"/"Mi panel" AUSENTES del SSR anónimo (0/0, I5 ✓), footer
-  intacto; helpers de URL testeados (apex + callbackUrl encodeado). Falta el check visual del enlace + href
-  en el DOM con browser-verify.*
+  *VERIFICADO en el DOM post-hidratación: ANÓNIMO en `prueba.localhost:3001` ⇒ footer "Iniciar sesión" →
+  `http://localhost:3001/login?callbackUrl=http%3A%2F%2Fprueba.localhost%3A3001%2F` (apex + callbackUrl
+  encodeado de la tienda actual); LOGUEADO (dev-login) en `autora.localhost:3001` ⇒ footer "Mi panel" →
+  `http://localhost:3001/admin` (apex, NO el subdominio). SSR anónimo de ambos tenants: 0 "Iniciar
+  sesión"/0 "Mi panel" (curl, I5 cacheable ✓). El banner de dueño "Ir a mi panel" es feature aparte (F09).*
 
 - [ ] ⏭️ **pagebuilder.wildcard.001** — PENDIENTE (feature-tester 2026-07-18: requiere `NEXT_PUBLIC_PLATFORM_DOMAIN=lvh.me` + reinicio del server; no ejecutado para no alterar la config del usuario) — (dev con `NEXT_PUBLIC_PLATFORM_DOMAIN=lvh.me` + hosts) `GET
   lvh.me:3001/api/dev/login?slug=autora` setea la cookie `next-auth.session-token` con `Domain=.lvh.me`;

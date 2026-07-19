@@ -2,6 +2,7 @@ import {
   OverlayNodeSchema,
   PageDocumentSchema,
   SeccionNodeSchema,
+  TemaSchema,
   type OverlayNode,
   type PageDocument,
   type SeccionNode,
@@ -88,10 +89,21 @@ export function leerDocumentoParaRender(raw: unknown): PageDocument {
     if (res.success) overlays.push(res.data);
   }
 
+  // El TemaPagina (`root.props`, catálogo-v2 F02/D3) se RESCATA tolerante: si parsea contra
+  // `TemaSchema` se conserva (modo/radio/tipografía/ancho/fondo llegan al render); si está podrido,
+  // cae a `{}` (defaults) SIN tumbar las secciones. Antes se descartaba a `{}` incondicionalmente
+  // ⇒ TemaPagina era no-op en el render público/preview (bug modo:oscuro y compañía).
+  const rootCrudo =
+    obj.root && typeof obj.root === "object"
+      ? (obj.root as Record<string, unknown>).props
+      : undefined;
+  const temaParse = TemaSchema.safeParse(rootCrudo ?? {});
+  const rootProps = temaParse.success ? temaParse.data : {};
+
   // El resto del continente se valida entero; si algo del root está mal, documento vacío.
   const doc = PageDocumentSchema.safeParse({
     schemaVersion: 1,
-    root: { props: {} },
+    root: { props: rootProps },
     secciones,
     overlays,
   });

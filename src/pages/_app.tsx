@@ -3,10 +3,15 @@
 // Tailwind. No reordenar.
 import "~/styles/globals.css";
 import "@mantine/core/styles.css";
+import "@mantine/charts/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/spotlight/styles.css";
 
-import { MantineProvider, mergeThemeOverrides } from "@mantine/core";
+import {
+  ColorSchemeScript,
+  MantineProvider,
+  mergeThemeOverrides,
+} from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
 import { type Session } from "next-auth";
@@ -78,6 +83,18 @@ const MyApp: AppType<{
           <style dangerouslySetInnerHTML={{ __html: fontOverrideCss }} />
         )}
       </Head>
+      {/*
+       * Modo oscuro de la TIENDA (catálogo-v2 F02, BUG modo:oscuro): el `ColorSchemeScript` del
+       * `_document` fija `light` por defecto (admin/apex/tiendas claras). Acá, SOLO cuando el
+       * TemaPagina de la tienda pide `oscuro`, un 2º script FUERZA `data-mantine-color-scheme=dark`.
+       * Va al INICIO del <body> (no en <Head>): así corre DESPUÉS del script de `_document`
+       * (que `next/head` emite antes del Head estático), ganándole sin race. Es SSR-safe (viaja en
+       * el HTML, no depende del efecto cliente de `MantineProvider`) y NO toca `_document`
+       * (compartido). El apex/admin nunca setean `temaPagina` ⇒ jamás emiten este script ⇒ claro.
+       */}
+      {temaPagina?.modo === "oscuro" && (
+        <ColorSchemeScript forceColorScheme="dark" />
+      )}
       <SessionProvider session={session}>
         <MantineProvider
           theme={themeFinal}

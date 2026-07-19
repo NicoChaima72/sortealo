@@ -1,29 +1,43 @@
-# E2E run log — feature-tester
-modo: feature (slug=admin-marca)
-scope: marca.* (tasks/e2e-panel-organizadores.md) + Vitest suite completa
-server: http://localhost:3001 (dev, apex=localhost)
-inicio: 2026-07-18 (ver timestamps abajo)
+# feature-tester run log
+- modo: feature (slug=catalogo-v2-builder-visual)
+- scope: E2E NAVEGADOR interactivo (el tester previo cerró Vitest 483/484 + gate/CSP por curl)
+- server: http://localhost:3001 (dev, subdominios *.localhost:3001)
+- carril: Playwright MCP (libre; chrome-devtools ocupado por otra sesión)
+- inicio: 2026-07-19 03:50
 
-## Vitest
-- Suite completa: 406 passed | 1 skipped (407). Exit 0.
-- config/app: 2/2 · styles/theme: theme+estado green · getAccesoActual: 4/4 (colorPrimario value+null)
-- HALLAZGO: theme.ts fue SUPERSEDED por identidad «El Talonario» (cobalto #2b3fbf, Instrument/Bricolage/Plex, fondo celeste 'hundido') — NO la violeta «En Vivo»/Manrope que describe el prompt. Semántica teal/ámbar/ladrillo intacta. Los tests validan los valores talonario.
+## Setup
+- [03:50] dev-login GET autora.localhost/api/dev/login?slug=autora ⇒ {ok, nikochaima72@gmail.com} (cookie host-only)
+- [03:50] snapshot pre-run autora: draft==published hash d56d2b05 (742B), version 15, 3 revisiones
 
-## E2E (browser-verify)
-- [login público] /login carga: wordmark «Sort·éa·telo» (éa en plumón amarillo), split cobalto con arte de talonario (N°312 «TÚ» en amarillo), testimonial, CTA «Continuar con Google» en cobalto rgb(43,63,191)=#2b3fbf (NO azul default Mantine), tab title «Entrar · Sortéatelo», favicon /favicon.svg. marca.login.001 PASS (estructura+paleta). marca.meta.001 login-part PASS.
-- [FONT BUG — CRÍTICO] next/font NO emite CSS. HTML server-rendered: 0 @font-face, 0 media woff2, --font-instrument/display/mono VACÍAS, document.fonts.size=0. Los classNames __variable_* SÍ están en <html>. Causa: fonts referenciadas SOLO en src/pages/_document.tsx (línea 18) — pitfall pages-router: next/font en _document aplica className pero no colecta su <style> de @font-face. Cascada: --font-instrument vacía ⇒ --mantine-font-family inválida ⇒ TODA la app cae a Times New Roman serif. Afecta login Y panel. El gate npm run check no lo detecta (no renderiza). Riesgo #7 del prompt + riesgo (1) del implementer: MATERIALIZADO.
-- [panel /admin] dev-login autora OK. Chrome invertido: wordmark arriba, chip «Tienda de la Autora (piloto)» con swatch ROSA (colorPrimario tenant, D2), avatar con foto de sesión. Menú: «Nicolás Chaima / nikochaima72@gmail.com / Operador de plataforma» + Modo oscuro + Cerrar sesión. «Ver mi tienda» (header) abre http://autora.localhost:3001/ en pestaña nueva. marca.chrome.001 PASS.
-- [dark toggle] Modo oscuro conmuta a data-mantine-color-scheme=dark; navbar/main oscuros, wordmark/chip/nav/KPIs/badges legibles. Rama dark de light-dark() OK (riesgo señalado: RESUELTO). marca.spotlight.001 dark-half PASS.
-- [spotlight] Ctrl+K abre dialog «Buscar en el panel…» con 7 acciones (5 rutas + Operador + Ver mi tienda); click «Ventas» navegó a /admin/ventas. marca.spotlight.001 nav-half PASS.
-- [badges] /admin/ventas: Pagado=teal, Pendiente=ámbar, Comisión −$96 / Te queda $2.904. /admin/operador: Publicada=teal ×2, Suspender=rojo-ladrillo. Grep src/components/admin: 0 hex. marca.badges.001 PASS.
-- [pageheader] 6 páginas con PageHeader (h1+desc) DENTRO del contenido: Resumen, Productos, Ventas, Sorteo, Configuración, Operador. Header liviano (bannerHasH1=false en configuracion). marca.pageheader.001 desktop PASS. Mobile NO exercitado: ni chrome-devtools ni Playwright exponen tool de viewport/emulación (window.resizeTo no cambia innerWidth). Residual.
-- [meta] Tab titles «X · Sortéatelo» en login + las 6 páginas; favicon /favicon.svg (SVG cobalto). marca.meta.001 PASS.
-- [empty states] marca.empty.001 NO verificado en vivo: todas las superficies de autora tienen datos sembrados (ventas, participantes sorteo, tiendas operador, producto). prueba no tiene dueño ⇒ dev-login 404. Componente empty-state.tsx existe + frontend-reviewer APPROVE, pero no se pudo surfacear. Data-blocked.
-- [chrome.002] Operador-sin-tienda NO verificado: la cuenta autora es dueña Y Operador; dev-login solo crea sesión para dueños de tienda. Sin fixture de Operador sin membresía. Data-blocked.
-- [console] /admin sin errores ni warnings.
+## E2E (browser) — resultados
+- [PASS] F09 editor: /editor logueado ⇒ preview iframe del borrador (banner "Vista previa del borrador")
+- [PASS] F09/F10-1 agregar del catálogo: beneficios_grid (+ estadisticas, meta_progreso, compartir) render inmediato en preview
+- [PASS] F10-1 editar props (form Zod): título "Por qué elegirnos" + item ⇒ reflejado en preview
+- [PASS] F02/F10-1 estiloSeccion: fondo marca rgb(225,29,72) + texto blanco legible + espaciado xl + divisor onda (SVG 0 0 1200 120, fill=sección siguiente) + entrada subir; scrollX=0
+- [PASS] F09 reordenar ↑ y ↓ (panel + preview coinciden)
+- [PASS] F09 eliminar (throwaway espaciador ⇒ desaparece)
+- [PASS] F03 entrada on-scroll: below-fold armado opacity:0 + translateY(24px); al entrar ⇒ opacity:1/transform:none; CLS-safe; scrollX=0
+- [BLOCKED] F03 reduced-motion: Playwright MCP sin emulateMedia; chrome-devtools ocupado ⇒ no emulable en vivo (cubierto por Vitest anim.003/004)
+- [PASS] F05 estadisticas count-up: +1.200 / +340 / 100% (SSR=final)
+- [FAIL] F06 meta_progreso_sorteo: cabecera "0/500" (0%) en vez del real 2; "Faltan 498" sí correcto ⇒ BUG useCountUp async (animar.tsx:177)
+- [PASS] F06 compartir_sorteo: deeplink wa.me/?text con mensaje + URL tienda
+- [PASS] F06 sin PII: único email en DOM = contacto público hola@tienda-autora.cl (cero PII de participante)
+- [PASS] F09 publicar (diálogo confirm) ⇒ SSR público anónimo refleja beneficios/estadisticas/compartir + divisor onda; sin banner preview
+- [FAIL] F02/F10-2 TemaPagina modo:oscuro: tipografía(editorial)+radio(completo) aplican, pero modo oscuro NO (html sigue light) ⇒ BUG forceColorScheme (_app.tsx:86 vs _document.tsx:19)
+- [PASS] F10-2 aislamiento draft: tema editorial visible en preview, público NO cambia hasta publicar
+- [BLOCKED] F08/F10-3 subir imagen: crearUrlSubidaImagen 200 (presigned OK) pero PUT→R2 net::ERR_FAILED por CORS (bucket sortealo-dev-public sin ACAO para autora.localhost:3001)
+- [PASS] F10-3 metadata display: catálogo + paneles con títulos/descr humanos (no snake_case)
+- [PASS] F10-3 historial: V1–V4 con publishedBy (V4 = mi email)
+- [PASS] F09/F10-3 rollback: Restaurar V3 ⇒ draft a 4 secciones originales; re-publicar ⇒ público vuelve al original
+- [PASS] login-entry.001: anónimo(prueba) "Iniciar sesión"→apex /login?callbackUrl encodeado; logueado(autora) "Mi panel"→apex /admin; SSR anónimo 0/0 (I5)
+- [PASS] regresión visual: autora crimson + prueba teal, aislamiento OK, 4 secciones c/u, disclaimer visible, scrollX=0 (screenshots en tmp/)
 
-## Veredicto E2E
-- PASS (6): badges.001, chrome.001, login.001, meta.001, spotlight.001, pageheader.001 (desktop; mobile residual)
-- FAIL (1): paleta.001 — paleta cobalto OK pero TIPOGRAFÍA rota (Times New Roman, fonts no cargan). Defecto real en src/pages/_document.tsx (next/font solo en _document). No auto-retryable.
-- BLOCKED (2): empty.001 (data), chrome.002 (data)
-fin: corrida completa.
+## Restauración
+- [04:25] doc de autora restaurado BYTE-EXACTO: draft==published d56d2b05 (742B), version 15, revisiones [1,2,3], publishedAt original. Borradas las 2 revisiones de prueba (4,5).
+
+## Footer
+- Editor F09/F10 núcleo + F02 estilo + F03 entrada + F10-3 historial/rollback + login-entry: VERDE.
+- 2 BUGS reales: (1) meta_progreso count-up async ⇒ 0; (2) TemaPagina modo:oscuro no-op. Ambos en zona prohibida (src/*).
+- 2 BLOQUEOS de entorno: R2 CORS (upload) + reduced-motion no emulable (herramienta).
+- No testeado esta corrida: hero variantes (F05), 6 widgets F04 completos (solo beneficios), round-trip MCP directo (F07), chunk-weight motion.
+- autora doc: restaurado byte-idéntico al pre-run.

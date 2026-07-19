@@ -162,11 +162,22 @@ export function AnimarItem({
   );
 }
 
+/** Valor a pintar del count-up: DERIVADO del objetivo y el progreso ∈ [0,1] (1 = final). Puro. */
+export function valorCountUp(objetivo: number, progreso: number): number {
+  return Math.round(objetivo * progreso);
+}
+
 /**
  * Count-up de un entero al entrar al viewport (catálogo-v2 F03): IntersectionObserver + rAF, SIN
  * `motion`. **SSR = valor FINAL** (I-D: cacheable/accesible) — el count-up solo corre client-side si
  * el nodo aún no fue visto (bajo el fold). Con `prefers-reduced-motion` ⇒ valor final inmediato (I-B).
  * Devuelve el valor a pintar + el ref a adjuntar al elemento del número.
+ *
+ * El estado guardado es el `progreso` de la animación (∈ [0,1], default 1 = final), NO el valor: el
+ * valor se DERIVA (`objetivo * progreso`). Así, cuando el `objetivo` llega ASYNC de una query
+ * (`useSorteoActivo`: 0 → N), el valor mostrado SIGUE al objetivo en reposo (progreso=1) sin quedar
+ * clavado en el 0 del primer render — el bug de `meta_progreso_sorteo`/`contador_tickets`. El
+ * count-up, cuando corre, lleva `progreso` de 0 a 1; en reposo siempre pinta el valor final.
  */
 export function useCountUp<T extends HTMLElement = HTMLElement>(
   objetivo: number,
@@ -174,10 +185,12 @@ export function useCountUp<T extends HTMLElement = HTMLElement>(
 ) {
   const reduce = useReducedMotion();
   const ref = useRef<T>(null);
-  const [valor, setValor] = useState(objetivo); // SSR + default = valor final (I-D)
+  const [progreso, setProgreso] = useState(1); // reposo = valor final (SSR/default, I-D)
 
   useEffect(() => {
-    if (reduce) return; // reduced-motion ⇒ queda en el valor final (I-B)
+    if (reduce) return; // reduced-motion ⇒ progreso queda en 1 (valor final, I-B)
+    // objetivo aún no resuelto (query async): no armar el count-up; el efecto re-corre al llegar.
+    if (objetivo <= 0) return;
     const el = ref.current;
     if (!el || typeof window === "undefined") return;
     const rect = el.getBoundingClientRect();
@@ -189,13 +202,12 @@ export function useCountUp<T extends HTMLElement = HTMLElement>(
       (entradas, obs) => {
         if (!entradas[0]?.isIntersecting) return;
         obs.disconnect();
-        setValor(0);
+        setProgreso(0);
         const paso = (t: number) => {
           if (!inicio) inicio = t;
           const p = Math.min(1, (t - inicio) / duracionMs);
-          // easeOutCubic
-          const e = 1 - Math.pow(1 - p, 3);
-          setValor(Math.round(objetivo * e));
+          // easeOutCubic (progreso 0→1)
+          setProgreso(1 - Math.pow(1 - p, 3));
           if (p < 1) raf = requestAnimationFrame(paso);
         };
         raf = requestAnimationFrame(paso);
@@ -209,5 +221,5 @@ export function useCountUp<T extends HTMLElement = HTMLElement>(
     };
   }, [objetivo, duracionMs, reduce]);
 
-  return { valor, ref };
+  return { valor: valorCountUp(objetivo, progreso), ref };
 }
