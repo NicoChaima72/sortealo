@@ -14,6 +14,14 @@
 export interface ConfigPlataforma {
   /** Dominio raíz de la plataforma, sin protocolo ni puerto. Ej: `localhost` en dev (S1). */
   dominioRaiz: string;
+  /**
+   * Override de DEV (F09d, `~/config` `devTienda`): si está seteado, el host APEX PELADO
+   * (`localhost`, sin subdominio) resuelve como la Tienda de este slug EN VEZ DE la plataforma. Solo
+   * el borde de cableado (`configPlataformaDesdeEnv`) lo puebla, y SOLO en `NODE_ENV=development`
+   * (guard `devTiendaAplica`) — en prod queda `undefined` ⇒ el parser es idéntico a antes (inerte).
+   * NO afecta a los subdominios reales (`autora.localhost`), que siguen su camino normal.
+   */
+  devTiendaSlug?: string;
 }
 
 /**
@@ -51,7 +59,16 @@ export function parsearHost(
   const normalizado = host ? normalizarHost(host) : "";
   if (!normalizado) return null;
 
-  if (normalizado === dominioRaiz) return { zona: "plataforma" };
+  if (normalizado === dominioRaiz) {
+    // Override de DEV (F09d): el host apex PELADO se comporta como una Tienda concreta, para trabajar
+    // el storefront/editor con login real sobre un solo host (`~/config` `devTienda`). Es inerte en
+    // prod porque `devTiendaSlug` solo se puebla en development (ver `configPlataformaDesdeEnv`). NO
+    // toca los subdominios reales: `autora.localhost` no entra acá (no es === dominioRaiz), cae abajo.
+    if (config.devTiendaSlug) {
+      return { zona: "tenant", slug: config.devTiendaSlug };
+    }
+    return { zona: "plataforma" };
+  }
 
   const sufijo = `.${dominioRaiz}`;
   if (!normalizado.endsWith(sufijo)) return null;

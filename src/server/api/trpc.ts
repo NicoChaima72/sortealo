@@ -14,7 +14,7 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { env } from "~/env";
-import { getFinalSession } from "~/server/auth";
+import { getServerAuthSession } from "~/server/auth";
 import {
   type AccesoPanel,
   esOperador,
@@ -81,11 +81,10 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
 export const createTRPCContext = async (opts: CreateNextContextOptions) => {
   const { req, res } = opts;
 
-  // Sesión del servidor vía `getFinalSession` (F09c): respeta la impersonación de dev (configSession) —
-  // con el fake activo, TODO procedure ve la sesión sin cookies. En prod es el `getServerAuthSession`
-  // real (fake inerte). La AUTORIZACIÓN no se falsea: usa el `User` real, así los scopes por tenant
-  // (I1) y el gate del panel siguen operando.
-  const session = await getFinalSession({ req, res });
+  // Sesión del servidor (cookie NextAuth real). En dev con el override de subdominio (F09d) el
+  // storefront y el panel viven en UN solo host (`localhost`), así que la cookie host-only del login
+  // real de Google alcanza sin trucos — no hace falta simular sesión.
+  const session = await getServerAuthSession({ req, res });
 
   // NO hay service Flow global en el contexto: con BYO-Flow (ADR-0006) cada
   // operación de pago instancia el Flow del tenant dueño vía

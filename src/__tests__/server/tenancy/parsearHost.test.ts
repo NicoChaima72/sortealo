@@ -53,6 +53,44 @@ describe("parsearHost — zona plataforma (sin tenant)", () => {
   });
 });
 
+describe("parsearHost — override de subdominio de DEV (F09d)", () => {
+  // Config de dev CON el override prendido: el apex pelado impersona la Tienda `autora`.
+  const DEV_OVERRIDE = { dominioRaiz: "localhost", devTiendaSlug: "autora" };
+
+  it("el apex pelado (`localhost`) resuelve como la Tienda del override, no como plataforma", () => {
+    expect(parsearHost("localhost:3001", DEV_OVERRIDE)).toEqual({
+      zona: "tenant",
+      slug: "autora",
+    });
+    expect(parsearHost("localhost", DEV_OVERRIDE)).toEqual({
+      zona: "tenant",
+      slug: "autora",
+    });
+  });
+
+  it("un subdominio REAL sigue su camino normal — el override NO lo toca", () => {
+    // `autora.localhost` no es === dominioRaiz ⇒ ni entra al branch del override; resuelve por label.
+    expect(parsearHost("autora.localhost:3001", DEV_OVERRIDE)).toEqual({
+      zona: "tenant",
+      slug: "autora",
+    });
+    // Y otra Tienda por subdominio real sigue siendo ELLA, no la del override (aislamiento intacto).
+    expect(parsearHost("prueba.localhost:3001", DEV_OVERRIDE)).toEqual({
+      zona: "tenant",
+      slug: "prueba",
+    });
+  });
+
+  it("sin `devTiendaSlug` (prod / override apagado) el apex pelado es plataforma — inerte", () => {
+    expect(parsearHost("localhost:3001", { dominioRaiz: "localhost" })).toEqual({
+      zona: "plataforma",
+    });
+    expect(parsearHost("plataforma.test", { dominioRaiz: "plataforma.test" })).toEqual({
+      zona: "plataforma",
+    });
+  });
+});
+
 describe("parsearHost — fail-closed (no resuelve tenant)", () => {
   it("no resuelve un subdominio anidado (`x.y.dominio`)", () => {
     expect(parsearHost("x.y.plataforma.test", PLATAFORMA)).toBeNull();

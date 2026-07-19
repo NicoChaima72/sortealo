@@ -1,3 +1,4 @@
+import { devTienda, devTiendaAplica } from "~/config";
 import { env } from "~/env";
 import { type ConfigPlataforma } from "~/server/tenancy/parsearHost";
 
@@ -31,12 +32,32 @@ export const DOMINIO_RAIZ_DEV = "localhost";
 export function resolverConfigPlataforma({
   dominioPlataforma,
   nodeEnv,
+  devTiendaSlug,
 }: {
   dominioPlataforma: string | undefined;
   nodeEnv: string | undefined;
+  /**
+   * Override de DEV (F09d): slug de la Tienda que impersona el apex pelado (o `undefined` para no
+   * overridear). Entra INYECTADO (no lo lee de `~/config` acá) para testear el threading — y la
+   * inertidad en prod — sin manosear `process.env`. `configPlataformaDesdeEnv` lo cablea con el guard.
+   */
+  devTiendaSlug?: string;
 }): ConfigPlataforma {
+  const dominioRaiz = resolverDominioRaiz({ dominioPlataforma, nodeEnv });
+  // Se ADJUNTA solo si viene: sin él, `ConfigPlataforma` queda idéntica a antes (parser inerte).
+  return devTiendaSlug ? { dominioRaiz, devTiendaSlug } : { dominioRaiz };
+}
+
+/** Decide el dominio raíz (apex): configurado > `localhost` en dev > throw en prod (I1/ADR-0007). */
+function resolverDominioRaiz({
+  dominioPlataforma,
+  nodeEnv,
+}: {
+  dominioPlataforma: string | undefined;
+  nodeEnv: string | undefined;
+}): string {
   const configurado = normalizarDominio(dominioPlataforma);
-  if (configurado) return { dominioRaiz: configurado };
+  if (configurado) return configurado;
 
   if (nodeEnv === "production") {
     throw new Error(
@@ -45,7 +66,7 @@ export function resolverConfigPlataforma({
     );
   }
 
-  return { dominioRaiz: DOMINIO_RAIZ_DEV };
+  return DOMINIO_RAIZ_DEV;
 }
 
 /** `https://plataforma.test:3000/` ⇒ `plataforma.test`. Vacío ⇒ `null`. */
@@ -72,8 +93,19 @@ function normalizarDominio(valor: string | undefined): string | null {
  * secreto — es literalmente lo que se ve en la barra de direcciones.
  */
 export function configPlataformaDesdeEnv(): ConfigPlataforma {
+  // Override de DEV (F09d): el apex pelado impersona `devTienda.slug` SOLO en development (guard). Es
+  // el ÚNICO punto de cableado del override — desde acá fluye a TODOS los consumidores de la tenancy
+  // (middleware, contexto tRPC, `getServerSideProps` del storefront) por igual, sin repetir la lógica.
+  const devTiendaSlug = devTiendaAplica({
+    enabled: devTienda.enabled,
+    nodeEnv: env.NODE_ENV,
+  })
+    ? devTienda.slug
+    : undefined;
+
   return resolverConfigPlataforma({
     dominioPlataforma: env.NEXT_PUBLIC_PLATFORM_DOMAIN,
     nodeEnv: env.NODE_ENV,
+    devTiendaSlug,
   });
 }

@@ -46,4 +46,27 @@ describe("resolverConfigPlataforma", () => {
       }),
     ).toEqual({ dominioRaiz: "plataforma.test" });
   });
+
+  // Override de subdominio de DEV (F09d): el borde lo INYECTA; este núcleo solo lo adjunta al config.
+  it("adjunta `devTiendaSlug` al config cuando se inyecta (override de dev)", () => {
+    expect(
+      resolverConfigPlataforma({
+        dominioPlataforma: undefined,
+        nodeEnv: "development",
+        devTiendaSlug: "autora",
+      }),
+    ).toEqual({ dominioRaiz: "localhost", devTiendaSlug: "autora" });
+  });
+
+  it("sin `devTiendaSlug` el config queda idéntico a antes (parser inerte)", () => {
+    // Es como quedará SIEMPRE en prod: `configPlataformaDesdeEnv` pasa `undefined` fuera de development
+    // (guard `devTiendaAplica`), así que la forma del config no cambia y el override no existe.
+    expect(
+      resolverConfigPlataforma({
+        dominioPlataforma: "sorteatelo.cl",
+        nodeEnv: "production",
+        devTiendaSlug: undefined,
+      }),
+    ).toEqual({ dominioRaiz: "sorteatelo.cl" });
+  });
 });

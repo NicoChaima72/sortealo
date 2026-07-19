@@ -26,8 +26,9 @@ import { api } from "~/utils/api";
  * `oculto` ⇒ el HTML anónimo es idéntico con/sin cookie ⇒ CDN-cacheable (I5/R5). La query de autz
  * corre SOLO cuando hay sesión (`enabled`), para no pegarle a la DB por el 99% de visitantes anónimos.
  *
- * Con `configSession` (F09c) activo esto aparece SOLO sin login: el interceptor de `/api/auth/session`
- * hace que `useSession()` vea al usuario, y `puedoEditar` (contexto tRPC con la sesión fake) resuelve.
+ * En dev con el override de subdominio (F09d, `~/config` `devTienda`) el storefront corre sobre el
+ * MISMO host que el login (`localhost`): tras iniciar sesión con Google real, `useSession()` ve al
+ * usuario por la cookie host-only y `puedoEditar` resuelve — sin simular la sesión.
  */
 export function AccesoSesion({ slug }: { slug: string }) {
   const [montado, setMontado] = useState(false);

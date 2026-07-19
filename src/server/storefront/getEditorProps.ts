@@ -1,7 +1,7 @@
 import { type GetServerSidePropsContext } from "next";
 
 import { env } from "~/env";
-import { getFinalSession } from "~/server/auth";
+import { getServerAuthSession } from "~/server/auth";
 import { esOperador, parsearAllowlist } from "~/server/authPolicy";
 import { db } from "~/server/db";
 import { puedoEditar } from "~/server/domain/pagebuilder/puedoEditar";
@@ -29,9 +29,9 @@ export async function getPropsEditor(
   const branding = await resolverBrandingSSR(ctx);
   if (branding.zona !== "storefront") return { notFound: true };
 
-  // 2. Sesión requerida (cookie wildcard, o impersonación de dev vía configSession/F09c ⇒ el editor
-  //    responde 200 sin cookie en dev). Sin sesión ⇒ 404 neutral (no "login").
-  const session = await getFinalSession(ctx);
+  // 2. Sesión requerida (cookie de sesión real; en dev con el override de subdominio F09d es la cookie
+  //    host-only del login de Google sobre `localhost`). Sin sesión ⇒ 404 neutral (no "login").
+  const session = await getServerAuthSession(ctx);
   if (!session?.user) return { notFound: true };
 
   // 3. Resolver el tenantId por slug (server-side, I1) y autorizar por membresía/Operador.
