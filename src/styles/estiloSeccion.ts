@@ -54,7 +54,13 @@ function esquemaACss(esquema: EsquemaFondo): CSSProperties {
     case "superficie":
       return { background: "var(--mantine-color-body)", color: "var(--mantine-color-text)" };
     case "superficie_alt":
-      return { background: "var(--mantine-color-gray-1)", color: "var(--mantine-color-text)" };
+      // Banda alterna dark-aware (mismo criterio light-dark() que `superficie` vía --mantine-color-body):
+      // clara ⇒ gray-1, oscura ⇒ dark-6. Antes era gray-1 fijo y en modo oscuro aparecía una banda
+      // clara que rompía la página (réplica landing_idol, 2026-07-24).
+      return {
+        background: "light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))",
+        color: "var(--mantine-color-text)",
+      };
     case "marca_suave":
       return { background: "var(--mantine-primary-color-0)", color: "var(--mantine-color-text)" };
     case "marca":
@@ -78,7 +84,7 @@ export function colorSolidoDeEsquema(esquema: EsquemaFondo): string {
     case "superficie":
       return "var(--mantine-color-body)";
     case "superficie_alt":
-      return "var(--mantine-color-gray-1)";
+      return "light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))";
     case "marca_suave":
       return "var(--mantine-primary-color-0)";
     case "marca":
