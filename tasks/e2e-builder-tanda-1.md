@@ -118,3 +118,16 @@ skill `browser-verify`. Cada check tiene un ID que el plan referencia desde sus 
   > (5) sección Sorteo con fondo BICOLOR púrpura→dorado (diagonal, suave);
   > (6) fondo de página púrpura profundo en modo oscuro; sin scroll-x en desktop y mobile.
   > Correr en `prueba.localhost:3001` (dev :3001 única instancia). Comparación pixel PENDIENTE (browser).
+  >
+  > **[feature-tester 2026-07-24 · VISUAL FINAL post-F13, carril chrome-devtools]** Comparación lado a lado
+  > EJECUTADA (`prueba.localhost:3001` vs `landing_idol (1).html`). Los **6 checkpoints PASAN en vivo**:
+  > (1) ticker dorado 7 msgs SOBRE el nav ✓; (2) nav El libro/Sorteo/Autora/Bases con scroll a
+  > `#beneficios`/`#sorteo`/`#autora`/`#bases` ✓; (3) hero a pantalla, "enriquecer" DORADO (tituloAcento
+  > marca) + "$3.000 CLP" destacado dorado + 2º CTA enlace + sin trust badges ✓; (4) fila de stats tras el
+  > hero REMOVIDA (F13 fix#8) — beneficios sigue al hero ✓; (5) sorteo BICOLOR púrpura→dorado con texto
+  > blanco LEGIBLE sobre la zona púrpura (colorA sólido a 60%, dorado al borde) ✓; (6) fondo púrpura
+  > profundo modo oscuro, sin scroll-x ✓. **Fix tipográfico F13 CONFIRMADO por computed font**: `h1`
+  > font-family = `__Bebas_Neue_d65ff6` y `--font-heading` = Bebas Neue (antes Fraunces). Fidelidad ~88%.
+  > Diferencia ACCIONABLE restante: hero `altoMin:pantalla` deja ~450px de púrpura vacío (mockup tiene hero
+  > compacto). Resto = guardrails de plataforma (superficies grey vs púrpura, iconos línea vs emoji, sorteo
+  > reorganizado). Ver Bitácora del plan para el detalle completo.
