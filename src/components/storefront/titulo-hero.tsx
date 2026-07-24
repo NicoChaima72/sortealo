@@ -24,6 +24,9 @@ function estiloAcentoCss(estilo: EstiloAcento): CSSProperties {
   switch (estilo) {
     case "acento":
       return { color: "var(--mantine-color-acento-filled, var(--mantine-primary-color-filled))" };
+    case "marca":
+      // Color del PRIMARIO del tenant (F13): la palabra clave en el color de marca (p.ej. marca dorada).
+      return { color: "var(--mantine-primary-color-filled)" };
     case "resaltado":
       // Destacador como background-image del PROPIO span (banda inferior). `box-decoration-break: clone`
       // ⇒ el resaltado envuelve bien si la palabra parte en dos líneas. Nunca una capa aparte con z-index.

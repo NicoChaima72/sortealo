@@ -52,6 +52,21 @@ describe("hero.schema — campos puente parsean con defaults que conservan el lo
     expect(heroProps.safeParse({ destacado: { texto: "x".repeat(25) } }).success).toBe(false);
     expect(heroProps.safeParse({ destacado: { texto: "$3.000", nota: "por ticket" } }).success).toBe(true);
   });
+
+  // hero.schema.003 (F13) — `eyebrow` es texto plano opcional ≤80; ausente = no-op (docs viejos igual).
+  it("eyebrow opcional ≤80 parsea; >80 rechaza; ausente ⇒ undefined (no-op)", () => {
+    expect(heroProps.parse({}).eyebrow).toBeUndefined();
+    expect(heroProps.safeParse({ eyebrow: "Bernardita Alvarado Coddou · Libro Digital" }).success).toBe(true);
+    expect(heroProps.safeParse({ eyebrow: "x".repeat(81) }).success).toBe(false);
+    expect(heroProps.safeParse({ eyebrow: "" }).success).toBe(false); // min 1
+  });
+
+  // hero.schema.004 (F13) — el estilo `marca` del tituloAcento parsea (aditivo); los previos siguen.
+  it("tituloAcento admite el estilo nuevo 'marca' sin romper los previos", () => {
+    expect(heroProps.safeParse({ tituloAcento: { palabra: "X", estilo: "marca" } }).success).toBe(true);
+    expect(heroProps.safeParse({ tituloAcento: { palabra: "X", estilo: "acento" } }).success).toBe(true);
+    expect(heroProps.safeParse({ tituloAcento: { palabra: "X", estilo: "gradiente" } }).success).toBe(true);
+  });
 });
 
 describe("hero.acento — match seguro por SUBSTRING, sin HTML del tenant", () => {
@@ -82,6 +97,21 @@ describe("hero.acento — match seguro por SUBSTRING, sin HTML del tenant", () =
     expect(html).toContain("tu vida");
     expect(html).toContain("--mantine-color-acento-filled"); // token de la escala acento
     expect(html).toContain("--mantine-primary-color-filled"); // fallback a marca (I-T2)
+    expect(tieneHex(html)).toBe(false);
+  });
+
+  // hero.acento.001c (F13) — estilo `marca`: la palabra en el color del PRIMARIO del tenant (no acento).
+  it("estilo marca envuelve la palabra con el token del primario (cero hex)", () => {
+    const html = render(
+      createElement(TituloHero, {
+        titulo: "¿Cómo enriquecer a tu idol?",
+        acento: { palabra: "enriquecer", estilo: "marca" },
+        efecto: "ninguno",
+      }),
+    );
+    expect(html).toContain("enriquecer");
+    expect(html).toContain("--mantine-primary-color-filled"); // color de MARCA
+    expect(html).not.toContain("--mantine-color-acento-filled"); // NO usa el token de acento
     expect(tieneHex(html)).toBe(false);
   });
 

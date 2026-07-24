@@ -279,6 +279,35 @@ describe("estiloSeccion — fondo bicolor (builder-tanda-1 F02/D3)", () => {
       }).color,
     ).toBe("var(--mantine-color-white)");
   });
+
+  // bicolor.005 (F13/fidelidad) — la mezcla `suave` SESGA el degradado hacia colorA (sólido hasta 60%)
+  // ⇒ el contenido centrado (≈50%) cae sobre colorA, cuyo texto emparejado es legible por construcción
+  // (dif #6: antes un heading blanco caía sobre la mitad clara de colorB). La `dura` sigue en 50/50.
+  it("suave sesga el degradado hacia colorA (sólido hasta 60%) para legibilidad por construcción", () => {
+    const suave = fondoSeccionACss({
+      tipo: "bicolor",
+      colorA: "acento_profundo",
+      colorB: "marca",
+      direccion: "diagonal",
+      mezcla: "suave",
+    }).background as string;
+    // colorA se mantiene sólido MÁS ALLÁ del centro (60%) antes de transicionar a colorB (borde 100%).
+    expect(suave).toContain("60%");
+    const iA = suave.indexOf("acento-8"); // token de colorA (acento_profundo, con fallback)
+    const iB = suave.indexOf("primary-color-filled"); // token de colorB (marca)
+    expect(iA).toBeGreaterThanOrEqual(0);
+    expect(iB).toBeGreaterThan(iA); // colorA aparece ANTES (domina el arranque + el centro)
+    // dura NO se sesga: mantiene el corte 50/50 deliberado
+    const dura = fondoSeccionACss({
+      tipo: "bicolor",
+      colorA: "acento_profundo",
+      colorB: "marca",
+      direccion: "diagonal",
+      mezcla: "dura",
+    }).background as string;
+    expect(dura).toContain("50%");
+    expect(dura).not.toContain("60%");
+  });
 });
 
 describe("estiloSeccion — anchoFondo (builder-tanda-1 F02/D4)", () => {

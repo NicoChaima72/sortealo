@@ -71,11 +71,14 @@ describe("aviso_barra v2 — migrate-on-read v1→v2 (I-T3, lossless)", () => {
 });
 
 describe("aviso_barra v2 — schema estricto (F04)", () => {
-  // aviso.schema.001 — mensajes 1–5 con límite de chars; modo/esquema de enum cerrado; defaults look v1.
-  it("mensajes 1–5 y enums cerrados; defaults = estatico/tema/false", () => {
+  // aviso.schema.001 — mensajes 1–10 (cap subido de 5 a 10 en F13); modo/esquema de enum cerrado; defaults.
+  it("mensajes 1–10 y enums cerrados; defaults = estatico/tema/bajo_nav/false", () => {
     expect(avisoBarraProps.safeParse({ mensajes: ["uno"] }).success).toBe(true);
     expect(avisoBarraProps.safeParse({ mensajes: [] }).success).toBe(false); // min 1
-    expect(avisoBarraProps.safeParse({ mensajes: ["a", "b", "c", "d", "e", "f"] }).success).toBe(false); // max 5
+    // F13 — el cap subió de 5 a 10 (aditivo): 6 y 10 ahora pasan; 11 rechaza.
+    expect(avisoBarraProps.safeParse({ mensajes: ["a", "b", "c", "d", "e", "f"] }).success).toBe(true); // 6 ⇒ OK (antes fallaba)
+    expect(avisoBarraProps.safeParse({ mensajes: Array.from({ length: 10 }, (_, i) => `m${i}`) }).success).toBe(true); // 10 ⇒ OK
+    expect(avisoBarraProps.safeParse({ mensajes: Array.from({ length: 11 }, (_, i) => `m${i}`) }).success).toBe(false); // 11 ⇒ rechazo
     // modo/esquema fuera del enum ⇒ rechazo
     expect(avisoBarraProps.safeParse({ mensajes: ["x"], modo: "girar" }).success).toBe(false);
     expect(avisoBarraProps.safeParse({ mensajes: ["x"], esquema: "neon" }).success).toBe(false);
@@ -83,10 +86,18 @@ describe("aviso_barra v2 — schema estricto (F04)", () => {
     const p = avisoBarraProps.parse({ mensajes: ["Novedad"] });
     expect(p.modo).toBe("estatico");
     expect(p.esquema).toBe("tema");
+    expect(p.posicion).toBe("bajo_nav"); // F13 — default no-op (la cinta queda BAJO el nav como antes)
     expect(p.mostrarCountdown).toBe(false);
     expect(p.descartable).toBe(false);
     // el set de modos es el declarado
     expect([...MODOS_AVISO_BARRA]).toEqual(["estatico", "rotacion", "marquee"]);
+  });
+
+  // aviso.schema.003 (F13) — `posicion` es un enum cerrado sobre-nav/bajo-nav; fuera del enum ⇒ rechazo.
+  it("posicion sobre_nav/bajo_nav parsea; fuera del enum ⇒ rechazo", () => {
+    expect(avisoBarraProps.safeParse({ mensajes: ["x"], posicion: "sobre_nav" }).success).toBe(true);
+    expect(avisoBarraProps.safeParse({ mensajes: ["x"], posicion: "bajo_nav" }).success).toBe(true);
+    expect(avisoBarraProps.safeParse({ mensajes: ["x"], posicion: "flotante" }).success).toBe(false);
   });
 
   // aviso.schema.002 — campo extra / HTML / shape v1 ⇒ rechazo .strict (nunca HTML del tenant, I3).

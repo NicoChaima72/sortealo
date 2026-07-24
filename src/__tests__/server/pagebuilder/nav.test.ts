@@ -78,6 +78,25 @@ describe("nav — anclasSemanticas (F05/D8)", () => {
     ]);
     expect(anclas).toEqual({ sv: "sorteo" });
   });
+
+  // nav.anclas.003 (F13) — beneficios_grid y texto_rico ganan ancla semántica (antes caían a `#<uuid>`):
+  // el nav "El libro"/"Bases" del mockup ahora apunta a un slug estable en vez del id del nodo.
+  it("beneficios_grid → #beneficios y texto_rico → #bases (anclas semánticas nuevas)", () => {
+    const anclas = anclasSemanticas([
+      sec("beneficios_grid", "bg"),
+      sec("texto_rico", "tr"),
+    ]);
+    expect(anclas).toEqual({ bg: "beneficios", tr: "bases" });
+    // y el nav derivado usa esos slugs (no el id del nodo) para la 1ª sección del tipo
+    const nav = derivarNav([
+      sec("beneficios_grid", "bg", { incluir: true, etiqueta: "El libro" }),
+      sec("texto_rico", "tr", { incluir: true, etiqueta: "Bases" }),
+    ]);
+    expect(nav).toEqual([
+      { label: "El libro", href: "#beneficios" },
+      { label: "Bases", href: "#bases" },
+    ]);
+  });
 });
 
 describe("nav — envelope schema (F05/D8)", () => {

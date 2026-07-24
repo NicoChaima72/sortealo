@@ -254,10 +254,14 @@ const DIRECCION_BICOLOR: Record<string, string> = {
 };
 
 /**
- * CSS de un fondo BICOLOR (builder-tanda-1 F02/D3). Dos TONOS curados (`colorSolidoDeEsquema` da su
- * token, con degradación acento→marca por fallback CSS, I-T2). `dura` = corte al 50% (dos bandas);
- * `suave` = degradado continuo. El texto se empareja con `colorA` (tono dominante donde se asienta el
- * contenido) — legibilidad por construcción (D3). Cero hex inline (I-A).
+ * CSS de un fondo BICOLOR (builder-tanda-1 F02/D3; contraste F13/fidelidad). Dos TONOS curados
+ * (`colorSolidoDeEsquema` da su token, con degradación acento→marca por fallback CSS, I-T2). `dura` =
+ * corte al 50% (dos bandas deliberadas). `suave` = degradado SESGADO hacia `colorA`: colorA se mantiene
+ * sólido hasta el 60% y solo entonces transiciona a colorB (que queda como acento hacia el borde). El
+ * texto se empareja con `colorA` (`esquemaACss(colorA)`) ⇒ el contenido —típicamente centrado, sobre el
+ * 50%— cae SIEMPRE sobre colorA, cuyo color de texto emparejado es legible: legibilidad POR CONSTRUCCIÓN
+ * (I-A). Antes el degradado era 0→100 simétrico y un heading blanco (emparejado a colorA oscuro) caía
+ * sobre la mitad colorB clara con contraste débil (dif #6 del feature-tester). Cero hex inline (I-A).
  */
 function bicolorACss(fondo: Extract<FondoSeccion, { tipo: "bicolor" }>): CSSProperties {
   const a = colorSolidoDeEsquema(fondo.colorA);
@@ -266,7 +270,7 @@ function bicolorACss(fondo: Extract<FondoSeccion, { tipo: "bicolor" }>): CSSProp
   const background =
     fondo.mezcla === "dura"
       ? `linear-gradient(${angulo}, ${a} 0%, ${a} 50%, ${b} 50%, ${b} 100%)`
-      : `linear-gradient(${angulo}, ${a}, ${b})`;
+      : `linear-gradient(${angulo}, ${a} 0%, ${a} 60%, ${b} 100%)`;
   // `TonoFondo ⊆ EsquemaFondo` ⇒ el color de texto emparejado sale de `esquemaACss(colorA)`.
   const color = esquemaACss(fondo.colorA).color;
   return { background, ...(color ? { color } : {}) };

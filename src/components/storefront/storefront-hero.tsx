@@ -100,6 +100,36 @@ function EyebrowSorteo({ mostrar }: { mostrar: boolean }) {
   );
 }
 
+/**
+ * Eyebrow de texto (F13/fidelidad): kicker pequeño en MAYÚSCULAS en el color de MARCA del tenant (cero
+ * hex, token del primario, I-A), con letter-spacing. Texto plano (schema, nunca HTML del tenant, I3).
+ * El mockup lo usa como firma de autoría ("Bernardita Alvarado Coddou · Libro Digital").
+ */
+function EyebrowTexto({ texto }: { texto: string }) {
+  return (
+    <Text
+      fw={700}
+      size="sm"
+      tt="uppercase"
+      style={{
+        letterSpacing: "0.12em",
+        color: "var(--mantine-primary-color-filled)",
+      }}
+    >
+      {texto}
+    </Text>
+  );
+}
+
+/**
+ * Kicker del hero: si el documento trae `eyebrow` explícito, gana (texto de marca); si no, cae al badge
+ * "Sorteo abierto" server-side (comportamiento previo, no-op cuando no hay eyebrow — I-H).
+ */
+function HeroEyebrow({ props }: { props: HeroProps }) {
+  if (props.eyebrow) return <EyebrowTexto texto={props.eyebrow} />;
+  return <EyebrowSorteo mostrar={props.mostrarBadgeSorteo} />;
+}
+
 function Ctas({ props, oscuro }: { props: HeroProps; oscuro?: boolean }) {
   const ctaTexto = props.ctaTexto ?? "Ver el catálogo";
   return (
@@ -148,8 +178,9 @@ function Ctas({ props, oscuro }: { props: HeroProps; oscuro?: boolean }) {
 
 /**
  * Cifra/etiqueta destacada del hero (el "$3.000 + nota", F03/D6). Texto plano con límite (schema); la
- * cifra usa el token de la escala acento con FALLBACK a marca (I-T2) y `tabular-nums` (design.md §5,
- * cifras monetarias alineadas). Cero hex inline (I-A).
+ * cifra usa el token del PRIMARIO del tenant (F13 — el precio es un momento de marca; antes usaba el
+ * token de acento, que con una paleta invertida —acento oscuro sobre fondo oscuro— quedaba de bajo
+ * contraste) y `tabular-nums` (design.md §5, cifras monetarias alineadas). Cero hex inline (I-A).
  */
 function Destacado({
   destacado,
@@ -167,9 +198,7 @@ function Destacado({
         c={oscuro ? "white" : undefined}
         style={{
           fontVariantNumeric: "tabular-nums",
-          ...(oscuro
-            ? {}
-            : { color: "var(--mantine-color-acento-filled, var(--mantine-primary-color-filled))" }),
+          ...(oscuro ? {} : { color: "var(--mantine-primary-color-filled)" }),
         }}
       >
         {destacado.texto}
@@ -249,7 +278,7 @@ function HeroSplit({
     <SeccionWrapper id={nodo.id} estilo={nodo.estilo} divisorColor={divisorColor}>
       <SimpleGrid cols={{ base: 1, md: 2 }} spacing={{ base: "xl", md: 48 }} style={{ alignItems: "center" }}>
         <Stack gap="lg">
-          <EyebrowSorteo mostrar={props.mostrarBadgeSorteo} />
+          <HeroEyebrow props={props} />
           <Title order={1} fz={{ base: 32, sm: 44 }} lh={1.1} fw={800}>
             <TituloHero titulo={titulo} acento={props.tituloAcento} efecto={props.efectoTitulo} />
           </Title>
@@ -286,7 +315,7 @@ function HeroCentrado({
   return (
     <SeccionWrapper id={nodo.id} estilo={nodo.estilo} divisorColor={divisorColor}>
       <Stack gap="lg" align="center" ta="center" maw={720} mx="auto">
-        {!minimal && <EyebrowSorteo mostrar={props.mostrarBadgeSorteo} />}
+        {!minimal && <HeroEyebrow props={props} />}
         <Title order={1} fz={{ base: minimal ? 28 : 34, sm: minimal ? 40 : 48 }} lh={1.1} fw={800}>
           <TituloHero titulo={titulo} acento={props.tituloAcento} efecto={props.efectoTitulo} />
         </Title>
@@ -329,7 +358,7 @@ function HeroImagenFondo({
   return (
     <SeccionWrapper id={nodo.id} estilo={estilo} divisorColor={divisorColor}>
       <Stack gap="lg" align="center" ta="center" maw={760} mx="auto" style={{ paddingBlock: 24 }}>
-        <EyebrowSorteo mostrar={props.mostrarBadgeSorteo} />
+        <HeroEyebrow props={props} />
         <Title order={1} fz={{ base: 34, sm: 52 }} lh={1.1} fw={800} c="inherit">
           <TituloHero titulo={titulo} acento={props.tituloAcento} efecto={props.efectoTitulo} />
         </Title>

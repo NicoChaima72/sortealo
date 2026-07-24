@@ -333,11 +333,14 @@ export const VARIANTES_HERO = ["split", "centrado", "imagen_fondo", "minimal"] a
 export type VarianteHero = (typeof VARIANTES_HERO)[number];
 
 /**
- * Estilo del `tituloAcento` (builder-tanda-1 F03/D5): `acento` = color de la escala acento; `resaltado`
- * = destacador como background del PROPIO span (nunca capa aparte con z-index — lección en memoria del
- * proyecto); `gradiente` = texto con background-clip:text (tokens marca/acento). Enum cerrado.
+ * Estilo del `tituloAcento` (builder-tanda-1 F03/D5): `acento` = color de la escala acento; `marca` =
+ * color del primario del tenant (F13 — cuando la palabra clave debe ir en el color de MARCA, no el de
+ * acento; p.ej. una paleta con marca dorada); `resaltado` = destacador como background del PROPIO span
+ * (nunca capa aparte con z-index — lección en memoria del proyecto); `gradiente` = texto con
+ * background-clip:text (tokens marca/acento). Enum cerrado. `marca` es ADITIVO (docs viejos sin él
+ * parsean; ningún valor previo se rompe).
  */
-export const ESTILOS_TITULO_ACENTO = ["acento", "resaltado", "gradiente"] as const;
+export const ESTILOS_TITULO_ACENTO = ["acento", "marca", "resaltado", "gradiente"] as const;
 
 /** Estilo del CTA secundario del hero (F03/D6): botón (default) o enlace de texto. */
 export const ESTILOS_CTA_SECUNDARIO = ["boton", "enlace"] as const;
@@ -378,6 +381,9 @@ export const heroProps = z
     overlayOscuridad: z.number().int().min(0).max(90).default(45), // solo variante imagen_fondo
     mostrarBadgeSorteo: z.boolean().default(true),
     // ── Hero puente (builder-tanda-1 F03/D5/D6), TODO aditivo/opcional ⇒ un hero v2 parsea igual ──
+    // Eyebrow (F13/fidelidad): kicker pequeño en MAYÚSCULAS sobre el título (texto plano ≤80). Cuando
+    // está presente REEMPLAZA al badge "Sorteo abierto" (el mockup lo usa como firma de autoría). Aditivo.
+    eyebrow: z.string().min(1).max(80).optional(),
     // Resalta la PRIMERA ocurrencia de `palabra` en el título (match seguro, jamás HTML del tenant).
     tituloAcento: z
       .object({
@@ -508,20 +514,31 @@ export const MODOS_AVISO_BARRA = ["estatico", "rotacion", "marquee"] as const;
 export type ModoAvisoBarra = (typeof MODOS_AVISO_BARRA)[number];
 
 /**
+ * Posición de la cinta relativa al header (builder-tanda-1 F13/fidelidad). `bajo_nav` (DEFAULT =
+ * comportamiento actual: la cinta es el 1er hijo de `<main>`, bajo el header sticky) o `sobre_nav`
+ * (la cinta se renderiza ANTES del header, en el tope absoluto — el ticker "sobre el nav" del mockup).
+ * Default `bajo_nav` ⇒ migración no-op total (I-T3): ningún doc previo cambia de posición.
+ */
+export const POSICIONES_AVISO_BARRA = ["sobre_nav", "bajo_nav"] as const;
+export type PosicionAvisoBarra = (typeof POSICIONES_AVISO_BARRA)[number];
+
+/**
  * `aviso_barra` v2 (builder-tanda-1 F04/D7; overlay, F10): cinta de aviso arriba de todo (sobre el
  * nav). v-bump v1→v2 con migrate-on-read `texto → mensajes:[texto]` que CONSERVA el look (I-T3): los
  * defaults `modo:"estatico"` + `esquema:"tema"` (transparente, borde inferior) + `mostrarCountdown:false`
- * reproducen la barra v1 exacta. `mensajes` 1–5 (≤120 = el límite v1 de `texto` ⇒ migrate lossless;
- * el editor sugiere textos cortos para el marquee). `esquema` reusa `ESQUEMAS_FONDO` (incl. `acento*`,
- * que degradan a marca sin acento, I-T2). `mostrarCountdown` muestra el chip del sorteo ACTIVO
- * (server-side; sin sorteo ⇒ auto-oculto). Texto plano (nunca HTML, I3); `enlaceUrl/enlaceTexto/
- * descartable` se conservan de v1.
+ * reproducen la barra v1 exacta. `mensajes` 1–10 (≤120 = el límite v1 de `texto` ⇒ migrate lossless;
+ * el editor sugiere textos cortos para el marquee — el cap subió de 5 a 10 en F13/fidelidad, aditivo:
+ * docs con 1–5 siguen válidos). `esquema` reusa `ESQUEMAS_FONDO` (incl. `acento*`, que degradan a marca
+ * sin acento, I-T2). `posicion` (F13) pone la cinta sobre o bajo el nav (default `bajo_nav` = look
+ * actual). `mostrarCountdown` muestra el chip del sorteo ACTIVO (server-side; sin sorteo ⇒ auto-oculto).
+ * Texto plano (nunca HTML, I3); `enlaceUrl/enlaceTexto/descartable` se conservan de v1.
  */
 export const avisoBarraProps = z
   .object({
-    mensajes: z.array(z.string().min(1).max(120)).min(1).max(5),
+    mensajes: z.array(z.string().min(1).max(120)).min(1).max(10),
     modo: z.enum(MODOS_AVISO_BARRA).default("estatico"),
     esquema: z.enum(ESQUEMAS_FONDO).default("tema"), // "tema" = transparente = look v1
+    posicion: z.enum(POSICIONES_AVISO_BARRA).default("bajo_nav"), // bajo_nav = look actual (no-op)
     mostrarCountdown: z.boolean().default(false),
     enlaceUrl: z.string().url().max(2048).optional(),
     enlaceTexto: z.string().min(1).max(40).optional(),

@@ -1,43 +1,56 @@
-# feature-tester run log
-- modo: feature (slug=catalogo-v2-builder-visual)
-- scope: E2E NAVEGADOR interactivo (el tester previo cerró Vitest 483/484 + gate/CSP por curl)
-- server: http://localhost:3001 (dev, subdominios *.localhost:3001)
-- carril: Playwright MCP (libre; chrome-devtools ocupado por otra sesión)
-- inicio: 2026-07-19 03:50
-
-## Setup
-- [03:50] dev-login GET autora.localhost/api/dev/login?slug=autora ⇒ {ok, nikochaima72@gmail.com} (cookie host-only)
-- [03:50] snapshot pre-run autora: draft==published hash d56d2b05 (742B), version 15, 3 revisiones
-
-## E2E (browser) — resultados
-- [PASS] F09 editor: /editor logueado ⇒ preview iframe del borrador (banner "Vista previa del borrador")
-- [PASS] F09/F10-1 agregar del catálogo: beneficios_grid (+ estadisticas, meta_progreso, compartir) render inmediato en preview
-- [PASS] F10-1 editar props (form Zod): título "Por qué elegirnos" + item ⇒ reflejado en preview
-- [PASS] F02/F10-1 estiloSeccion: fondo marca rgb(225,29,72) + texto blanco legible + espaciado xl + divisor onda (SVG 0 0 1200 120, fill=sección siguiente) + entrada subir; scrollX=0
-- [PASS] F09 reordenar ↑ y ↓ (panel + preview coinciden)
-- [PASS] F09 eliminar (throwaway espaciador ⇒ desaparece)
-- [PASS] F03 entrada on-scroll: below-fold armado opacity:0 + translateY(24px); al entrar ⇒ opacity:1/transform:none; CLS-safe; scrollX=0
-- [BLOCKED] F03 reduced-motion: Playwright MCP sin emulateMedia; chrome-devtools ocupado ⇒ no emulable en vivo (cubierto por Vitest anim.003/004)
-- [PASS] F05 estadisticas count-up: +1.200 / +340 / 100% (SSR=final)
-- [FAIL] F06 meta_progreso_sorteo: cabecera "0/500" (0%) en vez del real 2; "Faltan 498" sí correcto ⇒ BUG useCountUp async (animar.tsx:177)
-- [PASS] F06 compartir_sorteo: deeplink wa.me/?text con mensaje + URL tienda
-- [PASS] F06 sin PII: único email en DOM = contacto público hola@tienda-autora.cl (cero PII de participante)
-- [PASS] F09 publicar (diálogo confirm) ⇒ SSR público anónimo refleja beneficios/estadisticas/compartir + divisor onda; sin banner preview
-- [FAIL] F02/F10-2 TemaPagina modo:oscuro: tipografía(editorial)+radio(completo) aplican, pero modo oscuro NO (html sigue light) ⇒ BUG forceColorScheme (_app.tsx:86 vs _document.tsx:19)
-- [PASS] F10-2 aislamiento draft: tema editorial visible en preview, público NO cambia hasta publicar
-- [BLOCKED] F08/F10-3 subir imagen: crearUrlSubidaImagen 200 (presigned OK) pero PUT→R2 net::ERR_FAILED por CORS (bucket sortealo-dev-public sin ACAO para autora.localhost:3001)
-- [PASS] F10-3 metadata display: catálogo + paneles con títulos/descr humanos (no snake_case)
-- [PASS] F10-3 historial: V1–V4 con publishedBy (V4 = mi email)
-- [PASS] F09/F10-3 rollback: Restaurar V3 ⇒ draft a 4 secciones originales; re-publicar ⇒ público vuelve al original
-- [PASS] login-entry.001: anónimo(prueba) "Iniciar sesión"→apex /login?callbackUrl encodeado; logueado(autora) "Mi panel"→apex /admin; SSR anónimo 0/0 (I5)
-- [PASS] regresión visual: autora crimson + prueba teal, aislamiento OK, 4 secciones c/u, disclaimer visible, scrollX=0 (screenshots en tmp/)
-
-## Restauración
-- [04:25] doc de autora restaurado BYTE-EXACTO: draft==published d56d2b05 (742B), version 15, revisiones [1,2,3], publishedAt original. Borradas las 2 revisiones de prueba (4,5).
-
-## Footer
-- Editor F09/F10 núcleo + F02 estilo + F03 entrada + F10-3 historial/rollback + login-entry: VERDE.
-- 2 BUGS reales: (1) meta_progreso count-up async ⇒ 0; (2) TemaPagina modo:oscuro no-op. Ambos en zona prohibida (src/*).
-- 2 BLOQUEOS de entorno: R2 CORS (upload) + reduced-motion no emulable (herramienta).
-- No testeado esta corrida: hero variantes (F05), 6 widgets F04 completos (solo beneficios), round-trip MCP directo (F07), chunk-weight motion.
-- autora doc: restaurado byte-idéntico al pre-run.
+# feature-tester run log — builder-tanda-1
+# modo: feature (slug=builder-tanda-1)
+# scope: Vitest suite completa (regresión) + E2E browser (Playwright)
+# server: http://localhost:3001 (dev, devTienda; autora.localhost:3001 / prueba.localhost:3001)
+# inicio: 2026-07-24
+# ---
+# Paso 1: Vitest (suite completa)
+[vitest] suite completa: 578 passed | 1 skipped | 1 failed (101 files, 208s)
+[vitest] ÚNICO rojo: styles/theme.test.ts::consume las 3 fuentes → espera var(--font-display), recibe var(--font-heading).
+[vitest]   → PRE-EXISTENTE del WIP de marca del usuario en theme.ts (M en working tree). AJENO a la tanda (F01–F12 no tocan theme.ts/fonts). NO cuenta como fallo de la tanda.
+[vitest] TODOS los test files de la tanda VERDES: titulo-hero, avisoBarraV2, nav, estiloSeccion, widgetsSocial, imagen-destacada, getEstadoOrden, use-preview-patch, panel-secciones, tenantTheme, setColorAcento.
+# ---
+# Paso 2: precondición dev server + E2E
+[precondicion] apex/autora/prueba devolvían 500: PrismaClientValidationError "Unknown field colorAcento" — el dev server corría con un Prisma Client STALE (regen previa bloqueada por EPERM, DLL lockeada por el server). DB+schema tienen la columna; solo el client runtime estaba viejo.
+[precondicion] FIX (autorizado por la invocación "relanza si cayó"): taskkill del árbol next dev (PID 33332→25984), npx prisma generate (DLL ya libre, sin EPERM), npm run dev en background (id bbgtmy6q1). Server READY HTTP 200.
+[precondicion] Verificado sin PrismaError: autora "Tienda de la Autora (piloto)", prueba "BCAC", apex=autora (devTienda). Sigue E2E.
+[E2E] builder.replica.001 (F12) — comparación lado a lado vs landing_idol (1).html:
+  CAPACIDADES OK: ticker gold marquee running (animar-marquee 35s linear infinite, pausa en hover=paused verificado); nav "El libro/Sorteo/Autora/Bases" presente + scroll OK (click Autora → #autora al top, scrollY 2558); hero full-viewport (817px = viewport, altoMin pantalla+centro); "enriquecer" DORADO en título; "$3.000 CLP" destacado + nota; 2º CTA = <a> enlace (no botón); SIN trust badges; stats SIMPLE (2/10+/24h sin card); bicolor sorteo linear-gradient(135deg,#3C1678→#C9A130) diagonal suave; fondo púrpura; SIN scroll-x (scrollWidth==clientWidth 1790).
+  DIFERENCIAS RESTANTES vs mockup (lista exigente):
+   1. Ticker BAJO el nav (header 0–59px, ticker y=72) — el mockup lo pone SOBRE el nav. Arquitectura: aviso_barra es 1er hijo de <main>, el header/nav va encima.
+   2. Títulos en SERIF (Fraunces var(--font-heading), Title Case) vs Bebas Neue condensada MAYÚSCULAS del mockup. Driver: font heading de plataforma (WIP marca del usuario) + I-A cero fuente libre por tenant. No alcanzable pixel.
+   3. CTA primario PÚRPURA (colorPrimario #5B21B6) vs GOLD del mockup ("Comprar ahora"/"Agregar" en indigo).
+   4. Superficies oscuras NEUTRAS grey/near-black (header, feature cards, cómo-participar, bases) vs púrpura-card #1E0E45 del mockup.
+   5. Feature cards con iconos monocromo de línea vs emoji (📊💸🎤🏦); bg grey vs púrpura+borde gold.
+   6. Legibilidad bicolor: heading blanco "2 entradas..." cae sobre la MITAD GOLD del gradiente → contraste débil a la derecha.
+   7. Ticker 5 mensajes (IDOL ECONOMY/FAN ECONOMICS/MERCH INTELIGENTE/SORTEO BTS/FANDOM FINANCIERO) vs 7 del mockup (faltan STREAM Y GANA, INVERSIÓN K-POP) — schema cap mensajes 1–5.
+   8. Sorteo reorganizado: mockup=1 banner centrado con pasos dentro; réplica=sorteo_vitrina bicolor 2-col (premio+texto) + sección "Cómo participar" aparte. + stats row extra tras el hero (no en mockup).
+   9. Hero eyebrow: mockup "Bernardita Alvarado Coddou · Libro Digital"; réplica badge "Sorteo abierto".
+   10. Nota del destacado inline a la derecha del precio vs apilada-abajo-centrada; texto "Incluye el sorteo" vs "Incluye participación en el sorteo".
+   11. Nav hrefs "El libro"→#<uuid> y "Bases"→#<uuid> (fallback por id) vs "Sorteo"/"Autora"→ancla semántica; scroll funciona igual.
+  VEREDICTO capacidades: TODAS las capacidades nuevas de la tanda se ven y funcionan. Las diferencias son cosméticas/tipográficas por guardrails de plataforma (no fuentes libres, colorPrimario manda botones, superficies Mantine dark), NO bugs de implementación.
+  Screenshots: tmp/replica-mockup-full.png (referencia), tmp/replica-prueba-full2.png (réplica, tras disparar reveals).
+[E2E] builder.aviso.001 (F04) — marquee running + pausa en hover (paused) VERIFICADO. reduced-motion: .animar-marquee dentro de @media (prefers-reduced-motion: no-preference) → static por construcción (Playwright MCP sin emulateMedia; verificado por CSS). countdown chip "82d 17h" con sorteo activo. sin scroll-x.
+[E2E] EDITOR (autora.localhost:3001/editor, dev login autora OK):
+  builder.acento.001 (F01, editor side): panel Tema muestra "Color de acento" (separator "Segundo color de marca" + ColorInput placeholder "Sin acento (usa el color de marca)" + swatch, helper "Se guarda al elegirlo"). ✓ presente.
+  builder.patch.001 (F09): editar Titulo del hero → preview iframe actualiza h1 en vivo SIN reload (sentinel __patchSentinel sobrevivió TODA la sesión, cero reloads). ✓
+  builder.autosave.001 (F10): NO hay botones "Guardar contenido/estilo/tema" en el panel (solo Publicar en la barra). Editar dispara pagebuilder.mutar con debounce; indicador "Guardando…" capturado (t≈4s). Publicar sigue explícito. ✓
+    Lock optimista/conflicto: clics concurrentes rápidos → HTTP 409 + TRPCClientError "El borrador cambió (versión 24, esperabas 23). Recargá y reintentá." = defensa de conflicto funcionando (I10). El disparo canónico es 2 pestañas; lo forcé por clics rápidos. NO es bug.
+  builder.dnd.001 (F11): 4 cards con draggable="true" + handlers; reorden por drag (evento sintético aplicó con delay ~4-5s) Y por botones ↑↓ (fallback accesible) — ambos emiten move_section; lista + preview quedan en sync; live patch (sin reload). ✓ fallback ↑↓ OK. CAVEAT: el GESTO de arrastre con click trusted no es ejercitable por el Playwright MCP (sin tool de drag; DragEvent sintético no dispara React de forma confiable) — verificado por wiring + fallback + Vitest destinoReordenamiento.
+  NOTA dev: las mutaciones tardan ~4-5s en dev (compile en frío) — clics rápidos disparan el lock. autora DRAFT restaurado a original (order [hero,Catálogo,Vitrina,Cómo funciona], title "Historias que enamoran").
+[E2E] builder.confetti.001 (F08) — DEGRADACIÓN (sin compra real, por instrucción):
+  prueba.localhost:3001/checkout/retorno?token=e2e-invalid-token-xyz → página renderiza estado neutral "¡Gracias por tu compra! Estamos confirmando tu pago…" + "Volver a la tienda". SIN crash, SIN error page.
+  checkout.estadoOrden (tenant-scoped, polling 200 OK) devuelve EXACTAMENTE {"estado":null} — sin PII/correo/monto (coincide con Vitest estado.002/003/004).
+  canvasCount=0 → confetti NO dispara (token inválido nunca llega a PAGADO). ✓ degradación limpia.
+  PENDIENTE USUARIO: flujo completo Flow sandbox (pago real → webhook PAGADO → confetti one-shot + reduced-motion off). No ejecutado (I-T6: la query no confirma; el webhook es la única confirmación).
+[E2E] NO exercido en vivo:
+  builder.forma.001 (F07): ningún imagen_destacada con forma en los tenants de prueba (autora/prueba) → no ejercido en browser. Cubierto por Vitest forma.001/002/003 (formaImagenCss puro + schema).
+  MOBILE: el Playwright MCP no expone resize de viewport; el carril chrome-devtools quedó reservado a otra sesión (instrucción). Mobile no ejercido en vivo; desktop sin scroll-x + hero svh (mobile-safe por construcción F06). ANOTADO.
+# ---
+# RESUMEN
+# Vitest: 578 pass / 1 skip / 1 fail-ajeno (theme.test.ts, WIP marca del usuario). Tanda 100% verde.
+# E2E VERDE: acento, bicolor, hero, aviso(marquee+pausa), nav, altura, patch-vivo, autosave, dnd, replica(capacidades).
+# E2E PARCIAL: confetti (degradación OK; flujo Flow sandbox pendiente usuario). NO EJERCIDO: forma (Vitest cubre), mobile (MCP sin resize).
+# FIDELIDAD replica: 11 diferencias vs mockup (guardrails de plataforma; headline: ticker bajo nav, títulos serif, CTA púrpura).
+# autora DRAFT restaurado; prueba intacto; dev server relanzado y sano; NO state/status, NO commit, NO INDEX.
+# fin: 2026-07-24

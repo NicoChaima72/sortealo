@@ -37,6 +37,7 @@ export function StorefrontLayout({
   branding,
   estiloShell,
   navItems,
+  avisoSobreNav,
   children,
 }: {
   branding: TenantBranding;
@@ -44,6 +45,9 @@ export function StorefrontLayout({
   estiloShell?: CSSProperties;
   /** Items del nav derivados del documento (F05/D8); vacío/ausente ⇒ nav hardcodeado actual (I-H). */
   navItems?: NavItem[];
+  /** Cinta `aviso_barra` con `posicion:"sobre_nav"` (F13): se pinta ANTES del header, en el tope
+   * absoluto (fuera de `<main>`) ⇒ queda SOBRE el nav. Ausente ⇒ nada (el default `bajo_nav` va en main). */
+  avisoSobreNav?: ReactNode;
   children: ReactNode;
 }) {
   const [drawerAbierto, drawer] = useDisclosure(false);
@@ -61,6 +65,9 @@ export function StorefrontLayout({
       <div className="flex min-h-screen flex-col" style={estiloShell}>
         {/* Banner "Editar mi tienda" (F09): chrome de plataforma, monta post-hidratación (no toca el SSR). */}
         <BannerEditarTienda slug={branding.slug} />
+        {/* Cinta SOBRE el nav (F13): en el tope absoluto, antes del header sticky. Al hacer scroll la cinta
+            se va y el header queda pegado a top:0 (el ticker "sobre el nav" del mockup). */}
+        {avisoSobreNav}
         <Header branding={branding} navItems={navItems} onAbrirCarrito={drawer.open} />
 
         <Box component="main" className="flex-1">

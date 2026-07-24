@@ -27,6 +27,10 @@ export const ANCLA_POR_TIPO: Partial<Record<SeccionNode["tipo"], string>> = {
   como_funciona: "como-funciona",
   perfil_autora: "autora",
   garantias_sorteo: "bases",
+  // F13/fidelidad: dos tipos que en el mockup entran al nav ("El libro" / "Bases") pero antes caían al
+  // fallback `#<uuid>`. `beneficios_grid` → grilla de destacados; `texto_rico` → bloque de bases/legal.
+  beneficios_grid: "beneficios",
+  texto_rico: "bases",
   faq: "preguntas",
   testimonios: "opiniones",
   galeria: "galeria",
@@ -48,6 +52,7 @@ export const ETIQUETA_POR_TIPO: Partial<Record<SeccionNode["tipo"], string>> = {
   galeria: "Galería",
   ganadores: "Ganadores",
   beneficios_grid: "Beneficios",
+  texto_rico: "Bases",
   imagen_destacada: "Destacado",
 };
 

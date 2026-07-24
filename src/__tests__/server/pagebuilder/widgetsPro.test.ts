@@ -39,13 +39,14 @@ describe("pagebuilder/widgets pro (F10) — schemas", () => {
     expect(whatsappFlotanteProps.safeParse({ posicion: "arriba" }).success).toBe(false);
   });
 
-  // page.pro.004 — aviso_barra v2 (builder-tanda-1 F04): mensajes REQUERIDOS (1–5, ≤120); texto plano
+  // page.pro.004 — aviso_barra v2 (builder-tanda-1 F04; cap 10 en F13): mensajes REQUERIDOS (1–10, ≤120); texto plano
   // (no HTML — .strict lo garantiza); el `texto` de v1 ya NO es campo (v-bump).
-  it("aviso_barra exige mensajes (1–5, ≤120) y rechaza campos extra (sin HTML)", () => {
+  it("aviso_barra exige mensajes (1–10, ≤120) y rechaza campos extra (sin HTML)", () => {
     expect(avisoBarraProps.safeParse({}).success).toBe(false); // mensajes requerido
     expect(avisoBarraProps.safeParse({ mensajes: [] }).success).toBe(false); // min 1
     expect(avisoBarraProps.safeParse({ mensajes: ["Envío gratis hoy"] }).success).toBe(true);
-    expect(avisoBarraProps.safeParse({ mensajes: ["a", "b", "c", "d", "e", "f"] }).success).toBe(false); // max 5
+    expect(avisoBarraProps.safeParse({ mensajes: ["a", "b", "c", "d", "e", "f"] }).success).toBe(true); // 6 ⇒ OK (cap subió a 10 en F13)
+    expect(avisoBarraProps.safeParse({ mensajes: Array.from({ length: 11 }, (_, i) => `m${i}`) }).success).toBe(false); // max 10
     expect(avisoBarraProps.safeParse({ mensajes: ["x".repeat(121)] }).success).toBe(false);
     expect(avisoBarraProps.safeParse({ mensajes: ["ok"], html: "<b>x</b>" }).success).toBe(false);
     expect(avisoBarraProps.safeParse({ texto: "hola" }).success).toBe(false); // el shape v1 ya no parsea directo

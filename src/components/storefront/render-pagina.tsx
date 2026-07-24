@@ -62,9 +62,11 @@ export function RenderPagina({
   const anclas = anclasSemanticas(secciones);
   return (
     <>
-      {/* Overlays "arriba" (barra de aviso) antes del flujo vertical. */}
+      {/* Overlays "arriba" (barra de aviso BAJO el nav) antes del flujo vertical. Los `aviso_barra` con
+          `posicion:"sobre_nav"` (F13) NO se renderizan acá: el `storefront-layout` los pinta ANTES del
+          header (fuera de `<main>`) para que queden sobre el nav; acá solo van los `bajo_nav` (default). */}
       {overlays
-        .filter((o) => o.tipo === "aviso_barra")
+        .filter((o) => o.tipo === "aviso_barra" && o.props.posicion !== "sobre_nav")
         .map((o) => (
           <RenderOverlay key={o.id} overlay={o} />
         ))}

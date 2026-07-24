@@ -68,10 +68,15 @@ const MyApp: AppType<{
 
   // Swap de las CSS vars de tipografía al par elegido (el theme las consume por var). El par
   // "plataforma" NO overridea (usa el default ya en `FONT_VARS_CSS`). El mono se mantiene siempre.
+  // F13/fidelidad: el theme de headings consume `--font-heading` (Fraunces, WIP de marca del usuario),
+  // NO `--font-display` (que hoy solo alimenta el Wordmark). Antes el swap escribía SOLO `--font-display`
+  // ⇒ los headings del storefront ignoraban la tipografía del tenant (p.ej. `cartel`/Bebas Neue) y salían
+  // en Fraunces. Ahora escribe AMBAS (`--font-heading` = lo que el theme consume hoy + `--font-display`
+  // por compat con el Wordmark), y `--font-instrument` para el cuerpo.
   const par = temaPagina ? PARES_FONT[temaPagina.tipografia] : null;
   const fontOverrideCss =
     par && temaPagina && temaPagina.tipografia !== "plataforma"
-      ? `:root{--font-display:${par.display};--font-instrument:${par.texto};}`
+      ? `:root{--font-heading:${par.display};--font-display:${par.display};--font-instrument:${par.texto};}`
       : "";
 
   return (

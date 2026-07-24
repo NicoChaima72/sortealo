@@ -3,6 +3,7 @@ import { IconEye } from "@tabler/icons-react";
 import { type GetServerSideProps, type InferGetServerSidePropsType } from "next";
 import Head from "next/head";
 
+import { AvisoBarra } from "~/components/storefront/aviso-barra";
 import { LandingPlataforma } from "~/components/landing/landing-plataforma";
 import { RenderPagina } from "~/components/storefront/render-pagina";
 import { StorefrontLayout } from "~/components/storefront/storefront-layout";
@@ -69,11 +70,21 @@ function StorefrontHome({
   // Nav auto-derivado (F05/D8): items del header desde las secciones marcadas `nav.incluir`. Sin ninguna
   // marcada ⇒ `[]` y el layout cae al nav actual (I-H).
   const navItems = derivarNav(paginaViva.secciones);
+  // Cinta SOBRE el nav (F13): el 1er `aviso_barra` con `posicion:"sobre_nav"` se pinta ANTES del header
+  // (lo renderiza el layout). El resto (`bajo_nav`, default) los pinta `RenderPagina` dentro de `<main>`.
+  const avisoSobreNav = paginaViva.overlays.find(
+    (o) => o.tipo === "aviso_barra" && o.props.posicion === "sobre_nav",
+  );
   return (
     <StorefrontLayout
       branding={branding}
       estiloShell={{ background: fondoPagina }}
       navItems={navItems}
+      avisoSobreNav={
+        avisoSobreNav?.tipo === "aviso_barra" ? (
+          <AvisoBarra props={avisoSobreNav.props} />
+        ) : undefined
+      }
     >
       {esPreview && (
         <>
