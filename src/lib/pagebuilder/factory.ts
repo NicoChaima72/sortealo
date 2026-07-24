@@ -120,8 +120,9 @@ export function conAvisoBarra(
   const overlay = {
     id: ID_OVERLAY_AVISO,
     tipo: "aviso_barra" as const,
-    v: WIDGET_REGISTRY.aviso_barra.v,
-    props: { ...WIDGET_REGISTRY.aviso_barra.defaultProps, texto },
+    v: WIDGET_REGISTRY.aviso_barra.v, // = 2 (builder-tanda-1 F04/D7)
+    // aviso_barra v2: el `avisoTexto` del chrome entra como el 1er (único) mensaje de la cinta.
+    props: { ...WIDGET_REGISTRY.aviso_barra.defaultProps, mensajes: [texto] },
   };
   return PageDocumentSchema.parse({ ...doc, overlays: [...doc.overlays, overlay] });
 }

@@ -40,6 +40,7 @@ const brandingStorefront = {
   branding: {
     slug: "autora",
     colorPrimario: "#e11d48",
+    colorAcento: "#f59e0b",
     nombre: "Tienda Autora",
     descripcion: "Libros y sorteos",
   },
@@ -100,7 +101,12 @@ describe("editor/getPropsEditor — gate SSR fail-closed (F09/D6)", () => {
       props: {
         slug: "autora",
         previewToken: "tok-preview",
-        branding: { colorPrimario: "#e11d48", nombre: "Tienda Autora", descripcion: "Libros y sorteos" },
+        branding: {
+          colorPrimario: "#e11d48",
+          colorAcento: "#f59e0b",
+          nombre: "Tienda Autora",
+          descripcion: "Libros y sorteos",
+        },
       },
     });
     // El tenantId se resolvió por SLUG del host (I1), no de ningún input.

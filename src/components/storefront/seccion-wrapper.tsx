@@ -18,15 +18,12 @@ import { type EstiloSeccion, type PresetEntrada } from "~/lib/pagebuilder/widget
 export function SeccionWrapper({
   id,
   estilo,
-  ancla,
   divisorColor,
   children,
 }: {
-  /** Id estable del nodo (dirección del scroll del editor, D7). */
+  /** Id estable del nodo (dirección del scroll del editor, D7; también target de nav por id de nodo). */
   id: string;
   estilo?: EstiloSeccion;
-  /** Ancla semántica de navegación (`catalogo`/`sorteo`/`como-funciona`); se emite como scroll target. */
-  ancla?: string;
   /** Color sólido de la sección SIGUIENTE (fill del divisor inferior — lee como transición). */
   divisorColor?: string;
   children: ReactNode;
@@ -35,7 +32,12 @@ export function SeccionWrapper({
   // `heredar` ⇒ default del TemaPagina (v1: "subir"). El preset animable lo resuelve `<Animar>`.
   const preset: PresetEntrada = r.entrada === "heredar" ? "subir" : (r.entrada as PresetEntrada);
 
-  const contenido =
+  // `anchoFondo` (F02/D4): `completo` (default) ⇒ el fondo va en el `<section>` (full-bleed) = render
+  // ACTUAL, byte-idéntico (I-H). `contenido` ⇒ el `<section>` queda transparente y el fondo se pinta en
+  // un box del ancho del contenido con radio (sección tipo "card").
+  const fondoEnSeccion = r.anchoFondo !== "contenido";
+
+  const inner =
     r.containerSize === false ? (
       children
     ) : (
@@ -44,22 +46,42 @@ export function SeccionWrapper({
       </Container>
     );
 
+  const contenido = fondoEnSeccion ? (
+    inner
+  ) : (
+    <Container
+      size={r.containerSize === false ? "lg" : r.containerSize}
+      px={{ base: "md", lg: "xl" }}
+    >
+      <Box
+        style={{
+          ...r.fondo,
+          borderRadius: "var(--mantine-radius-lg)",
+          paddingInline: "var(--mantine-spacing-lg)",
+          paddingBlock: "var(--mantine-spacing-xl)",
+        }}
+      >
+        {children}
+      </Box>
+    </Container>
+  );
+
   return (
     <Box
       component="section"
       id={id}
       py={r.py}
-      style={{ ...r.fondo, position: "relative" }}
+      style={{
+        ...(fondoEnSeccion ? r.fondo : {}),
+        position: "relative",
+        // Alto mínimo + alineación vertical (F06/D9): solo con `altoMin` presente ⇒ la sección pasa a
+        // flex-column para centrar/anclar el contenido. Sin altoMin (default `auto`), NADA de esto se
+        // aplica ⇒ layout byte-idéntico al actual (I-H). `svh` no anima (CLS=0, I-C).
+        ...(r.altoMin
+          ? { minHeight: r.altoMin, display: "flex", flexDirection: "column", justifyContent: r.justifyVertical }
+          : {}),
+      }}
     >
-      {/* Ancla semántica de navegación (scroll target; el id del nodo va en el <section>). */}
-      {ancla && (
-        <span
-          id={ancla}
-          aria-hidden
-          style={{ position: "absolute", top: 0, left: 0 }}
-        />
-      )}
-
       {/* Entrada on-scroll (F03): SSR-visible + reduced-motion + solo-bajo-el-fold (I-B..I-E). */}
       <Animar preset={preset}>{contenido}</Animar>
 

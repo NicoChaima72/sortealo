@@ -19,7 +19,7 @@ import { SessionProvider } from "next-auth/react";
 import { type AppType } from "next/app";
 import Head from "next/head";
 
-import { bricolage, instrumentSans, PARES_FONT, plexMono } from "~/config/fonts";
+import { bricolage, fraunces, instrumentSans, PARES_FONT, plexMono } from "~/config/fonts";
 import { type Tema } from "~/lib/pagebuilder/schema";
 import { theme } from "~/styles/theme";
 import {
@@ -38,7 +38,7 @@ import { api } from "~/utils/api";
  * Spotlight, Notifications) que se montan en `<body>`, fuera del árbol de React. El theme de Mantine
  * las consume vía `var(--font-instrument|display|mono)` (`theme.ts`).
  */
-const FONT_VARS_CSS = `:root{--font-instrument:${instrumentSans.style.fontFamily};--font-display:${bricolage.style.fontFamily};--font-mono:${plexMono.style.fontFamily};}`;
+const FONT_VARS_CSS = `:root{--font-instrument:${instrumentSans.style.fontFamily};--font-display:${bricolage.style.fontFamily};--font-heading:${fraunces.style.fontFamily};--font-mono:${plexMono.style.fontFamily};}`;
 
 /**
  * Theming per-tenant (F06/D2, ADR-0011). Las páginas del storefront pueblan

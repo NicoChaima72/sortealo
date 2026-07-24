@@ -33,6 +33,12 @@ export interface EstiloSeccionResuelto {
   divisor: { forma: string; altura: string; invertir: boolean } | null;
   /** Preset de entrada (F03). `heredar` ⇒ el wrapper toma el default del TemaPagina. */
   entrada: string;
+  /** Ancho del FONDO (F02/D4): `completo` = full-bleed (default, comportamiento actual); `contenido` = acotado. */
+  anchoFondo: "completo" | "contenido";
+  /** Min-height CSS resuelto (F06/D9): `undefined` = auto (sin min-height, comportamiento actual). */
+  altoMin?: string;
+  /** `justify-content` para alinear el contenido en vertical (F06/D9). Solo aplica con `altoMin` presente. */
+  justifyVertical: "flex-start" | "center" | "flex-end";
 }
 
 // ── Tokens de fondo emparejados (fondo + color de texto legible por construcción) ─────────────
@@ -43,6 +49,7 @@ export interface EstiloSeccionResuelto {
 const ESQUEMAS_OSCUROS: ReadonlySet<EsquemaFondo> = new Set([
   "marca",
   "marca_profundo",
+  "acento_profundo",
   "tinta",
 ]);
 
@@ -72,9 +79,37 @@ function esquemaACss(esquema: EsquemaFondo): CSSProperties {
       };
     case "marca_profundo":
       return { background: "var(--mantine-primary-color-8)", color: "var(--mantine-color-white)" };
+    // Acento (builder-tanda-1 F01/D1): tokens de la escala `acento` con FALLBACK a la de marca/
+    // primario cuando el tenant no tiene acento (I-T2 — nunca opción muda ni sección ilegible).
+    case "acento_suave":
+      return {
+        background: "var(--mantine-color-acento-0, var(--mantine-primary-color-0))",
+        color: "var(--mantine-color-text)",
+      };
+    case "acento":
+      // Filled del acento + su contraste (autoContrast del theme emite `--mantine-color-acento-contrast`);
+      // sin acento cae al filled/contrast del primario (marca) — emparejado legible en ambos casos.
+      return {
+        background: "var(--mantine-color-acento-filled, var(--mantine-primary-color-filled))",
+        color: "var(--mantine-color-acento-contrast, var(--mantine-primary-color-contrast))",
+      };
+    case "acento_profundo":
+      return {
+        background: "var(--mantine-color-acento-8, var(--mantine-primary-color-8))",
+        color: "var(--mantine-color-white)",
+      };
     case "tinta":
       return { background: "var(--mantine-color-gray-9)", color: "var(--mantine-color-white)" };
   }
+}
+
+/**
+ * CSS público (background + color de texto emparejado) de un esquema sólido. Wrapper de `esquemaACss`
+ * para consumidores fuera de este módulo (p.ej. la cinta `aviso_barra` v2, F04) ⇒ el color del widget
+ * sale del MISMO mapa de tokens (cero hex en el componente, I-A; degradación acento→marca I-T2).
+ */
+export function cssDeEsquema(esquema: EsquemaFondo): CSSProperties {
+  return esquemaACss(esquema);
 }
 
 /** Token de color SÓLIDO de un esquema (para el fill del divisor de la sección siguiente). */
@@ -91,6 +126,12 @@ export function colorSolidoDeEsquema(esquema: EsquemaFondo): string {
       return "var(--mantine-primary-color-filled)";
     case "marca_profundo":
       return "var(--mantine-primary-color-8)";
+    case "acento_suave":
+      return "var(--mantine-color-acento-0, var(--mantine-primary-color-0))";
+    case "acento":
+      return "var(--mantine-color-acento-filled, var(--mantine-primary-color-filled))";
+    case "acento_profundo":
+      return "var(--mantine-color-acento-8, var(--mantine-primary-color-8))";
     case "tinta":
       return "var(--mantine-color-gray-9)";
   }
@@ -205,6 +246,32 @@ function patronACss(
   };
 }
 
+/** Ángulo del degradado bicolor por dirección (fijo, no CSS libre). */
+const DIRECCION_BICOLOR: Record<string, string> = {
+  vertical: "to bottom",
+  horizontal: "to right",
+  diagonal: "135deg",
+};
+
+/**
+ * CSS de un fondo BICOLOR (builder-tanda-1 F02/D3). Dos TONOS curados (`colorSolidoDeEsquema` da su
+ * token, con degradación acento→marca por fallback CSS, I-T2). `dura` = corte al 50% (dos bandas);
+ * `suave` = degradado continuo. El texto se empareja con `colorA` (tono dominante donde se asienta el
+ * contenido) — legibilidad por construcción (D3). Cero hex inline (I-A).
+ */
+function bicolorACss(fondo: Extract<FondoSeccion, { tipo: "bicolor" }>): CSSProperties {
+  const a = colorSolidoDeEsquema(fondo.colorA);
+  const b = colorSolidoDeEsquema(fondo.colorB);
+  const angulo = DIRECCION_BICOLOR[fondo.direccion] ?? "to bottom";
+  const background =
+    fondo.mezcla === "dura"
+      ? `linear-gradient(${angulo}, ${a} 0%, ${a} 50%, ${b} 50%, ${b} 100%)`
+      : `linear-gradient(${angulo}, ${a}, ${b})`;
+  // `TonoFondo ⊆ EsquemaFondo` ⇒ el color de texto emparejado sale de `esquemaACss(colorA)`.
+  const color = esquemaACss(fondo.colorA).color;
+  return { background, ...(color ? { color } : {}) };
+}
+
 /** CSS de fondo (background + color) para cualquier `FondoSeccion`. */
 export function fondoSeccionACss(fondo: FondoSeccion | undefined): CSSProperties {
   if (!fondo) return {}; // ausente ⇒ transparente (hereda el fondo de página) = look actual
@@ -213,6 +280,8 @@ export function fondoSeccionACss(fondo: FondoSeccion | undefined): CSSProperties
       return esquemaACss(fondo.esquema);
     case "gradiente":
       return gradienteACss(fondo.preset);
+    case "bicolor":
+      return bicolorACss(fondo);
     case "imagen":
       return imagenACss(fondo);
     case "patron":
@@ -227,6 +296,20 @@ const PY_POR_ESPACIADO: Record<string, PyResuelto> = {
   m: { base: "lg", md: "xl" },
   l: { base: "xl", md: 48 }, // ← default histórico (Box py={{ base:"xl", md:48 }})
   xl: { base: 48, md: 80 },
+};
+
+/** Alto mínimo (enum) → min-height CSS (svh, correcto en mobile). `auto` ⇒ sin min-height (no-op). */
+const ALTO_MIN_CSS: Record<string, string | undefined> = {
+  auto: undefined,
+  media: "60svh",
+  pantalla: "100svh",
+};
+
+/** Alineación vertical (enum) → `justify-content` del `<section>` en flex-column. */
+const JUSTIFY_POR_ALINEAR: Record<string, "flex-start" | "center" | "flex-end"> = {
+  arriba: "flex-start",
+  centro: "center",
+  abajo: "flex-end",
 };
 
 /** Ancho (enum) → tamaño del `Container` de Mantine; `completo` ⇒ `false` (full-bleed). */
@@ -260,6 +343,9 @@ export function estiloSeccionACss(
           }
         : null,
     entrada: estilo?.entrada ?? "heredar",
+    anchoFondo: estilo?.anchoFondo ?? "completo", // default full-bleed = comportamiento actual (I-H)
+    altoMin: ALTO_MIN_CSS[estilo?.altoMin ?? "auto"], // undefined con "auto" (no-op, I-H)
+    justifyVertical: JUSTIFY_POR_ALINEAR[estilo?.alinearVertical ?? "arriba"] ?? "flex-start",
   };
 }
 
@@ -272,5 +358,8 @@ export function colorFondoSolido(estilo: EstiloSeccion | undefined): string {
   if (!fondo) return "var(--mantine-color-body)";
   if (fondo.tipo === "esquema") return colorSolidoDeEsquema(fondo.esquema);
   if (fondo.tipo === "patron") return colorSolidoDeEsquema(fondo.esquema);
+  // Bicolor (F02): el divisor de la sección anterior se pinta con el tono SUPERIOR (colorA), donde
+  // lande la transición desde arriba (vertical). Aproximación para horizontal/diagonal.
+  if (fondo.tipo === "bicolor") return colorSolidoDeEsquema(fondo.colorA);
   return "var(--mantine-color-body)"; // gradiente/imagen ⇒ transición al fondo de página
 }

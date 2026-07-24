@@ -11,6 +11,7 @@ import {
   Tooltip,
 } from "@mantine/core";
 import {
+  IconCheck,
   IconDeviceDesktop,
   IconDeviceMobile,
   IconExternalLink,
@@ -25,10 +26,23 @@ import { PanelHistorial } from "~/components/editor/panel-historial";
 import { PanelSecciones } from "~/components/editor/panel-secciones";
 import { PanelTema } from "~/components/editor/panel-tema";
 import { WidgetGallery } from "~/components/editor/widget-gallery";
+import { TIPO_PATCH } from "~/components/storefront/use-preview-patch";
 import { WIDGET_META, type WidgetTipo } from "~/lib/pagebuilder/widgets";
 import { type MutacionPagina } from "~/server/domain/pagebuilder/schemas";
+import { type PageDocument } from "~/lib/pagebuilder/schema";
 import { type TenantBranding } from "~/styles/tenantTheme";
 import { api } from "~/utils/api";
+
+/**
+ * Mutaciones que RECARGAN el iframe en vez de patchear en vivo (F09/D13): cambian el chrome/provider a
+ * nivel de página (modo oscuro, tipografía) o reemplazan el documento entero ⇒ el patch por postMessage
+ * (que solo re-renderiza el árbol del documento) no basta. El resto patchea en vivo (scroll intacto).
+ */
+const MUTACIONES_QUE_RECARGAN = new Set<MutacionPagina["accion"]>([
+  "set_theme",
+  "set_page_theme",
+  "apply_page",
+]);
 
 /**
  * Editor visual del page builder (catálogo-v2 F09/F10; DOCK en F11). Superficie, NO dominio (I-I): CERO
@@ -66,14 +80,22 @@ export function EditorPageBuilder({
 }: {
   slug: string;
   previewToken: string | null;
-  branding: { colorPrimario: string | null; nombre: string; descripcion: string | null };
+  branding: {
+    colorPrimario: string | null;
+    colorAcento: string | null;
+    nombre: string;
+    descripcion: string | null;
+  };
 }) {
   const [version, setVersion] = useState<number | null>(null);
   const [previewKey, setPreviewKey] = useState(0); // fuerza el reload del iframe
   const [seleccion, setSeleccion] = useState<string | null>(null); // id de la sección seleccionada
   const [viewport, setViewport] = useState<"escritorio" | "movil">("escritorio");
   const [confirmPublicar, setConfirmPublicar] = useState(false);
+  const [guardadoFlash, setGuardadoFlash] = useState(false); // "Guardado" tras un auto-save (F10)
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const guardadoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (guardadoTimer.current) clearTimeout(guardadoTimer.current); }, []);
 
   // ── Estado del dock (F11) ────────────────────────────────────────────
   const [abiertos, setAbiertos] = useState<Record<DockKey, boolean>>({
@@ -96,10 +118,26 @@ export function EditorPageBuilder({
 
   const recargarPreview = useCallback(() => setPreviewKey((k) => k + 1), []);
 
+  /** Patch en vivo del preview (F09/D13): envía el documento nuevo al iframe (same-origin), que lo
+   *  re-valida con Zod y re-renderiza sin reload. Si el iframe aún no cargó, el patch se pierde y la
+   *  invalidación posterior mantiene el editor coherente (el usuario ve el estado en el próximo render). */
+  const patchearPreview = useCallback((documento: PageDocument) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { tipo: TIPO_PATCH, documento },
+      window.location.origin, // targetOrigin = el propio (el iframe es same-origin, I-T5)
+    );
+  }, []);
+
   const mutar = api.pagebuilder.mutar.useMutation({
-    onSuccess: (res) => {
+    onSuccess: (res, variables) => {
       setVersion(res.version);
-      recargarPreview();
+      // Patch en vivo salvo las mutaciones que exigen reload (tema/apply_page, D13).
+      if (MUTACIONES_QUE_RECARGAN.has(variables.mutacion.accion)) recargarPreview();
+      else patchearPreview(res.documento);
+      // Indicador de auto-guardado (F10/D14): "Guardado" por ~1.6s tras cada mutación exitosa.
+      setGuardadoFlash(true);
+      if (guardadoTimer.current) clearTimeout(guardadoTimer.current);
+      guardadoTimer.current = setTimeout(() => setGuardadoFlash(false), 1600);
       void utils.pagebuilder.getBorrador.invalidate();
     },
     onError: (e) => {
@@ -130,6 +168,22 @@ export function EditorPageBuilder({
     (tipo: WidgetTipo) => aplicar({ accion: "add_section", tipo }),
     [aplicar],
   );
+
+  // Segundo color de marca (builder-tanda-1 F01/D2): vive en `Tenant.colorAcento`, FUERA del documento.
+  // Al cambiarlo el theme cambia (CSS vars --mantine-color-acento-*) ⇒ hay que RECARGAR la preview (no
+  // se puede patchear en vivo por postMessage, que solo re-renderiza el documento — D13).
+  const acento = api.pagebuilder.setColorAcento.useMutation({
+    onSuccess: () => {
+      recargarPreview();
+      notifications.show({
+        color: "teal",
+        title: "Color de acento aplicado",
+        message: "Actualizamos tu vista previa.",
+      });
+    },
+    onError: (e) =>
+      notifications.show({ color: "red", title: "No se pudo aplicar el acento", message: e.message }),
+  });
 
   const publicar = api.pagebuilder.publicar.useMutation({
     onSuccess: () => {
@@ -166,6 +220,7 @@ export function EditorPageBuilder({
     descripcion: branding.descripcion,
     logoUrl: null,
     colorPrimario: branding.colorPrimario,
+    colorAcento: branding.colorAcento,
     heroTitulo: null,
     heroSubtitulo: null,
     heroImageUrl: null,
@@ -194,7 +249,10 @@ export function EditorPageBuilder({
       <WidgetGallery slug={slug} branding={brandingPreview} enUso={enUso} onAgregar={agregarSeccion} />
     ),
     editar: seccionSel ? (
+      // `key` por id de sección (F10): al cambiar de sección el panel se RE-MONTA ⇒ estado local fresco.
+      // Con auto-save esto es crítico — evita que el estado de la sección anterior se auto-guarde en la nueva.
       <PanelEdicion
+        key={seccionSel.id}
         slug={slug}
         nodo={seccionSel}
         onVolver={() => {
@@ -211,6 +269,9 @@ export function EditorPageBuilder({
     tema: documento ? (
       <PanelTema
         tema={documento.root.props as Record<string, unknown>}
+        colorAcento={branding.colorAcento}
+        onColorAcento={(hex) => acento.mutate({ colorAcento: hex })}
+        aplicandoAcento={acento.isPending}
         onVolver={() => colapsar("tema")}
         onAplicar={aplicar}
       />
@@ -264,7 +325,19 @@ export function EditorPageBuilder({
             ) : (
               <Badge variant="light" color="gray" tt="none">Sin publicar</Badge>
             ))}
-          {(mutar.isPending || borrador.isFetching) && <Loader size="xs" />}
+          {/* Indicador de auto-guardado (F10/D14): Guardando… mientras la mutación viaja, Guardado al
+              confirmar. Reemplaza los botones "Guardar" de los paneles. */}
+          {mutar.isPending || borrador.isFetching ? (
+            <Group gap={6} wrap="nowrap">
+              <Loader size="xs" />
+              <Text size="xs" c="dimmed">Guardando…</Text>
+            </Group>
+          ) : guardadoFlash ? (
+            <Group gap={6} wrap="nowrap">
+              <IconCheck className="size-3.5" style={{ color: "var(--mantine-color-teal-6)" }} />
+              <Text size="xs" c="dimmed">Guardado</Text>
+            </Group>
+          ) : null}
         </Group>
         <Group gap="sm" wrap="nowrap">
           <Tooltip label={viewport === "movil" ? "Ver en escritorio" : "Ver en móvil"}>

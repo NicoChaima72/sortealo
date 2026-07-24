@@ -2,13 +2,18 @@ import { type PrismaClient } from "@prisma/client";
 
 import { type PageDocument } from "~/lib/pagebuilder/schema";
 import {
+  ALINEAR_VERTICAL,
+  ALTO_MIN,
   ALTURA_DIVISOR,
   ANCHO_CONTENIDO,
+  ANCHO_FONDO,
   ANCHO_SECCION,
+  DIRECCIONES_BICOLOR,
   ESPACIADO_V,
   ESQUEMAS_FONDO,
   FORMAS_DIVISOR,
   GRADIENTES,
+  MEZCLAS_BICOLOR,
   MODO_COLOR,
   OVERLAY_IMAGEN,
   PARES_TIPOGRAFICOS,
@@ -17,6 +22,7 @@ import {
   PRESETS_ENTRADA,
   RADIO_GLOBAL,
   TIPOS_SECCION,
+  TONOS_FONDO,
   VIBE,
   WIDGET_REGISTRY,
 } from "~/lib/pagebuilder/widgets";
@@ -134,6 +140,9 @@ export function mcpListStyleOptions() {
         marca_suave: "Tinte claro del color de la tienda, texto tinta.",
         marca: "Color de la tienda a fondo lleno, texto claro legible.",
         marca_profundo: "Versión oscura del color de la tienda, texto claro.",
+        acento_suave: "Tinte claro del 2º color de marca; sin acento cae al de marca.",
+        acento: "2º color de marca a fondo lleno, texto emparejado; sin acento cae al de marca.",
+        acento_profundo: "Versión oscura del 2º color de marca, texto claro; cae a marca sin acento.",
         tinta: "Fondo casi negro, texto claro (alto contraste).",
       }),
       fondoGradiente: describir(GRADIENTES, {
@@ -141,6 +150,26 @@ export function mcpListStyleOptions() {
         marca_vivo: "Degradado vivo de la marca (el del hero).",
         tinta: "Degradado oscuro tinta.",
         papel: "Degradado gris muy claro tipo papel.",
+      }),
+      // Bicolor (F02): dos TONOS curados + dirección + mezcla. El texto se empareja con colorA.
+      fondoBicolorTono: describir(TONOS_FONDO, {
+        superficie: "Superficie clara (texto tinta).",
+        marca_suave: "Tinte claro de la marca (texto tinta).",
+        marca: "Color de la marca a fondo lleno (texto emparejado).",
+        marca_profundo: "Marca oscura (texto claro).",
+        acento_suave: "Tinte claro del 2º color de marca (cae a marca sin acento).",
+        acento: "2º color de marca lleno (cae a marca sin acento).",
+        acento_profundo: "2º color de marca oscuro (cae a marca sin acento).",
+        tinta: "Casi negro (texto claro).",
+      }),
+      fondoBicolorDireccion: describir(DIRECCIONES_BICOLOR, {
+        vertical: "A arriba, B abajo.",
+        horizontal: "A izquierda, B derecha.",
+        diagonal: "Diagonal de A a B.",
+      }),
+      fondoBicolorMezcla: describir(MEZCLAS_BICOLOR, {
+        dura: "Corte duro al 50% (dos bandas).",
+        suave: "Degradado continuo entre A y B.",
       }),
       fondoImagenOverlay: describir(OVERLAY_IMAGEN, {
         ninguno: "Sin capa sobre la imagen.",
@@ -173,6 +202,20 @@ export function mcpListStyleOptions() {
         contenido: "Ancho de lectura (por defecto).",
         ancho: "Más ancho.",
         completo: "De borde a borde (full-bleed).",
+      }),
+      anchoFondo: describir(ANCHO_FONDO, {
+        completo: "Fondo de borde a borde (por defecto).",
+        contenido: "Fondo acotado al contenido, con esquinas redondeadas (tipo tarjeta).",
+      }),
+      altoMin: describir(ALTO_MIN, {
+        auto: "Alto según el contenido (por defecto).",
+        media: "Al menos media ventana de alto.",
+        pantalla: "Al menos toda la ventana de alto (hero a pantalla completa).",
+      }),
+      alinearVertical: describir(ALINEAR_VERTICAL, {
+        arriba: "Contenido arriba (por defecto).",
+        centro: "Contenido centrado en vertical (útil con alto de pantalla).",
+        abajo: "Contenido abajo.",
       }),
       divisorForma: describir(FORMAS_DIVISOR, {
         ninguno: "Sin divisor.",
@@ -234,6 +277,9 @@ export function mcpListStyleOptions() {
         marca_suave: "Tinte claro de la marca de fondo.",
         marca: "Color de la marca a fondo lleno.",
         marca_profundo: "Marca oscura de fondo.",
+        acento_suave: "Tinte claro del 2º color de marca (cae a marca sin acento).",
+        acento: "2º color de marca a fondo lleno (cae a marca sin acento).",
+        acento_profundo: "2º color de marca oscuro (cae a marca sin acento).",
         tinta: "Fondo casi negro.",
       }),
     },

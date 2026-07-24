@@ -23,8 +23,20 @@ import { z } from "zod";
 /** URL de imagen del bucket público (ADR-0013). Exportado para reuso (factory, F03). */
 export const urlPublica = z.string().url().max(2048);
 
-/** Anclas de navegación internas permitidas para los CTA (enum cerrado). */
-export const CTA_ANCLAS = ["catalogo", "sorteo"] as const;
+/**
+ * Anclas de navegación internas permitidas para los CTA (enum cerrado). Ampliado en builder-tanda-1
+ * F05/D8 con las anclas semánticas nuevas (`como-funciona`/`autora`/`bases`/`preguntas`) — ADITIVO: los
+ * valores viejos (`catalogo`/`sorteo`) siguen parseando, los docs existentes no cambian. Cada valor
+ * resuelve a un target de scroll emitido por `render-pagina` (nav.ts `ANCLA_POR_TIPO`).
+ */
+export const CTA_ANCLAS = [
+  "catalogo",
+  "sorteo",
+  "como-funciona",
+  "autora",
+  "bases",
+  "preguntas",
+] as const;
 
 /**
  * Íconos permitidos para los pasos de "cómo funciona" (enum cerrado; el render los mapea).
@@ -101,7 +113,11 @@ export type ParTipografico = (typeof PARES_TIPOGRAFICOS)[number];
 // CSS la hace `estiloSeccionACss()` (F02, `~/styles/tenantTheme.ts`), espejo puro de
 // `gradienteTematico` (SSR + cliente sin mismatch).
 
-/** Esquemas de fondo emparejados (fondo + texto legible). `tema` = transparente = DEFAULT. */
+/**
+ * Esquemas de fondo emparejados (fondo + texto legible). `tema` = transparente = DEFAULT. Los `acento*`
+ * (builder-tanda-1 F01/D1) usan la escala del `colorAcento` del tenant y DEGRADAN a la de marca cuando
+ * el tenant no tiene acento (fallback CSS var, I-T2): nunca opción muda ni sección ilegible.
+ */
 export const ESQUEMAS_FONDO = [
   "tema", // transparente, hereda el fondo de página (DEFAULT)
   "superficie", // blanco / (dark) tinta — texto tinta
@@ -109,12 +125,39 @@ export const ESQUEMAS_FONDO = [
   "marca_suave", // marca-0/1 — texto tinta
   "marca", // marca-6 filled — texto claro (autoContrast)
   "marca_profundo", // marca-8 — texto claro
+  "acento_suave", // acento-0 — texto tinta (degrada a marca sin acento)
+  "acento", // acento filled — texto emparejado (autoContrast; degrada a marca)
+  "acento_profundo", // acento-8 — texto claro (degrada a marca)
   "tinta", // gray-9 — texto claro
 ] as const;
 export type EsquemaFondo = (typeof ESQUEMAS_FONDO)[number];
 
 /** Gradientes preset (`marca_vivo` = el `gradienteTematico` actual). */
 export const GRADIENTES = ["marca_suave", "marca_vivo", "tinta", "papel"] as const;
+
+/**
+ * Tonos de fondo curados para el BICOLOR (builder-tanda-1 F02/D3). Subconjunto de `ESQUEMAS_FONDO`
+ * con color de texto emparejado por construcción ⇒ el render empareja el texto de la sección con el
+ * tono `colorA` (donde se asienta el contenido). Enum cerrado, jamás hex libre (I-A). Los `acento*`
+ * degradan a marca sin acento (I-T2), igual que en los esquemas sólidos.
+ */
+export const TONOS_FONDO = [
+  "superficie",
+  "marca_suave",
+  "marca",
+  "marca_profundo",
+  "acento_suave",
+  "acento",
+  "acento_profundo",
+  "tinta",
+] as const;
+export type TonoFondo = (typeof TONOS_FONDO)[number];
+
+/** Dirección del degradado bicolor (mapea a un ángulo fijo en el render, no CSS libre). */
+export const DIRECCIONES_BICOLOR = ["vertical", "horizontal", "diagonal"] as const;
+
+/** Mezcla del bicolor: `dura` = corte duro al 50%, `suave` = degradado continuo entre A y B. */
+export const MEZCLAS_BICOLOR = ["dura", "suave"] as const;
 
 /** Overlay sobre un fondo de imagen (para garantizar contraste del texto encima). */
 export const OVERLAY_IMAGEN = ["ninguno", "tinta", "marca", "claro"] as const;
@@ -130,6 +173,27 @@ export const ESPACIADO_V = ["ninguno", "s", "m", "l", "xl"] as const;
 
 /** Ancho del contenido de la sección (Container lg / xl / full-bleed). */
 export const ANCHO_SECCION = ["contenido", "ancho", "completo"] as const;
+
+/**
+ * Ancho del FONDO de la sección (builder-tanda-1 F02/D4), independiente de `ancho` (que gobierna el
+ * Container del CONTENIDO). `completo` = full-bleed = el comportamiento ACTUAL del wrapper (el fondo
+ * pinta todo el ancho del `<section>`) ⇒ DEFAULT no-op (I-H). `contenido` acota el fondo a un box del
+ * ancho de contenido con radio (sección tipo "card").
+ */
+export const ANCHO_FONDO = ["completo", "contenido"] as const;
+
+/**
+ * Alto MÍNIMO de la sección (builder-tanda-1 F06/D9). `auto` = sin min-height = comportamiento ACTUAL
+ * (DEFAULT no-op, I-H). `media` = 60svh, `pantalla` = 100svh (svh = small viewport height ⇒ correcto en
+ * mobile con la barra del navegador). El min-height NO se anima (CLS irrelevante, I-C).
+ */
+export const ALTO_MIN = ["auto", "media", "pantalla"] as const;
+
+/**
+ * Alineación VERTICAL del contenido dentro de la sección (builder-tanda-1 F06/D9). Solo tiene efecto
+ * cuando `altoMin` da altura extra (media/pantalla). `arriba` = DEFAULT (comportamiento actual, I-H).
+ */
+export const ALINEAR_VERTICAL = ["arriba", "centro", "abajo"] as const;
 
 /** Formas de divisor inferior (SVG generado por NOSOTROS, nunca markup del tenant). */
 export const FORMAS_DIVISOR = [
@@ -183,6 +247,17 @@ export type PresetEntrada = (typeof PRESETS_ENTRADA)[number];
 export const FondoSeccionSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("esquema"), esquema: z.enum(ESQUEMAS_FONDO) }).strict(),
   z.object({ tipo: z.literal("gradiente"), preset: z.enum(GRADIENTES) }).strict(),
+  // Bicolor (builder-tanda-1 F02/D3): dos TONOS curados (nunca hex), dirección + mezcla por enum. El
+  // render empareja el texto con `colorA` (tono dominante donde se asienta el contenido). `.strict()`.
+  z
+    .object({
+      tipo: z.literal("bicolor"),
+      colorA: z.enum(TONOS_FONDO),
+      colorB: z.enum(TONOS_FONDO),
+      direccion: z.enum(DIRECCIONES_BICOLOR).default("vertical"),
+      mezcla: z.enum(MEZCLAS_BICOLOR).default("dura"),
+    })
+    .strict(),
   z
     .object({
       tipo: z.literal("imagen"),
@@ -214,6 +289,9 @@ export const EstiloSeccionSchema = z
     fondo: FondoSeccionSchema.optional(), // ausente ⇒ "tema"/transparente
     padY: z.enum(ESPACIADO_V).default("l"), // = py actual (xl/48)
     ancho: z.enum(ANCHO_SECCION).default("contenido"),
+    anchoFondo: z.enum(ANCHO_FONDO).default("completo"), // F02/D4: full-bleed = comportamiento actual
+    altoMin: z.enum(ALTO_MIN).default("auto"), // F06/D9: auto = sin min-height (no-op)
+    alinearVertical: z.enum(ALINEAR_VERTICAL).default("arriba"), // F06/D9: arriba = comportamiento actual
     entrada: z.enum(PRESETS_ENTRADA).default("heredar"), // F03
     divisorInferior: z
       .object({
@@ -255,6 +333,24 @@ export const VARIANTES_HERO = ["split", "centrado", "imagen_fondo", "minimal"] a
 export type VarianteHero = (typeof VARIANTES_HERO)[number];
 
 /**
+ * Estilo del `tituloAcento` (builder-tanda-1 F03/D5): `acento` = color de la escala acento; `resaltado`
+ * = destacador como background del PROPIO span (nunca capa aparte con z-index — lección en memoria del
+ * proyecto); `gradiente` = texto con background-clip:text (tokens marca/acento). Enum cerrado.
+ */
+export const ESTILOS_TITULO_ACENTO = ["acento", "resaltado", "gradiente"] as const;
+
+/** Estilo del CTA secundario del hero (F03/D6): botón (default) o enlace de texto. */
+export const ESTILOS_CTA_SECUNDARIO = ["boton", "enlace"] as const;
+
+/**
+ * Efecto del título del hero (F03/D6). `ninguno` (default = look v2). `revelar_palabras` = reveal por
+ * palabra escalonado (CSS puro, SSR-visible I-D, reduced-motion ⇒ estático). `gradiente_animado` =
+ * texto con gradiente animado (reusa el keyframe holo; reduced-motion ⇒ gradiente estático). Es prop
+ * del hero, NO un preset de `PRESETS_ENTRADA` (que es de sección entera).
+ */
+export const EFECTOS_TITULO = ["ninguno", "revelar_palabras", "gradiente_animado"] as const;
+
+/**
  * `hero` (semilla, v2 en catálogo-v2 F05). `titulo`/`subtitulo`/`imagenUrl` son OVERRIDES opcionales
  * — sin ellos el render cae al `nombre`/`descripcion`/gradiente del Tenant (degradación elegante,
  * resueltos server-side; NO se copian al documento, I2/I11). El badge "Sorteo abierto" y los badges
@@ -281,6 +377,26 @@ export const heroProps = z
     variante: z.enum(VARIANTES_HERO).default("split"), // split = look v1 (migración no-op, I-H)
     overlayOscuridad: z.number().int().min(0).max(90).default(45), // solo variante imagen_fondo
     mostrarBadgeSorteo: z.boolean().default(true),
+    // ── Hero puente (builder-tanda-1 F03/D5/D6), TODO aditivo/opcional ⇒ un hero v2 parsea igual ──
+    // Resalta la PRIMERA ocurrencia de `palabra` en el título (match seguro, jamás HTML del tenant).
+    tituloAcento: z
+      .object({
+        palabra: z.string().min(1).max(40),
+        estilo: z.enum(ESTILOS_TITULO_ACENTO),
+      })
+      .strict()
+      .optional(),
+    // Cifra/etiqueta destacada del hero (el "$3.000 + nota"). Texto plano con límite.
+    destacado: z
+      .object({
+        texto: z.string().min(1).max(24),
+        nota: z.string().min(1).max(120).optional(),
+      })
+      .strict()
+      .optional(),
+    ctaSecundarioEstilo: z.enum(ESTILOS_CTA_SECUNDARIO).default("boton"),
+    mostrarConfianza: z.boolean().default(true), // toggle de los trust badges (hoy hardcodeados)
+    efectoTitulo: z.enum(EFECTOS_TITULO).default("ninguno"),
   })
   .strict();
 export type HeroProps = z.infer<typeof heroProps>;
@@ -384,12 +500,29 @@ export const whatsappFlotanteProps = z
 export type WhatsappFlotanteProps = z.infer<typeof whatsappFlotanteProps>;
 
 /**
- * `aviso_barra` (overlay, F10): barra de aviso arriba de todo. Migra el `avisoTexto` del chrome (R1).
- * Sin `texto` ⇒ oculto. `descartable` permite cerrarla. Texto plano (nunca HTML, I3).
+ * Modo de la cinta de aviso (builder-tanda-1 F04/D7). `estatico` = un mensaje fijo (= look v1).
+ * `rotacion` = cicla los mensajes con un fade (client-side; SSR muestra el 1º). `marquee` = ticker
+ * horizontal continuo (CSS puro, pausa en hover, reduced-motion ⇒ estático). Enum cerrado.
+ */
+export const MODOS_AVISO_BARRA = ["estatico", "rotacion", "marquee"] as const;
+export type ModoAvisoBarra = (typeof MODOS_AVISO_BARRA)[number];
+
+/**
+ * `aviso_barra` v2 (builder-tanda-1 F04/D7; overlay, F10): cinta de aviso arriba de todo (sobre el
+ * nav). v-bump v1→v2 con migrate-on-read `texto → mensajes:[texto]` que CONSERVA el look (I-T3): los
+ * defaults `modo:"estatico"` + `esquema:"tema"` (transparente, borde inferior) + `mostrarCountdown:false`
+ * reproducen la barra v1 exacta. `mensajes` 1–5 (≤120 = el límite v1 de `texto` ⇒ migrate lossless;
+ * el editor sugiere textos cortos para el marquee). `esquema` reusa `ESQUEMAS_FONDO` (incl. `acento*`,
+ * que degradan a marca sin acento, I-T2). `mostrarCountdown` muestra el chip del sorteo ACTIVO
+ * (server-side; sin sorteo ⇒ auto-oculto). Texto plano (nunca HTML, I3); `enlaceUrl/enlaceTexto/
+ * descartable` se conservan de v1.
  */
 export const avisoBarraProps = z
   .object({
-    texto: z.string().min(1).max(120),
+    mensajes: z.array(z.string().min(1).max(120)).min(1).max(5),
+    modo: z.enum(MODOS_AVISO_BARRA).default("estatico"),
+    esquema: z.enum(ESQUEMAS_FONDO).default("tema"), // "tema" = transparente = look v1
+    mostrarCountdown: z.boolean().default(false),
     enlaceUrl: z.string().url().max(2048).optional(),
     enlaceTexto: z.string().min(1).max(40).optional(),
     descartable: z.boolean().default(false),
@@ -580,6 +713,14 @@ export type TextoRicoProps = z.infer<typeof textoRicoProps>;
 export const RATIOS_IMAGEN = ["natural", "16:9", "4:3", "1:1", "3:4"] as const;
 
 /**
+ * Máscara de forma de una imagen (builder-tanda-1 F07/D11): clip-paths/border-radius CURADOS por
+ * NOSOTROS (nunca clip-path libre del tenant, I-A/I4). `ninguna` = DEFAULT no-op (I-H). `ticket` reusa
+ * el motivo troquel (muescas laterales). El slot reserva tamaño por el `ratio` ⇒ CLS=0 (I-C).
+ */
+export const FORMAS_IMAGEN = ["ninguna", "circulo", "blob", "arco", "ticket"] as const;
+export type FormaImagen = (typeof FORMAS_IMAGEN)[number];
+
+/**
  * `imagen_destacada` (sección, F04): una imagen grande con `alt` (obligatorio, accesibilidad),
  * `caption` y enlace opcionales. `imagenUrl` = `urlPublica` (bucket, ADR-0013). URL rota ⇒ el
  * componente degrada a un placeholder tematizado (I-G).
@@ -591,6 +732,7 @@ export const imagenDestacadaProps = z
     caption: z.string().min(1).max(200).optional(),
     ancho: z.enum(["contenido", "completo"]).default("contenido"),
     ratio: z.enum(RATIOS_IMAGEN).default("natural"),
+    forma: z.enum(FORMAS_IMAGEN).default("ninguna"), // F07/D11: máscara de forma curada (default no-op)
     enlaceUrl: z.string().url().max(2048).optional(),
     // Variante holográfica (F12): borde de gradiente animado (tokens de marca) + tilt 3D al mouse
     // (transform-only, reduced-motion/SSR-safe). Aditivo/opcional ⇒ un doc v1 sin `holo` es idéntico.
@@ -646,6 +788,9 @@ export type BannerCtaProps = z.infer<typeof bannerCtaProps>;
 
 // ── Widgets [mvp-v2] · lote social/prueba (catálogo-v2 F05, síntesis §2) ───────────────────────
 
+/** Estilo visual de `estadisticas` (builder-tanda-1 F06/D10): `cards` = render actual; `simple` = limpio. */
+export const ESTILOS_ESTADISTICA = ["cards", "simple"] as const;
+
 /**
  * `estadisticas` (sección, F05): fila 2–4 de cifras grandes con count-up. `valor` es ENTERO (no
  * string — el count-up parsea confiable, síntesis §2 dedup); `prefijo`/`sufijo` acotados ("+", "★",
@@ -656,6 +801,9 @@ export type BannerCtaProps = z.infer<typeof bannerCtaProps>;
 export const estadisticasProps = z
   .object({
     titulo: z.string().min(1).max(80).optional(),
+    // Estilo visual (builder-tanda-1 F06/D10): `cards` = render ACTUAL (default no-op, I-H); `simple` =
+    // cifras limpias sin ThemeIcon ni contenedor (las stats del mockup).
+    estiloVisual: z.enum(ESTILOS_ESTADISTICA).default("cards"),
     items: z
       .array(
         z
@@ -984,9 +1132,9 @@ export const WIDGET_REGISTRY = {
   }),
   aviso_barra: definirWidget({
     categoria: "overlay",
-    v: 1,
+    v: 2, // builder-tanda-1 F04/D7: v-bump v1→v2 (mensajes[]/modo/esquema/countdown; migrate-on-read texto→mensajes)
     propsSchema: avisoBarraProps,
-    defaultProps: { texto: "Novedad", descartable: false },
+    defaultProps: { mensajes: ["Novedad"], descartable: false },
   }),
   // ── PRO de confianza (F11) ──
   testimonios: definirWidget({

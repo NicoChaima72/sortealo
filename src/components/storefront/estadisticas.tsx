@@ -31,7 +31,7 @@ export function Estadisticas({
         )}
         <SimpleGrid cols={{ base: 2, sm: props.items.length }} spacing="lg">
           {props.items.map((item, i) => (
-            <StatItem key={i} item={item} />
+            <StatItem key={i} item={item} estiloVisual={props.estiloVisual} />
           ))}
         </SimpleGrid>
       </Stack>
@@ -39,10 +39,20 @@ export function Estadisticas({
   );
 }
 
-/** Una cifra con count-up. Sub-componente porque `useCountUp` es un hook (uno por ítem). */
-function StatItem({ item }: { item: EstadisticasProps["items"][number] }) {
+/**
+ * Una cifra con count-up. Sub-componente porque `useCountUp` es un hook (uno por ítem). `estiloVisual`
+ * `cards` (default) = render actual con `ThemeIcon`; `simple` (F06/D10) = sin icono ni contenedor, solo
+ * la cifra grande + etiqueta (las stats limpias del mockup).
+ */
+function StatItem({
+  item,
+  estiloVisual,
+}: {
+  item: EstadisticasProps["items"][number];
+  estiloVisual: EstadisticasProps["estiloVisual"];
+}) {
   const { valor, ref } = useCountUp<HTMLSpanElement>(item.valor);
-  const Icono = item.icono ? iconoBeneficio(item.icono) : null;
+  const Icono = estiloVisual === "simple" ? null : item.icono ? iconoBeneficio(item.icono) : null;
   return (
     <Stack gap={4} align="center" ta="center">
       {Icono && (

@@ -125,6 +125,13 @@ model Tenant {
   descripcion   String? // texto breve de la tienda (marketing)
   logoUrl       String? // ref al logo (F06 define su storage/tratamiento real)
   colorPrimario String? // color de marca del tenant (hex/HSL; F06 lo aplica al tema)
+  // Segundo color de marca (builder-tanda-1 F01, ADR-0016). Tratamiento ESPEJO de colorPrimario:
+  // hex validado con esHex ⇒ generarEscalaColor deriva 10 tonos ⇒ overrideDesdeBranding agrega
+  // colors.acento al theme (CSS vars --mantine-color-acento-*). null ⇒ los esquemas/tonos `acento*`
+  // del documento degradan a la escala de MARCA (nunca error ni sección ilegible, I-T2). Vive fuera
+  // del Documento de Página (I-T1); se edita en el panel Tema del EDITOR, no en el admin. No queriable
+  // (se lee por el tenant ya resuelto) ⇒ sin @@index.
+  colorAcento   String? // segundo color de marca del tenant (hex); null = degrada a la escala de marca
   // ── Textos del storefront (F06/D4, schema-guardian APPROVE). El Organizador los edita en el
   // panel (guardarConfiguracionTienda); el render del hero/aviso los consume con fallback. NO
   // queriables (se leen por el tenant ya resuelto por id/slug) ⇒ sin @@index.

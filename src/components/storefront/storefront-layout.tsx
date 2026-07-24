@@ -19,6 +19,7 @@ import {
 } from "~/components/storefront/carrito-ui";
 import { CountdownChip } from "~/components/storefront/countdown-chip";
 import { useSorteoActivo } from "~/components/storefront/use-sorteo-activo";
+import { type NavItem } from "~/lib/pagebuilder/nav";
 import { type TenantBranding } from "~/styles/tenantTheme";
 
 /**
@@ -35,11 +36,14 @@ import { type TenantBranding } from "~/styles/tenantTheme";
 export function StorefrontLayout({
   branding,
   estiloShell,
+  navItems,
   children,
 }: {
   branding: TenantBranding;
   /** Fondo del shell derivado del TemaPagina (catálogo-v2 F02); ausente ⇒ fondo por defecto. */
   estiloShell?: CSSProperties;
+  /** Items del nav derivados del documento (F05/D8); vacío/ausente ⇒ nav hardcodeado actual (I-H). */
+  navItems?: NavItem[];
   children: ReactNode;
 }) {
   const [drawerAbierto, drawer] = useDisclosure(false);
@@ -57,7 +61,7 @@ export function StorefrontLayout({
       <div className="flex min-h-screen flex-col" style={estiloShell}>
         {/* Banner "Editar mi tienda" (F09): chrome de plataforma, monta post-hidratación (no toca el SSR). */}
         <BannerEditarTienda slug={branding.slug} />
-        <Header branding={branding} onAbrirCarrito={drawer.open} />
+        <Header branding={branding} navItems={navItems} onAbrirCarrito={drawer.open} />
 
         <Box component="main" className="flex-1">
           {children}
@@ -73,13 +77,18 @@ export function StorefrontLayout({
 
 function Header({
   branding,
+  navItems,
   onAbrirCarrito,
 }: {
   branding: TenantBranding;
+  navItems?: NavItem[];
   onAbrirCarrito: () => void;
 }) {
   const sorteo = useSorteoActivo();
   const haySorteo = !!sorteo.data;
+  // Nav derivado del documento (F05/D8) si alguna sección se marcó `nav.incluir`; si NO (array vacío o
+  // ausente), el nav cae al hardcodeado actual — byte-idéntico al de antes de F05 (I-H).
+  const derivado = navItems && navItems.length > 0;
 
   return (
     <Box
@@ -118,11 +127,22 @@ function Header({
             )}
           </Anchor>
 
-          {/* Nav de anclas — solo desktop (mobile-first: en móvil el chrome se aprieta). */}
+          {/* Nav de anclas — solo desktop (mobile-first: en móvil el chrome se aprieta). Derivado del
+              documento (F05/D8) o, sin config, el hardcodeado actual (Catálogo/Sorteo/Cómo funciona). */}
           <Group gap="lg" visibleFrom="sm" wrap="nowrap">
-            <NavAncla href="#catalogo">Catálogo</NavAncla>
-            {haySorteo && <NavAncla href="#sorteo">Sorteo</NavAncla>}
-            <NavAncla href="#como-funciona">Cómo funciona</NavAncla>
+            {derivado ? (
+              navItems.map((item) => (
+                <NavAncla key={item.href + item.label} href={item.href}>
+                  {item.label}
+                </NavAncla>
+              ))
+            ) : (
+              <>
+                <NavAncla href="#catalogo">Catálogo</NavAncla>
+                {haySorteo && <NavAncla href="#sorteo">Sorteo</NavAncla>}
+                <NavAncla href="#como-funciona">Cómo funciona</NavAncla>
+              </>
+            )}
           </Group>
 
           <Group gap="sm" wrap="nowrap">

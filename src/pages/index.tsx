@@ -6,6 +6,8 @@ import Head from "next/head";
 import { LandingPlataforma } from "~/components/landing/landing-plataforma";
 import { RenderPagina } from "~/components/storefront/render-pagina";
 import { StorefrontLayout } from "~/components/storefront/storefront-layout";
+import { usePreviewPatch } from "~/components/storefront/use-preview-patch";
+import { derivarNav } from "~/lib/pagebuilder/nav";
 import { type PageDocument } from "~/lib/pagebuilder/schema";
 import {
   getPropsHome,
@@ -57,11 +59,22 @@ function StorefrontHome({
   pagina: PageDocument;
   esPreview: boolean;
 }) {
+  // Documento VIVO: en preview (F09/D13) el hook escucha los patches del editor y re-renderiza sin reload;
+  // en público devuelve el SSR fijo (sin listener, I-T5). El shell (fondo), el nav y las secciones se
+  // derivan TODOS de `paginaViva` ⇒ un patch actualiza header + shell + contenido juntos, sin recargar.
+  const paginaViva = usePreviewPatch(pagina, esPreview);
   // Fondo de página del TemaPagina (catálogo-v2 F02): `superficie` (default) = body ⇒ sin cambio;
   // otros esquemas pintan el shell entero. Cero hex inline (token de la escala del tenant, I-A).
-  const fondoPagina = colorSolidoDeEsquema(pagina.root.props.fondoPagina);
+  const fondoPagina = colorSolidoDeEsquema(paginaViva.root.props.fondoPagina);
+  // Nav auto-derivado (F05/D8): items del header desde las secciones marcadas `nav.incluir`. Sin ninguna
+  // marcada ⇒ `[]` y el layout cae al nav actual (I-H).
+  const navItems = derivarNav(paginaViva.secciones);
   return (
-    <StorefrontLayout branding={branding} estiloShell={{ background: fondoPagina }}>
+    <StorefrontLayout
+      branding={branding}
+      estiloShell={{ background: fondoPagina }}
+      navItems={navItems}
+    >
       {esPreview && (
         <>
           <Head>
@@ -89,8 +102,8 @@ function StorefrontHome({
       )}
 
       <RenderPagina
-        secciones={pagina.secciones}
-        overlays={pagina.overlays}
+        secciones={paginaViva.secciones}
+        overlays={paginaViva.overlays}
         branding={branding}
       />
     </StorefrontLayout>

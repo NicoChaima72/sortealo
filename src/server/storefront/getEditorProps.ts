@@ -27,6 +27,8 @@ export interface PropsEditor {
    */
   branding: {
     colorPrimario: string | null;
+    /** Segundo color de marca (builder-tanda-1 F01/D2): lo lee el campo de acento del panel Tema. */
+    colorAcento: string | null;
     nombre: string;
     descripcion: string | null;
   };
@@ -66,6 +68,7 @@ export async function getPropsEditor(
       previewToken: env.STOREFRONT_PREVIEW_TOKEN ?? null,
       branding: {
         colorPrimario: branding.branding.colorPrimario,
+        colorAcento: branding.branding.colorAcento,
         nombre: branding.branding.nombre,
         descripcion: branding.branding.descripcion,
       },

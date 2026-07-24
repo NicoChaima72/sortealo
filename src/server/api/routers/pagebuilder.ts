@@ -20,10 +20,12 @@ import {
 import { puedoEditar } from "~/server/domain/pagebuilder/puedoEditar";
 import { publicarPagina } from "~/server/domain/pagebuilder/publicarPagina";
 import { revertirPagina } from "~/server/domain/pagebuilder/revertirPagina";
+import { setColorAcento } from "~/server/domain/pagebuilder/setColorAcento";
 import {
   editarBorradorInput,
   publicarBorradorInput,
   revertirBorradorInput,
+  setColorAcentoInput,
 } from "~/server/domain/pagebuilder/schemas";
 import { DomainError } from "~/server/domain/errors";
 import { crearStoragePublicoDeEnv } from "~/server/storage/storagePublicoDeEnv";
@@ -145,6 +147,24 @@ export const pagebuilderRouter = createTRPCRouter({
           db: ctx.db,
           tenantId: await exigirEditor(ctx),
           revision: input.revision,
+        }),
+      ),
+    ),
+
+  /**
+   * Setea el segundo color de marca del tenant (`Tenant.colorAcento`, builder-tanda-1 F01/D2). Vive
+   * FUERA del Documento (I-T1) ⇒ el MCP NO gana tool para esto (I12); solo el panel Tema del editor.
+   * Gateado por membresía (`exigirEditor`, I1); el `tenantId` sale del host, nunca del input. `null`
+   * limpia el acento (⇒ degradación a marca, I-T2). Cambia el theme ⇒ el editor recarga la preview.
+   */
+  setColorAcento: tenantProcedure
+    .input(setColorAcentoInput)
+    .mutation(({ ctx, input }) =>
+      runDomain(async () =>
+        setColorAcento({
+          db: ctx.db,
+          tenantId: await exigirEditor(ctx),
+          colorAcento: input.colorAcento,
         }),
       ),
     ),

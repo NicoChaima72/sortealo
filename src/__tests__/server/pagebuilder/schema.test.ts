@@ -119,7 +119,7 @@ describe("pagebuilder/schema — PageDocumentSchema", () => {
     // Un overlay válido (aviso_barra) ⇒ OK.
     const conOverlay = {
       ...GOLDEN,
-      overlays: [{ id: "ov", tipo: "aviso_barra", v: 1, props: { texto: "Envío gratis" } }],
+      overlays: [{ id: "ov", tipo: "aviso_barra", v: 2, props: { mensajes: ["Envío gratis"] } }],
     };
     expect(PageDocumentSchema.safeParse(conOverlay).success).toBe(true);
     // Un widget de SECCIÓN metido en overlays ⇒ rechazo.

@@ -27,6 +27,9 @@ import { TextoRico } from "~/components/storefront/texto-rico";
 import { UrgenciaCountdown } from "~/components/storefront/urgencia-countdown";
 import { Video } from "~/components/storefront/video";
 import { WhatsappFlotante } from "~/components/storefront/whatsapp-flotante";
+import { Fragment } from "react";
+
+import { anclasSemanticas } from "~/lib/pagebuilder/nav";
 import {
   type OverlayNode,
   type PageDocument,
@@ -53,6 +56,10 @@ export function RenderPagina({
   overlays: PageDocument["overlays"];
   branding: TenantBranding;
 }) {
+  // Anclas semánticas del nav auto-derivado (F05/D8): la 1ª sección de cada tipo navegable recibe un
+  // target de scroll invisible (`#catalogo`/`#sorteo`/`#autora`/`#bases`…) — fuente ÚNICA de anclas
+  // (los widgets ya no las hardcodean). El nav del header y los CTA apuntan a estos ids.
+  const anclas = anclasSemanticas(secciones);
   return (
     <>
       {/* Overlays "arriba" (barra de aviso) antes del flujo vertical. */}
@@ -63,13 +70,20 @@ export function RenderPagina({
         ))}
 
       {secciones.map((seccion, i) => (
-        <RenderSeccion
-          key={seccion.id}
-          seccion={seccion}
-          branding={branding}
-          // Color de la sección SIGUIENTE ⇒ fill del divisor inferior de ESTA (lee como transición).
-          divisorColor={colorFondoSolido(secciones[i + 1]?.estilo)}
-        />
+        <Fragment key={seccion.id}>
+          {anclas[seccion.id] && (
+            // Target de scroll en flujo (zero-height, aria-hidden) justo antes de la sección: mismo Y que
+            // el borde superior de la sección ⇒ el scroll del nav/CTA aterriza ahí. Invisible (no afecta
+            // el layout ni el screenshot — I-H).
+            <div id={anclas[seccion.id]} aria-hidden style={{ position: "relative" }} />
+          )}
+          <RenderSeccion
+            seccion={seccion}
+            branding={branding}
+            // Color de la sección SIGUIENTE ⇒ fill del divisor inferior de ESTA (lee como transición).
+            divisorColor={colorFondoSolido(secciones[i + 1]?.estilo)}
+          />
+        </Fragment>
       ))}
 
       {/* Overlays flotantes (FAB): position:fixed, su posición en el DOM no importa. */}

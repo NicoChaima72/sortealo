@@ -85,6 +85,26 @@
     }
   }
 
+  /* Reveal por palabra del título del hero (builder-tanda-1 F03/D6, efectoTitulo revelar_palabras).
+     CSS PURO: cada palabra es un span con animation-delay escalonado (inline). SSR-visible por
+     construcción (I-D): el `opacity:0` vive AQUÍ (keyframe gateado), NUNCA en el HTML SSR ⇒ el
+     `renderToString` no contiene opacity:0. Con reduced-motion (fuera de esta media query) las palabras
+     quedan estáticas y visibles. Solo transform/opacity (CLS=0, I-C). */
+  .animar-revelar-palabra {
+    display: inline-block;
+    animation: animar-revelar-palabra 0.5s ease-out both;
+  }
+  @keyframes animar-revelar-palabra {
+    from {
+      opacity: 0;
+      transform: translateY(0.4em);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
   /* Marco holográfico (imagen_destacada holo, F12): la POSICIÓN del gradiente se desplaza ~7s. El
      gradiente en sí (colores de la escala del tenant) se pinta inline en el componente y queda VISIBLE
      con reduced-motion; solo la animación de posición vive acá (gateada por la media query, I-B). */
@@ -98,6 +118,26 @@
     }
     50% {
       background-position: 100% 50%;
+    }
+  }
+
+  /* Ticker/marquee del aviso_barra (builder-tanda-1 F04/D7): la pista (contenido DUPLICADO) se
+     desplaza -50% en loop ⇒ costura invisible. La duración la fija el componente inline
+     (animation-duration). Pausa al pasar el mouse por la cinta. Solo transform (CLS=0, I-C). Gateado
+     por reduced-motion (I-B): sin movimiento la pista queda estática y visible (I-D). */
+  .animar-marquee {
+    animation: animar-marquee 24s linear infinite;
+    will-change: transform;
+  }
+  .animar-marquee-pausable:hover .animar-marquee {
+    animation-play-state: paused;
+  }
+  @keyframes animar-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
     }
   }
 }

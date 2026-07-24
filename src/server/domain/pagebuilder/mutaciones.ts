@@ -24,6 +24,8 @@ interface NodoLaxo {
   props: Record<string, unknown>;
   /** Estilo de sección en el envelope (catálogo-v2 F01/D2); ausente ⇒ el nodo no lleva estilo. */
   estilo?: unknown;
+  /** Nav del envelope (builder-tanda-1 F05/D8); ausente ⇒ la sección no está en el header. */
+  nav?: unknown;
 }
 
 /** `true` sii `tipo` es un widget de SECCIÓN del registro (no overlay, no inexistente). */
@@ -61,6 +63,7 @@ export function aplicarMutacion(
     v: s.v,
     props: { ...s.props },
     ...(s.estilo !== undefined ? { estilo: s.estilo } : {}),
+    ...(s.nav !== undefined ? { nav: s.nav } : {}),
   }));
   let root: { props: Record<string, unknown> } = { props: { ...doc.root.props } };
 
@@ -133,6 +136,16 @@ export function aplicarMutacion(
       // Reemplaza el estilo COMPLETO del nodo (el panel/MCP mandan el objeto entero). El parse final
       // revalida contra `EstiloSeccionSchema` ⇒ esquema/enum fuera de rango o hex crudo ⇒ INVALID.
       nodo.estilo = mut.estilo;
+      break;
+    }
+    case "set_section_nav": {
+      const nodo = secciones.find((s) => s.id === mut.id);
+      if (!nodo) {
+        throw new DomainError("NOT_FOUND", `Sección no encontrada: "${mut.id}".`);
+      }
+      // `null` (o {}) limpia el nav; un objeto lo setea. El parse final revalida el envelope (I3):
+      // etiqueta >20 o campo extra ⇒ INVALID sin mutar.
+      nodo.nav = mut.nav ?? undefined;
       break;
     }
     case "apply_page": {

@@ -55,7 +55,14 @@ export const plexMono = IBM_Plex_Mono({
 // tenant elige ese par): cero costo para el 99% que usa "plataforma". El render (`_app`) swapea las
 // CSS vars `--font-display`/`--font-instrument` al par elegido — el theme ya las consume por var.
 
-const fraunces = Fraunces({ subsets: ["latin"], display: "swap", preload: false });
+/** Fraunces: serif cálida de los HEADINGS de plataforma (decisión 2026-07-24 — reemplaza a
+ * Bricolage en `theme.headings`; el wordmark sigue en Bricolage vía `--font-display`). Preloaded
+ * (es fuente core) y expone `--font-heading`. También es el display del par "editorial". */
+export const fraunces = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-heading",
+});
 const inter = Inter({ subsets: ["latin"], display: "swap", preload: false });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], display: "swap", preload: false });
 const poppins = Poppins({

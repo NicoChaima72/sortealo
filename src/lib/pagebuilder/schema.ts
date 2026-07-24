@@ -92,6 +92,17 @@ function nodoSeccion<T extends string, P extends z.ZodTypeAny>(tipo: T, props: P
       v: z.number().int().positive(),
       props,
       estilo: EstiloSeccionSchema.optional(),
+      // Nav auto-derivado (builder-tanda-1 F05/D8): `incluir` mete esta sección en el header; `etiqueta`
+      // sobreescribe la del mapa por tipo (texto plano ≤20, jamás HTML). Vive en el ENVELOPE (hermano de
+      // `props`/`estilo`), OPCIONAL ⇒ un doc sin `nav` deriva al nav actual (no-op, I-H). Los OVERLAYS
+      // usan `nodo()` pelado ⇒ NO admiten `nav`.
+      nav: z
+        .object({
+          incluir: z.boolean(),
+          etiqueta: z.string().min(1).max(20).optional(),
+        })
+        .strict()
+        .optional(),
     })
     .strict();
 }

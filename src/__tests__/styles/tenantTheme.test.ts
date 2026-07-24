@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  esHex,
   generarEscalaColor,
   gradienteTematico,
   overrideDesdeBranding,
@@ -14,12 +15,16 @@ import {
  * función pura y determinista.
  */
 
-const branding = (colorPrimario: string | null): TenantBranding => ({
+const branding = (
+  colorPrimario: string | null,
+  colorAcento: string | null = null,
+): TenantBranding => ({
   nombre: "Tienda X",
   slug: "x",
   descripcion: null,
   logoUrl: null,
   colorPrimario,
+  colorAcento,
   heroTitulo: null,
   heroSubtitulo: null,
   heroImageUrl: null,
@@ -89,6 +94,51 @@ describe("styles/tenantTheme — overrideDesdeBranding", () => {
     const a = overrideDesdeBranding(branding("#4f46e5"));
     const b = overrideDesdeBranding(branding("#4f46e5"));
     expect(a).toEqual(b);
+  });
+
+  // ── builder-tanda-1 F01/D1: segundo color de marca (acento) ──────────────────────────────────
+
+  // acento.override.001 — marca + acento hex ⇒ override con AMBAS escalas de 10 tonos + primaryColor marca
+  it("con colorPrimario Y colorAcento hex emite la escala `acento` de 10 tonos ADEMÁS de la de marca", () => {
+    const override = overrideDesdeBranding(branding("#4f46e5", "#f59e0b"));
+    expect(override.primaryColor).toBe("marca");
+    expect(override.colors?.marca).toHaveLength(10);
+    expect(override.colors?.acento).toHaveLength(10);
+    expect(override.colors?.acento?.[6]).toBe("#f59e0b"); // base del acento en el índice 6
+  });
+
+  // acento.override.002 — acento inválido/ausente ⇒ override IDÉNTICO al actual (solo marca, sin acento)
+  it("con colorAcento null o inválido el override es idéntico al de solo marca (no agrega `acento`)", () => {
+    const soloMarca = overrideDesdeBranding(branding("#4f46e5"));
+    expect(soloMarca.colors?.acento).toBeUndefined();
+    expect(overrideDesdeBranding(branding("#4f46e5", "no-es-hex"))).toEqual(soloMarca);
+    expect(overrideDesdeBranding(branding("#4f46e5", null))).toEqual(soloMarca);
+  });
+
+  // acento.override.003 — solo acento (sin marca) ⇒ escala acento presente, primaryColor SIN override (plataforma)
+  it("con solo colorAcento (sin marca) agrega la escala acento pero NO mueve el primario", () => {
+    const override = overrideDesdeBranding(branding(null, "#f59e0b"));
+    expect(override.colors?.acento).toHaveLength(10);
+    expect(override.colors?.marca).toBeUndefined();
+    expect(override.primaryColor).toBeUndefined(); // conserva el primario de plataforma
+  });
+
+  // acento.override.004 — sin ningún color ⇒ override vacío (theme base intacto)
+  it("sin colorPrimario ni colorAcento no produce override alguno", () => {
+    expect(overrideDesdeBranding(branding(null, null))).toEqual({});
+  });
+});
+
+describe("styles/tenantTheme — esHex (builder-tanda-1 F01)", () => {
+  // acento.eshex.001 — acepta hex de 3 y 6 dígitos, rechaza el resto
+  it("valida hex de 3/6 dígitos y rechaza null/vacío/no-hex", () => {
+    expect(esHex("#abc")).toBe(true);
+    expect(esHex("#4f46e5")).toBe(true);
+    expect(esHex(null)).toBe(false);
+    expect(esHex(undefined)).toBe(false);
+    expect(esHex("")).toBe(false);
+    expect(esHex("4f46e5")).toBe(false);
+    expect(esHex("#12")).toBe(false);
   });
 });
 

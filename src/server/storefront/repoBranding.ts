@@ -19,6 +19,7 @@ export function crearRepoBranding(db: PrismaClient): RepoBranding {
           descripcion: true,
           logoUrl: true,
           colorPrimario: true,
+          colorAcento: true,
           heroTitulo: true,
           heroSubtitulo: true,
           heroImageUrl: true,

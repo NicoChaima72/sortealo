@@ -76,6 +76,15 @@ describe("pagebuilder/widgets social (F05) — estadisticas / botones_sociales /
     expect(SeccionNodeSchema.safeParse({ id: "st", tipo: "estadisticas", v: 1, props: ok }).success).toBe(true);
   });
 
+  // page.soc.001b — estadisticas estiloVisual (builder-tanda-1 F06/D10): default `cards` (= render
+  // actual, no-op); `simple` parsea; valor fuera del enum ⇒ rechazo.
+  it("estadisticas.estiloVisual default cards; simple parsea; fuera del enum ⇒ rechazo", () => {
+    const items = [{ valor: 3000, etiqueta: "lectores" }, { valor: 5, sufijo: "★", etiqueta: "rating" }];
+    expect(estadisticasProps.parse({ items }).estiloVisual).toBe("cards"); // default = actual (I-H)
+    expect(estadisticasProps.safeParse({ items, estiloVisual: "simple" }).success).toBe(true);
+    expect(estadisticasProps.safeParse({ items, estiloVisual: "tarjetas" }).success).toBe(false);
+  });
+
   // page.soc.002 — botones_sociales: red del enum, URL validada, 1–8, .strict
   it("botones_sociales valida red del enum y URL, rechaza red desconocida/URL inválida", () => {
     const ok = { redes: [{ red: "instagram", url: "https://instagram.com/x" }, { red: "whatsapp", url: "https://wa.me/569" }] };

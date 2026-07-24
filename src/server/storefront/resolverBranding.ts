@@ -71,6 +71,7 @@ export async function resolverBrandingDesdeHost({
     descripcion: tienda.descripcion,
     logoUrl: tienda.logoUrl,
     colorPrimario: tienda.colorPrimario,
+    colorAcento: tienda.colorAcento,
     heroTitulo: tienda.heroTitulo,
     heroSubtitulo: tienda.heroSubtitulo,
     heroImageUrl: tienda.heroImageUrl,

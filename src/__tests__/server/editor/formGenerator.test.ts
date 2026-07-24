@@ -37,6 +37,15 @@ const OVERRIDES_CONOCIDOS = new Set<string>([
   // cubre array-de-objetos→repeater, no array-de-string. Tiene default sensato; se afina por el
   // asistente hasta que el form tenga un editor de lista-de-strings dedicado (REVISABLE).
   "cinta_texto.mensajes",
+  // `hero.tituloAcento` / `hero.destacado` (builder-tanda-1 F03): objetos anidados OPCIONALES
+  // (`{palabra,estilo}` / `{texto,nota}`) — MISMO caso que `hero.ctaSecundario`: objeto suelto con
+  // toggle presente/ausente, fuera de la introspección genérica (D8). Se editan por el asistente/MCP
+  // (así los arma F12); el resto del hero (títulos/subtítulo/CTA/enums/toggles) sí es editable por form.
+  "hero.tituloAcento",
+  "hero.destacado",
+  // `aviso_barra.mensajes` (builder-tanda-1 F04): array de STRINGS (mismo caso que `cinta_texto.mensajes`).
+  // Además el `aviso_barra` es un OVERLAY sin panel de edición UI ⇒ se configura por MCP/apply_page.
+  "aviso_barra.mensajes",
 ]);
 
 describe("editor/formGenerator — F10-1: generador de forms cubre el registro (generativo)", () => {

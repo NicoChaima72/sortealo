@@ -82,14 +82,14 @@ describe("pagebuilder/estiloSeccion — envelope de sección (F01)", () => {
     const overlayConEstilo = {
       id: "ov",
       tipo: "aviso_barra",
-      v: 1,
-      props: { texto: "Hola" },
+      v: 2,
+      props: { mensajes: ["Hola"] },
       estilo: { padY: "l" },
     };
     expect(OverlayNodeSchema.safeParse(overlayConEstilo).success).toBe(false);
     // sin estilo ⇒ OK
     expect(
-      OverlayNodeSchema.safeParse({ id: "ov", tipo: "aviso_barra", v: 1, props: { texto: "Hola" } }).success,
+      OverlayNodeSchema.safeParse({ id: "ov", tipo: "aviso_barra", v: 2, props: { mensajes: ["Hola"] } }).success,
     ).toBe(true);
   });
 });

@@ -47,6 +47,33 @@ describe("estiloSeccion — defaults (estilo ausente = render actual)", () => {
   });
 });
 
+describe("estiloSeccion — altura + alineación vertical (builder-tanda-1 F06/D9)", () => {
+  // altura.001 — defaults no-op: altoMin ausente (undefined) + justifyVertical flex-start ⇒ el wrapper
+  // NO aplica flex ni min-height (render idéntico al actual, I-H).
+  it("altoMin default auto ⇒ sin min-height + alineación arriba (no-op)", () => {
+    expect(estiloSeccionACss(undefined).altoMin).toBeUndefined();
+    expect(estiloSeccionACss(undefined).justifyVertical).toBe("flex-start");
+    expect(estiloSeccionACss(parse({})).altoMin).toBeUndefined();
+    expect(estiloSeccionACss(parse({})).justifyVertical).toBe("flex-start");
+  });
+
+  // altura.002 — altoMin pantalla/media ⇒ min-height en svh (mobile-safe); alinearVertical ⇒ justify.
+  it("altoMin pantalla=100svh, media=60svh; alinearVertical mapea a justify-content", () => {
+    expect(estiloSeccionACss(parse({ altoMin: "pantalla" })).altoMin).toBe("100svh");
+    expect(estiloSeccionACss(parse({ altoMin: "media" })).altoMin).toBe("60svh");
+    expect(estiloSeccionACss(parse({ alinearVertical: "centro" })).justifyVertical).toBe("center");
+    expect(estiloSeccionACss(parse({ alinearVertical: "abajo" })).justifyVertical).toBe("flex-end");
+    // svh (no vh) ⇒ correcto en mobile; sin hex (I-A)
+    expect(estiloSeccionACss(parse({ altoMin: "pantalla" })).altoMin).toContain("svh");
+  });
+
+  // altura.003 — enums cerrados: valor fuera de rango ⇒ rechazo (candado)
+  it("altoMin/alinearVertical rechazan valores fuera del enum", () => {
+    expect(EstiloSeccionSchema.safeParse({ altoMin: "gigante" }).success).toBe(false);
+    expect(EstiloSeccionSchema.safeParse({ alinearVertical: "medio" }).success).toBe(false);
+  });
+});
+
 describe("estiloSeccion — esquemas emparejados (cero hex, texto legible)", () => {
   // esc.003 — cada esquema mapea a tokens de la escala (ningún hex inline)
   it("los esquemas sólidos emiten solo CSS vars/color-mix (cero hex)", () => {
@@ -86,6 +113,47 @@ describe("estiloSeccion — esquemas emparejados (cero hex, texto legible)", () 
   // esc.005 — tema (transparente) no fija fondo ni color (hereda el shell)
   it("esquema tema no fija fondo ni color (transparente/heredado)", () => {
     expect(fondoSeccionACss({ tipo: "esquema", esquema: "tema" })).toEqual({});
+  });
+
+  // ── builder-tanda-1 F01/D1: esquemas de acento con degradación a marca ────────────────────────
+
+  // acento.esc.001 — los tres esquemas acento parsean en FondoSeccion y no emiten hex
+  it("los esquemas acento_suave/acento/acento_profundo parsean y emiten solo CSS vars (cero hex)", () => {
+    for (const esquema of ["acento_suave", "acento", "acento_profundo"] as const) {
+      parse({ fondo: { tipo: "esquema", esquema } }); // no lanza ⇒ el enum los acepta
+      const css = fondoSeccionACss({ tipo: "esquema", esquema });
+      expect(tieneHex(valoresCss(css)), `esquema ${esquema} no debe tener hex`).toBe(false);
+    }
+  });
+
+  // acento.esc.002 — degradación: cada esquema acento cae por fallback CSS a la escala de marca/primario
+  it("cada esquema acento usa la escala `acento` con FALLBACK a la de marca (degradación sin acento, I-T2)", () => {
+    const suave = fondoSeccionACss({ tipo: "esquema", esquema: "acento_suave" });
+    expect(suave.background).toBe("var(--mantine-color-acento-0, var(--mantine-primary-color-0))");
+    expect(suave.color).toBe("var(--mantine-color-text)");
+
+    const filled = fondoSeccionACss({ tipo: "esquema", esquema: "acento" });
+    expect(filled.background).toBe(
+      "var(--mantine-color-acento-filled, var(--mantine-primary-color-filled))",
+    );
+    // texto emparejado por autoContrast, con fallback al contraste del primario
+    expect(filled.color).toBe(
+      "var(--mantine-color-acento-contrast, var(--mantine-primary-color-contrast))",
+    );
+
+    const profundo = fondoSeccionACss({ tipo: "esquema", esquema: "acento_profundo" });
+    expect(profundo.background).toBe("var(--mantine-color-acento-8, var(--mantine-primary-color-8))");
+    expect(profundo.color).toBe("var(--mantine-color-white)");
+  });
+
+  // acento.esc.003 — colorSolidoDeEsquema (fill del divisor) también degrada por fallback
+  it("colorSolidoDeEsquema de un esquema acento emite el token acento con fallback a marca", () => {
+    expect(colorSolidoDeEsquema("acento")).toBe(
+      "var(--mantine-color-acento-filled, var(--mantine-primary-color-filled))",
+    );
+    expect(colorSolidoDeEsquema("acento_profundo")).toBe(
+      "var(--mantine-color-acento-8, var(--mantine-primary-color-8))",
+    );
   });
 });
 
@@ -136,6 +204,93 @@ describe("estiloSeccion — gradientes / imagen / patrón", () => {
     expect(css.background).toBe("var(--mantine-color-body)"); // esquema base
     expect(css.backgroundImage).toContain("radial-gradient");
     expect(tieneHex(valoresCss(css))).toBe(false);
+  });
+});
+
+describe("estiloSeccion — fondo bicolor (builder-tanda-1 F02/D3)", () => {
+  // bicolor.001 — parsea con tonos/dirección/mezcla de enum; defaults de direccion/mezcla aplican
+  it("la rama bicolor parsea con TONOS de enum y rellena direccion/mezcla por default", () => {
+    const e = parse({ fondo: { tipo: "bicolor", colorA: "marca", colorB: "acento" } });
+    expect(e.fondo).toEqual({
+      tipo: "bicolor",
+      colorA: "marca",
+      colorB: "acento",
+      direccion: "vertical",
+      mezcla: "dura",
+    });
+  });
+
+  // bicolor.002 — hex crudo, tono fuera de TONOS_FONDO o campo extra ⇒ rechazo (.strict / enum cerrado)
+  it("rechaza hex crudo, tono fuera de rango y campos extra", () => {
+    expect(() => parse({ fondo: { tipo: "bicolor", colorA: "#fff", colorB: "acento" } })).toThrow();
+    // "tema" existe en ESQUEMAS_FONDO pero NO en TONOS_FONDO (curado) ⇒ rechazo
+    expect(() => parse({ fondo: { tipo: "bicolor", colorA: "tema", colorB: "marca" } })).toThrow();
+    expect(() =>
+      parse({ fondo: { tipo: "bicolor", colorA: "marca", colorB: "acento", extra: 1 } }),
+    ).toThrow();
+  });
+
+  // bicolor.003 — mezcla dura = hard-stop 50%; suave = degradado continuo; dirección mapeada; cero hex
+  it("emite los dos tokens + dirección; dura = corte al 50%, suave = degradado", () => {
+    const dura = fondoSeccionACss({
+      tipo: "bicolor",
+      colorA: "marca",
+      colorB: "acento",
+      direccion: "vertical",
+      mezcla: "dura",
+    });
+    expect(dura.background).toContain("linear-gradient(to bottom");
+    expect(dura.background).toContain("var(--mantine-primary-color-filled)"); // colorA = marca
+    expect(dura.background).toContain("var(--mantine-color-acento-filled"); // colorB = acento (fallback)
+    expect(dura.background).toContain("50%"); // corte duro
+    expect(tieneHex(valoresCss(dura))).toBe(false);
+
+    const suave = fondoSeccionACss({
+      tipo: "bicolor",
+      colorA: "marca",
+      colorB: "acento",
+      direccion: "diagonal",
+      mezcla: "suave",
+    });
+    expect(suave.background).toContain("linear-gradient(135deg");
+    expect(suave.background).not.toContain("50%"); // degradado continuo
+  });
+
+  // bicolor.004 — el color de texto se empareja con colorA (tono dominante donde se asienta el contenido)
+  it("empareja el color de texto con colorA (legibilidad por construcción)", () => {
+    // colorA marca (filled) ⇒ contraste de autoContrast (mismo que esquema `marca`)
+    expect(
+      fondoSeccionACss({
+        tipo: "bicolor",
+        colorA: "marca",
+        colorB: "tinta",
+        direccion: "vertical",
+        mezcla: "dura",
+      }).color,
+    ).toBe("var(--mantine-primary-color-contrast)");
+    // colorA tinta (oscuro) ⇒ texto blanco
+    expect(
+      fondoSeccionACss({
+        tipo: "bicolor",
+        colorA: "tinta",
+        colorB: "marca",
+        direccion: "vertical",
+        mezcla: "dura",
+      }).color,
+    ).toBe("var(--mantine-color-white)");
+  });
+});
+
+describe("estiloSeccion — anchoFondo (builder-tanda-1 F02/D4)", () => {
+  // anchofondo.001 — default no-op: estilo ausente / sin anchoFondo ⇒ "completo" (render actual full-bleed)
+  it("anchoFondo default es 'completo' (reproduce el full-bleed actual del wrapper)", () => {
+    expect(estiloSeccionACss(undefined).anchoFondo).toBe("completo");
+    expect(estiloSeccionACss(parse({})).anchoFondo).toBe("completo");
+  });
+
+  // anchofondo.002 — "contenido" se propaga al descriptor
+  it("anchoFondo 'contenido' se resuelve al descriptor", () => {
+    expect(estiloSeccionACss(parse({ anchoFondo: "contenido" })).anchoFondo).toBe("contenido");
   });
 });
 

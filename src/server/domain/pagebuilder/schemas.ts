@@ -62,6 +62,14 @@ export const mutacionPaginaSchema = z.discriminatedUnion("accion", [
     accion: z.literal("set_page_theme"),
     tema: propsLaxas,
   }),
+  // Escribir el `nav` del ENVELOPE de una sección (builder-tanda-1 F05/D8): incluir/excluir del header
+  // + etiqueta opcional. `nav: null` (o ausente) LIMPIA el campo. El documento completo revalida (I3):
+  // etiqueta >20 o campo extra ⇒ INVALID sin mutar.
+  z.object({
+    accion: z.literal("set_section_nav"),
+    id: z.string().min(1),
+    nav: propsLaxas.nullable(),
+  }),
   // Reemplazo TOTAL del borrador desde un documento crudo (primer volcado desde foto). Se parsea
   // entero contra PageDocumentSchema.
   z.object({
@@ -98,3 +106,17 @@ export const revertirBorradorInput = z.object({
   revision: z.number().int().positive(),
 });
 export type RevertirBorradorInput = z.infer<typeof revertirBorradorInput>;
+
+/**
+ * Setear el segundo color de marca del tenant (builder-tanda-1 F01/D2). `colorAcento` vive en la
+ * columna `Tenant.colorAcento`, FUERA del Documento de Página (I-T1) ⇒ no es una mutación del doc, es
+ * un procedure propio gateado por membresía. Hex de 3/6 dígitos (mismo criterio que `esHex`), o `null`
+ * para limpiarlo (⇒ los esquemas `acento*` degradan a marca, I-T2). Rechaza cualquier otra cosa.
+ */
+export const setColorAcentoInput = z.object({
+  colorAcento: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Color hex inválido (usa #rgb o #rrggbb)")
+    .nullable(),
+});
+export type SetColorAcentoInput = z.infer<typeof setColorAcentoInput>;

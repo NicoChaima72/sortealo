@@ -52,7 +52,6 @@ export function CatalogoStorefront({
     <SeccionWrapper
       id={nodo.id}
       estilo={nodo.estilo}
-      ancla="catalogo"
       divisorColor={divisorColor}
     >
       <Stack gap="lg">

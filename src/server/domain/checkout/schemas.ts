@@ -72,3 +72,14 @@ export const getSorteoResumenStorefrontInput = z
 export type GetSorteoResumenStorefrontInput = z.infer<
   typeof getSorteoResumenStorefrontInput
 >;
+
+/**
+ * Input del estado de una orden por su token de Flow (builder-tanda-1 F08/D12). El `token` es el que
+ * viaja en la URL de retorno de Flow (opaco). El `tenantId` sale del contexto (I1), jamás del input.
+ * La respuesta es solo el estado enum, sin PII (I-T6).
+ */
+export const getEstadoOrdenInput = z.object({
+  token: z.string().min(1).max(256),
+});
+
+export type GetEstadoOrdenInput = z.infer<typeof getEstadoOrdenInput>;

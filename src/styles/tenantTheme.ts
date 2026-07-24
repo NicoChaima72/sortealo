@@ -28,6 +28,11 @@ export interface TenantBranding {
   logoUrl: string | null;
   /** Color de marca en hex (`#rgb` o `#rrggbb`); `null` ⇒ sin override (theme base de plataforma). */
   colorPrimario: string | null;
+  /**
+   * Segundo color de marca en hex (builder-tanda-1 F01/D1); `null` ⇒ los esquemas/tonos `acento*`
+   * degradan a la escala de marca (I-T2). Tratamiento ESPEJO de `colorPrimario`.
+   */
+  colorAcento: string | null;
   heroTitulo: string | null;
   heroSubtitulo: string | null;
   /** URL PÚBLICA de la imagen de hero (bucket público, ADR-0013); `null` ⇒ gradiente temático (D7). */
@@ -42,6 +47,14 @@ export interface TenantBranding {
 
 /** Clave del color de marca en `theme.colors`. Un solo token = un solo color (design.md §2). */
 export const COLOR_MARCA = "marca";
+
+/**
+ * Clave del SEGUNDO color de marca en `theme.colors` (builder-tanda-1 F01/D1). Cuando el tenant
+ * tiene `colorAcento` válido, `overrideDesdeBranding` puebla `colors.acento` ⇒ Mantine emite las CSS
+ * vars `--mantine-color-acento-*` (incl. `-filled`/`-contrast` por `autoContrast`). Sin acento, esas
+ * vars no existen y los esquemas `acento*` degradan por fallback de `var()` a la escala de marca (I-T2).
+ */
+export const COLOR_ACENTO = "acento";
 
 const HEX_CORTO = /^#([0-9a-fA-F]{3})$/;
 const HEX_LARGO = /^#([0-9a-fA-F]{6})$/;
@@ -119,23 +132,38 @@ export function generarEscalaColor(hex: string): MantineColorsTuple {
   return tonos as unknown as MantineColorsTuple;
 }
 
-/** `true` sii `valor` es un hex de 3 o 6 dígitos. */
-function esHex(valor: string | null): valor is string {
-  return valor !== null && (HEX_CORTO.test(valor) || HEX_LARGO.test(valor));
+/**
+ * `true` sii `valor` es un hex de 3 o 6 dígitos. Exportado (builder-tanda-1 F01): el borde valida
+ * el `colorAcento` entrante con el MISMO criterio antes de escribir `Tenant.colorAcento`.
+ */
+export function esHex(valor: string | null | undefined): valor is string {
+  return valor != null && (HEX_CORTO.test(valor) || HEX_LARGO.test(valor));
 }
 
 /**
- * Construye el theme override del tenant a partir de su branding (D2). Solo el color de marca
- * altera el theme hoy; el resto del branding (logo/textos) lo consume el chrome del storefront,
- * no el theme. Sin color válido ⇒ override vacío ⇒ queda el theme base de plataforma (I9).
+ * Construye el theme override del tenant a partir de su branding (D2; +acento en builder-tanda-1
+ * F01/D1). Solo los COLORES de marca alteran el theme; el resto del branding (logo/textos) lo consume
+ * el chrome del storefront, no el theme. Cada color inválido/ausente se OMITE (degradación limpia, I9):
+ * sin `colorPrimario` queda el primario de plataforma; sin `colorAcento` los esquemas `acento*`
+ * degradan por fallback CSS a la escala de marca (I-T2). Puro y determinista (mismo branding ⇒ mismo
+ * override, sirve SSR + cliente sin mismatch).
  */
 export function overrideDesdeBranding(
   branding: TenantBranding,
 ): MantineThemeOverride {
-  if (!esHex(branding.colorPrimario)) return {};
+  const colors: Record<string, ReturnType<typeof generarEscalaColor>> = {};
+  if (esHex(branding.colorPrimario)) {
+    colors[COLOR_MARCA] = generarEscalaColor(branding.colorPrimario);
+  }
+  if (esHex(branding.colorAcento)) {
+    colors[COLOR_ACENTO] = generarEscalaColor(branding.colorAcento);
+  }
+  if (Object.keys(colors).length === 0) return {};
   return {
-    colors: { [COLOR_MARCA]: generarEscalaColor(branding.colorPrimario) },
-    primaryColor: COLOR_MARCA,
+    colors,
+    // El primario del storefront solo se mueve si el tenant definió su color de marca; un tenant con
+    // solo acento conserva el primario de plataforma (el acento sigue disponible por su token).
+    ...(colors[COLOR_MARCA] ? { primaryColor: COLOR_MARCA } : {}),
   };
 }
 

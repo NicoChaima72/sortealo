@@ -68,7 +68,6 @@ export function SorteoStorefront({
     <SeccionWrapper
       id={nodo.id}
       estilo={nodo.estilo ?? ESTILO_SORTEO_DEFAULT}
-      ancla="sorteo"
       divisorColor={divisorColor}
     >
       <SimpleGrid

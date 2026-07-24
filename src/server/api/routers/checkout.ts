@@ -1,5 +1,6 @@
 import { runDomain } from "~/server/api/runDomain";
 import { createTRPCRouter, tenantProcedure } from "~/server/api/trpc";
+import { getEstadoOrden } from "~/server/domain/checkout/getEstadoOrden";
 import { getProductoStorefront } from "~/server/domain/checkout/getProductoStorefront";
 import { getSorteoActivoStorefront } from "~/server/domain/checkout/getSorteoActivoStorefront";
 import { getSorteoResumenStorefront } from "~/server/domain/checkout/getSorteoResumenStorefront";
@@ -7,6 +8,7 @@ import { iniciarCheckout } from "~/server/domain/checkout/iniciarCheckout";
 import { listarProductos } from "~/server/domain/checkout/listarProductos";
 import { resolverCatalogo } from "~/server/domain/checkout/resolverCatalogo";
 import {
+  getEstadoOrdenInput,
   getProductoStorefrontInput,
   getSorteoResumenStorefrontInput,
   iniciarCheckoutInput,
@@ -69,6 +71,17 @@ export const checkoutRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       runDomain(() =>
         getSorteoResumenStorefront({ db: ctx.db, tenantId: ctx.tenant.id, max: input?.max }),
+      ),
+    ),
+
+  // Estado de una orden por su token de Flow (builder-tanda-1 F08/D12). SOLO el estado enum, sin PII
+  // (I-T6). La usa `checkout/retorno` para pasar a celebración cuando el webhook confirma PAGADO — esta
+  // query NO confirma nada (I6/ADR-0001), solo LEE. Tenant-scoped por el contexto (I1).
+  estadoOrden: tenantProcedure
+    .input(getEstadoOrdenInput)
+    .query(({ ctx, input }) =>
+      runDomain(() =>
+        getEstadoOrden({ db: ctx.db, tenantId: ctx.tenant.id, token: input.token }),
       ),
     ),
 

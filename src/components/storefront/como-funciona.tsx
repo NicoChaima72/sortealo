@@ -76,7 +76,6 @@ export function ComoFunciona({
     <SeccionWrapper
       id={nodo.id}
       estilo={nodo.estilo}
-      ancla="como-funciona"
       divisorColor={divisorColor}
     >
       <Stack gap="lg">

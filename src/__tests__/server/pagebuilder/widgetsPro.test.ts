@@ -39,17 +39,21 @@ describe("pagebuilder/widgets pro (F10) — schemas", () => {
     expect(whatsappFlotanteProps.safeParse({ posicion: "arriba" }).success).toBe(false);
   });
 
-  // page.pro.004 — aviso_barra: texto REQUERIDO + max 120; texto plano (no HTML — .strict lo garantiza)
-  it("aviso_barra exige texto (≤120) y rechaza campos extra (sin HTML)", () => {
-    expect(avisoBarraProps.safeParse({}).success).toBe(false); // texto requerido
-    expect(avisoBarraProps.safeParse({ texto: "Envío gratis hoy" }).success).toBe(true);
-    expect(avisoBarraProps.safeParse({ texto: "x".repeat(121) }).success).toBe(false);
-    expect(avisoBarraProps.safeParse({ texto: "ok", html: "<b>x</b>" }).success).toBe(false);
+  // page.pro.004 — aviso_barra v2 (builder-tanda-1 F04): mensajes REQUERIDOS (1–5, ≤120); texto plano
+  // (no HTML — .strict lo garantiza); el `texto` de v1 ya NO es campo (v-bump).
+  it("aviso_barra exige mensajes (1–5, ≤120) y rechaza campos extra (sin HTML)", () => {
+    expect(avisoBarraProps.safeParse({}).success).toBe(false); // mensajes requerido
+    expect(avisoBarraProps.safeParse({ mensajes: [] }).success).toBe(false); // min 1
+    expect(avisoBarraProps.safeParse({ mensajes: ["Envío gratis hoy"] }).success).toBe(true);
+    expect(avisoBarraProps.safeParse({ mensajes: ["a", "b", "c", "d", "e", "f"] }).success).toBe(false); // max 5
+    expect(avisoBarraProps.safeParse({ mensajes: ["x".repeat(121)] }).success).toBe(false);
+    expect(avisoBarraProps.safeParse({ mensajes: ["ok"], html: "<b>x</b>" }).success).toBe(false);
+    expect(avisoBarraProps.safeParse({ texto: "hola" }).success).toBe(false); // el shape v1 ya no parsea directo
   });
 
-  // page.pro.005 — overlays[] acepta aviso_barra y whatsapp_flotante; rechaza secciones
+  // page.pro.005 — overlays[] acepta aviso_barra (v2) y whatsapp_flotante; rechaza secciones
   it("la union de overlays acepta los overlays y rechaza secciones", () => {
-    expect(OverlayNodeSchema.safeParse({ id: "o1", tipo: "aviso_barra", v: 1, props: { texto: "hola" } }).success).toBe(true);
+    expect(OverlayNodeSchema.safeParse({ id: "o1", tipo: "aviso_barra", v: 2, props: { mensajes: ["hola"] } }).success).toBe(true);
     expect(OverlayNodeSchema.safeParse({ id: "o2", tipo: "whatsapp_flotante", v: 1, props: { numero: "+56912345678" } }).success).toBe(true);
     expect(OverlayNodeSchema.safeParse({ id: "o3", tipo: "hero", v: 1, props: {} }).success).toBe(false);
   });
@@ -63,7 +67,7 @@ describe("pagebuilder/conAvisoBarra + factory (migración de avisoTexto)", () =>
     const conAviso = documentoInicial({ ...semilla, avisoTexto: "Recibes el PDF por correo" });
     expect(conAviso.overlays.map((o) => o.tipo)).toEqual(["aviso_barra"]);
     const aviso = conAviso.overlays[0]!;
-    if (aviso.tipo === "aviso_barra") expect(aviso.props.texto).toBe("Recibes el PDF por correo");
+    if (aviso.tipo === "aviso_barra") expect(aviso.props.mensajes).toEqual(["Recibes el PDF por correo"]);
 
     const sinAviso = documentoInicial({ ...semilla, avisoTexto: null });
     expect(sinAviso.overlays).toEqual([]);

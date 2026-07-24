@@ -11,9 +11,11 @@ import {
 import {
   IconChevronDown,
   IconChevronUp,
+  IconGripVertical,
   IconPlus,
   IconTrash,
 } from "@tabler/icons-react";
+import { useState } from "react";
 
 import { type PageDocument } from "~/lib/pagebuilder/schema";
 import { type MutacionPagina } from "~/server/domain/pagebuilder/schemas";
@@ -21,11 +23,32 @@ import { WIDGET_META } from "~/lib/pagebuilder/widgets";
 
 /**
  * Panel de SECCIONES del editor (catálogo-v2 F09; dock en F11): lista ordenada de las secciones del
- * Borrador con reordenar (↑↓ vía `move_section`), eliminar (`remove_section`) y un botón que abre la
- * WidgetGallery (panel hermano "Agregar", F11 — reemplaza el modal). Click en una sección ⇒ scroll de
- * la preview + abre su panel de edición (F10). Tema e Historial ahora son paneles del dock (rail). Cero
+ * Borrador con reordenar, eliminar (`remove_section`) y un botón que abre la WidgetGallery (panel
+ * hermano "Agregar"). Click en una sección ⇒ scroll de la preview + abre su panel de edición. Cero
  * lógica de dominio: solo arma `MutacionPagina` y las emite (I-I).
+ *
+ * Reordenar (builder-tanda-1 F11/D15): drag & drop NATIVO (HTML5) SOLO en esta lista — al soltar emite
+ * UN `move_section` con la posición final. Los botones ↑↓ se CONSERVAN como fallback accesible (teclado/
+ * touch). Sin librería nueva: la lista es corta, vertical y de un solo contenedor ⇒ el DnD nativo basta;
+ * `@dnd-kit` quedaría justificado solo si hiciera falta a11y de teclado avanzada (no es el caso: ↑↓ ya la
+ * cubren). El canvas NUNCA es drag-libre (D9 del plan v2).
  */
+
+/**
+ * Posición destino de un reordenamiento por arrastre (PURO). `move_section` quita el nodo y lo inserta
+ * en `aPosicion` del array YA sin el nodo; para "soltar sobre el índice visual `hasta`" eso coincide con
+ * `aPosicion = hasta` en AMBAS direcciones. Soltar sobre sí mismo (o índice inválido) ⇒ `null` (no-op).
+ */
+export function destinoReordenamiento(
+  desde: number,
+  hasta: number,
+  total: number,
+): number | null {
+  if (desde === hasta) return null;
+  if (hasta < 0 || hasta >= total || desde < 0 || desde >= total) return null;
+  return hasta;
+}
+
 export function PanelSecciones({
   documento,
   seleccion,
@@ -41,6 +64,17 @@ export function PanelSecciones({
   onAbrirGaleria: () => void;
 }) {
   const secciones = documento.secciones;
+  const [arrastrado, setArrastrado] = useState<number | null>(null);
+  const [encima, setEncima] = useState<number | null>(null);
+
+  const soltarEn = (hasta: number) => {
+    if (arrastrado === null) return;
+    const destino = destinoReordenamiento(arrastrado, hasta, secciones.length);
+    const id = secciones[arrastrado]?.id;
+    if (destino !== null && id) onAplicar({ accion: "move_section", id, aPosicion: destino });
+    setArrastrado(null);
+    setEncima(null);
+  };
 
   return (
     <Stack gap="sm" p="md">
@@ -60,23 +94,55 @@ export function PanelSecciones({
           {secciones.map((s, i) => {
             const meta = WIDGET_META[s.tipo];
             const activa = s.id === seleccion;
+            const esObjetivo = encima === i && arrastrado !== null && arrastrado !== i;
             return (
               <Card
                 key={s.id}
                 withBorder
                 padding="xs"
                 radius="md"
+                draggable
+                onDragStart={(e) => {
+                  setArrastrado(i);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault(); // permite el drop
+                  e.dataTransfer.dropEffect = "move";
+                  if (encima !== i) setEncima(i);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  soltarEn(i);
+                }}
+                onDragEnd={() => {
+                  setArrastrado(null);
+                  setEncima(null);
+                }}
                 style={{
                   cursor: "pointer",
-                  borderColor: activa ? "var(--mantine-primary-color-filled)" : undefined,
+                  opacity: arrastrado === i ? 0.5 : 1,
+                  borderColor: esObjetivo
+                    ? "var(--mantine-primary-color-filled)"
+                    : activa
+                      ? "var(--mantine-primary-color-filled)"
+                      : undefined,
+                  borderTopWidth: esObjetivo ? 2 : undefined,
                 }}
                 onClick={() => onSeleccionar(s.id)}
               >
                 <Group justify="space-between" wrap="nowrap" gap="xs">
-                  <Box style={{ minWidth: 0 }}>
-                    <Text size="sm" fw={500} truncate>{meta.titulo}</Text>
-                    <Text size="xs" c="dimmed" truncate>{meta.descripcion}</Text>
-                  </Box>
+                  <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+                    <IconGripVertical
+                      className="size-4 shrink-0"
+                      style={{ color: "var(--mantine-color-dimmed)", cursor: "grab" }}
+                      aria-hidden
+                    />
+                    <Box style={{ minWidth: 0 }}>
+                      <Text size="sm" fw={500} truncate>{meta.titulo}</Text>
+                      <Text size="xs" c="dimmed" truncate>{meta.descripcion}</Text>
+                    </Box>
+                  </Group>
                   <Group gap={2} wrap="nowrap" onClick={(e) => e.stopPropagation()}>
                     <Tooltip label="Subir">
                       <ActionIcon

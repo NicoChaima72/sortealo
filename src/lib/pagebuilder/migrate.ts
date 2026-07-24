@@ -20,9 +20,12 @@ import {
 export function migrarDocumento(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
   const doc = raw as Record<string, unknown>;
-  if (!Array.isArray(doc.secciones)) return raw;
-  const secciones = doc.secciones as unknown[];
-  return { ...doc, secciones: secciones.map(migrarNodo) };
+  const out: Record<string, unknown> = { ...doc };
+  if (Array.isArray(doc.secciones)) out.secciones = doc.secciones.map(migrarNodo);
+  // Los OVERLAYS también se migran (builder-tanda-1 F04/D7: aviso_barra v1→v2). Antes migrarDocumento
+  // solo tocaba `secciones` ⇒ un overlay con `v` viejo llegaba crudo al parse.
+  if (Array.isArray(doc.overlays)) out.overlays = doc.overlays.map(migrarOverlay);
+  return out;
 }
 
 /**
@@ -48,6 +51,33 @@ function migrarNodo(s: unknown): unknown {
   // ganadores v1 → v2 (aditivo: default `fuente:"manual"` conserva los items y el look actual).
   if (out.tipo === "ganadores" && v < 2) {
     out = { ...out, v: 2 };
+    v = 2;
+  }
+  return out;
+}
+
+/**
+ * Migra UN overlay de su `v` viejo a la actual (PURO). Paso vigente:
+ *  - `aviso_barra` v1 → v2 (builder-tanda-1 F04/D7): la barra v1 llevaba `texto` (string); v2 usa
+ *    `mensajes` (array 1–5). Migrate-on-read LOSSLESS: `texto → mensajes:[texto]` (el límite ≤120 de v2
+ *    = el de v1 ⇒ nunca falla el parse). Los defaults `modo:"estatico"`/`esquema:"tema"`/
+ *    `mostrarCountdown:false` reproducen el look v1 exacto (I-T3). `enlaceUrl/enlaceTexto/descartable`
+ *    quedan intactos. Un nodo sin `v` se normaliza a v1 primero (paso genérico, como en `migrarNodo`).
+ */
+function migrarOverlay(o: unknown): unknown {
+  if (!o || typeof o !== "object") return o;
+  const nodo = o as Record<string, unknown>;
+  let out = nodo;
+  let v = typeof nodo.v === "number" ? nodo.v : 1;
+  if (nodo.v === undefined) out = { ...out, v };
+  if (out.tipo === "aviso_barra" && v < 2) {
+    const props = (out.props ?? {}) as Record<string, unknown>;
+    const nuevoProps: Record<string, unknown> = { ...props };
+    if (typeof props.texto === "string") {
+      nuevoProps.mensajes = [props.texto];
+      delete nuevoProps.texto;
+    }
+    out = { ...out, v: 2, props: nuevoProps };
     v = 2;
   }
   return out;
