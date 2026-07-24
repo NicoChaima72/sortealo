@@ -28,6 +28,7 @@ export function Banda({
   contenedor = true,
   contenedorClassName,
   className,
+  curvaInferior = false,
   id,
 }: {
   tono?: TonoBanda;
@@ -35,10 +36,20 @@ export function Banda({
   contenedor?: boolean;
   contenedorClassName?: string;
   className?: string;
+  /** Esquina inferior derecha muy redondeada que se curva hacia la banda de abajo (estilo scoop). */
+  curvaInferior?: boolean;
   id?: string;
 }) {
   return (
-    <section id={id} className={cn(s.banda, CLASE_TONO[tono], className)}>
+    <section
+      id={id}
+      className={cn(
+        s.banda,
+        CLASE_TONO[tono],
+        curvaInferior && s.curvaInferior,
+        className,
+      )}
+    >
       {contenedor ? (
         <div
           className={cn(

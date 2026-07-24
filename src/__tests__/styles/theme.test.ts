@@ -107,7 +107,7 @@ describe("styles/theme — tipografía por CSS var (I9, Vitest-safe)", () => {
   // styles.theme.008 — texto Instrument, headings Bricolage, mono Plex, todas por CSS var
   it("consume las 3 fuentes del talonario por CSS var (Instrument/Bricolage/Plex)", () => {
     expect(theme.fontFamily).toContain("var(--font-instrument)");
-    expect(theme.headings?.fontFamily).toContain("var(--font-display)");
+    expect(theme.headings?.fontFamily).toContain("var(--font-heading)");
     expect(theme.fontFamilyMonospace).toContain("var(--font-mono)");
   });
 

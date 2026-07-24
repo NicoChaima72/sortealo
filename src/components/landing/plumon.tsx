@@ -5,11 +5,17 @@ import { cn } from "~/lib/utils";
 import s from "./landing.module.css";
 
 /**
- * Plumón — trazo orgánico de destacador amarillo detrás de una palabra (firma de «El Talonario»).
- * Dos variantes (`a`/`b`) con distinta inclinación y borde para que dos plumones seguidos no se
- * vean clonados. El texto resaltado siempre va en tinta (legible sobre el amarillo); sobre una
- * banda amarilla el trazo pasa a blanco solo (`.bandaAmarilla` en el CSS module). Cero hex: el
- * amarillo sale del token `--mantine-color-amarillo-6`.
+ * Plumón — pincelazo de destacador detrás de una palabra (firma de «El Talonario»).
+ *
+ * Técnica BULLETPROOF (2026-07-18, tras 3 reincidencias del "trazo sobre el texto"): el trazo es
+ * el `background-image` del PROPIO span de texto (`/plumon.svg`). En el modelo de caja de CSS, el
+ * contenido de un elemento SIEMPRE se pinta encima de su propio background — no hay z-index,
+ * stacking context ni CSS a medio recargar (HMR) que pueda invertir eso. Es imposible que el trazo
+ * tape el texto. (Reemplaza al enfoque de capa absoluta + z-index, que sí podía romperse.)
+ *
+ * Trade-off aceptado: como background el color va horneado en el SVG (`#FFC530`) → misma excepción
+ * de "hex en asset de marca" ya vigente para `favicon.svg`/`og.svg`. Sobre banda amarilla el trazo
+ * pasa a blanco (`/plumon-blanco.svg`) vía `.bandaAmarilla .plumon` en el CSS module.
  */
 export function Plumon({
   children,
@@ -19,7 +25,7 @@ export function Plumon({
   variante?: "a" | "b";
 }) {
   return (
-    <span className={cn(variante === "b" ? s.plumonB : s.plumon)}>
+    <span className={cn(s.plumon, variante === "b" && s.plumonB)}>
       {children}
     </span>
   );

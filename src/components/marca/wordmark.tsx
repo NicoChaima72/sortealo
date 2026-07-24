@@ -1,23 +1,34 @@
-import { Group, Text, ThemeIcon } from "@mantine/core";
-import { IconTicket } from "@tabler/icons-react";
+import { Text } from "@mantine/core";
+import { type CSSProperties } from "react";
 
 import { Plumon } from "~/components/landing/plumon";
 import { APP_CONFIG } from "~/config/app";
 
 /**
- * Wordmark de plataforma (identidad «El Talonario»). Firma tipográfica reutilizable: isotipo
- * PROVISIONAL (Tabler `IconTicket` en un `ThemeIcon` del primario cobalto) + el nombre en Bricolage
- * Grotesque (`var(--font-display)`, peso 800) con el **«éa» resaltado en plumón amarillo**. El
- * nombre SIEMPRE sale de `APP_CONFIG.name` (I8) — nunca literal; el resaltado se hace partiendo el
- * nombre por «éa» y degrada limpio si ese trozo no está. Un logo/isotipo dibujado real es encargo
- * de diseño futuro (out of scope del plan).
+ * Wordmark de plataforma (identidad «El Talonario»). Firma SOLO tipográfica: el nombre en
+ * Bricolage Grotesque (`var(--font-display)`, peso 800) con el **«éa» resaltado en plumón**
+ * (componente `Plumon`: trazo como `background-image` del propio texto → texto SIEMPRE encima por
+ * modelo de caja, imposible de romper por CSS stale — patrón bulletproof 2026-07-18).
+ *
+ * `invertido` (para fondos azul/oscuros): el nombre COMPLETO va sobre un pincelazo BLANCO en
+ * diagonal, también como `background-image` del propio Text (misma técnica bulletproof, no una
+ * capa aparte) — el "lockup negativo" de la marca. Decisión del usuario 2026-07-18.
+ *
+ * El nombre SIEMPRE sale de `APP_CONFIG.name` (I8) — nunca literal; el resaltado parte el
+ * nombre por «éa» y degrada limpio si ese trozo no está.
  */
 interface WordmarkProps {
-  /** Tamaño de fuente del nombre en px (el isotipo escala proporcional). */
+  /** Tamaño de fuente del nombre en px. */
   size?: number;
-  /** Muestra el isotipo (ThemeIcon). En espacios muy chicos se puede ocultar. */
+  /** Fondo azul/oscuro: pincelazo blanco diagonal detrás del nombre completo, texto en tinta. */
+  invertido?: boolean;
+  /**
+   * Muestra el isotipo = EL MISMO `/favicon.svg` (S blanca sobre cobalto + subrayado amarillo),
+   * decisión del usuario 2026-07-18 — un solo asset para pestaña y UI, sincronizados por
+   * construcción. Off por defecto; el navbar de la landing lo activa.
+   */
   withIcon?: boolean;
-  /** Color del texto (token del theme). Por defecto hereda el color de texto del contexto. */
+  /** Color del texto (token del theme). Ignorado en `invertido`. */
   c?: string;
 }
 
@@ -34,28 +45,64 @@ function nombreConPlumon() {
   );
 }
 
-export function Wordmark({ size = 20, withIcon = true, c }: WordmarkProps) {
+/** Pincelazo blanco diagonal como background del PROPIO texto (bulletproof, no capa aparte).
+ * `inline-block` + `width: fit-content` + `alignSelf: flex-start`: si no, un contenedor flex
+ * padre (p. ej. el login) estira el elemento a todo el ancho y el trazo se estira con él. */
+const BRUSH_INVERTIDO: CSSProperties = {
+  display: "inline-block",
+  width: "fit-content",
+  alignSelf: "flex-start",
+  backgroundImage: "url('/plumon-blanco.svg')",
+  backgroundSize: "100% 1.5em",
+  backgroundPosition: "center 54%",
+  backgroundRepeat: "no-repeat",
+  padding: "0.05em 0.55em",
+};
+
+export function Wordmark({
+  size = 20,
+  invertido = false,
+  withIcon = false,
+  c,
+}: WordmarkProps) {
+  const marca = (
+    <Text
+      component="span"
+      fw={800}
+      c={invertido ? "black" : c}
+      style={{
+        fontFamily: "var(--font-display)",
+        fontSize: size,
+        letterSpacing: "-0.02em",
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+        ...(invertido ? BRUSH_INVERTIDO : {}),
+      }}
+    >
+      {nombreConPlumon()}
+    </Text>
+  );
+
+  if (!withIcon) return marca;
+
   return (
-    <Group gap="xs" wrap="nowrap" align="center">
-      {withIcon && (
-        <ThemeIcon size={Math.round(size * 1.6)} radius="md" variant="filled">
-          <IconTicket style={{ width: "62%", height: "62%" }} stroke={1.9} />
-        </ThemeIcon>
-      )}
-      <Text
-        component="span"
-        fw={800}
-        c={c}
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: size,
-          letterSpacing: "-0.02em",
-          lineHeight: 1,
-          whiteSpace: "nowrap",
-        }}
-      >
-        {nombreConPlumon()}
-      </Text>
-    </Group>
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: Math.round(size * 0.42),
+        width: "fit-content",
+      }}
+    >
+      <img
+        src="/favicon.svg"
+        alt=""
+        aria-hidden
+        width={Math.round(size * 1.55)}
+        height={Math.round(size * 1.55)}
+        style={{ display: "block", flex: "none" }}
+      />
+      {marca}
+    </span>
   );
 }

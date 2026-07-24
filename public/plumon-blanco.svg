@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" preserveAspectRatio="none" role="presentation">
+  <!-- Trazo de destacador BLANCO (para fondos azul/oscuros). Mismo shape que plumon.svg. -->
+  <path fill="#ffffff" fill-opacity="0.92" d="M7 11
+    C 28 4, 84 2, 112 6
+    C 117 7, 119 12, 117 18
+    C 119 25, 118 33, 111 36
+    C 82 43, 28 42, 9 38
+    C 3 36, 1 30, 3 23
+    C 1 17, 2 13, 7 11 Z"/>
+</svg>

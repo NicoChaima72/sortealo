@@ -54,7 +54,7 @@ function coloresConfetti(branding: TenantBranding): string[] {
 /** Dispara el confetti one-shot con import dinámico (el peso se paga solo tras pago confirmado). */
 async function dispararConfetti(colors: string[]): Promise<void> {
   const confetti = (await import("canvas-confetti")).default;
-  confetti({
+  void confetti({
     particleCount: 120,
     spread: 78,
     startVelocity: 42,
@@ -63,10 +63,9 @@ async function dispararConfetti(colors: string[]): Promise<void> {
     disableForReducedMotion: true,
   });
   // Segundo golpe leve para dar cuerpo (sigue siendo one-shot: no hay loop).
-  setTimeout(
-    () => confetti({ particleCount: 70, spread: 100, origin: { y: 0.4 }, colors, disableForReducedMotion: true }),
-    220,
-  );
+  setTimeout(() => {
+    void confetti({ particleCount: 70, spread: 100, origin: { y: 0.4 }, colors, disableForReducedMotion: true });
+  }, 220);
 }
 
 function RetornoContenido({ branding }: { branding: TenantBranding }) {

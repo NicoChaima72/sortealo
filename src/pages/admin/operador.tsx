@@ -1,4 +1,4 @@
-import { Button, Card, Group, Skeleton, Table, Text } from "@mantine/core";
+import { Button, Group, Skeleton, Table, Text } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import {
@@ -12,6 +12,7 @@ import { type GetServerSideProps } from "next";
 import { AdminLayout } from "~/components/admin/admin-layout";
 import { EmptyState } from "~/components/admin/empty-state";
 import { EstadoTiendaBadge } from "~/components/admin/estado-tienda-badge";
+import { PanelCard } from "~/components/admin/panel-card";
 import { fecha, num } from "~/lib/formato";
 import { requireSession } from "~/server/auth";
 import { api } from "~/utils/api";
@@ -76,7 +77,7 @@ export default function OperadorPage() {
       title="Operador"
       description="Supervisión de todas las tiendas de la plataforma."
     >
-      <Card withBorder padding="lg" radius="md">
+      <PanelCard>
         <div>
           <Text fw={600}>Tiendas de la plataforma</Text>
           <Text size="sm" c="dimmed">
@@ -234,7 +235,7 @@ export default function OperadorPage() {
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-      </Card>
+      </PanelCard>
     </AdminLayout>
   );
 }

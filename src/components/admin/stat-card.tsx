@@ -1,7 +1,9 @@
-import { Card, Group, Text } from "@mantine/core";
+import { Group, Text } from "@mantine/core";
+import { Sparkline } from "@mantine/charts";
 import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
 import { type ComponentType } from "react";
 
+import { PanelCard } from "~/components/admin/panel-card";
 import { cn } from "~/lib/utils";
 
 type IconCmp = ComponentType<{
@@ -16,6 +18,8 @@ interface StatCardProps {
   icon: IconCmp;
   delta?: { value: string; dir: "up" | "down" };
   hint?: string;
+  /** Serie para el sparkline (solo KPIs con serie real, D8). Vacío/ausente ⇒ no se dibuja. */
+  sparkline?: number[];
 }
 
 export function StatCard({
@@ -24,9 +28,10 @@ export function StatCard({
   icon: Icon,
   delta,
   hint,
+  sparkline,
 }: StatCardProps) {
   return (
-    <Card withBorder padding="lg" radius="md">
+    <PanelCard padding="lg">
       <Group justify="space-between" wrap="nowrap">
         <Text size="xs" fw={500} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.03em" }}>
           {label}
@@ -38,7 +43,8 @@ export function StatCard({
           color="var(--mantine-primary-color-filled)"
         />
       </Group>
-      <Text mt="sm" fw={600} fz="1.5rem" lh={1.2} className="tabular-nums">
+      {/* Número de marca: IBM Plex Mono + tabular-nums (D9, design.md §3/§8 — firma del talonario). */}
+      <Text mt="sm" fw={600} fz="1.7rem" lh={1.15} ff="monospace" className="tabular-nums">
         {value}
       </Text>
       <Group mt={6} gap={6} align="center">
@@ -58,6 +64,17 @@ export function StatCard({
           </Text>
         )}
       </Group>
-    </Card>
+      {sparkline && sparkline.length > 1 && (
+        <Sparkline
+          mt="md"
+          h={36}
+          data={sparkline}
+          curveType="linear"
+          color="sorteatelo.6"
+          fillOpacity={0.12}
+          strokeWidth={1.5}
+        />
+      )}
+    </PanelCard>
   );
 }

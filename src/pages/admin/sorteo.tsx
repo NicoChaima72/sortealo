@@ -1,4 +1,4 @@
-import { Badge, Button, Card, Divider, Group, Paper, SimpleGrid, Skeleton, Stack, Table, Text } from "@mantine/core";
+import { Badge, Button, Divider, Group, Paper, SimpleGrid, Skeleton, Stack, Table, Text } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import {
@@ -13,6 +13,7 @@ import { type GetServerSideProps } from "next";
 import { AdminLayout } from "~/components/admin/admin-layout";
 import { AssetUploader } from "~/components/admin/asset-uploader";
 import { EmptyState } from "~/components/admin/empty-state";
+import { PanelCard } from "~/components/admin/panel-card";
 import { StatCard } from "~/components/admin/stat-card";
 import { fechaHora, num } from "~/lib/formato";
 import { requireSession } from "~/server/auth";
@@ -75,11 +76,11 @@ export default function SorteoPage() {
       {sorteoQuery.isLoading ? (
         <Stack gap="md">
           <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-            <Skeleton height={104} radius="md" />
-            <Skeleton height={104} radius="md" />
-            <Skeleton height={104} radius="md" />
+            <Skeleton height={104} radius="lg" />
+            <Skeleton height={104} radius="lg" />
+            <Skeleton height={104} radius="lg" />
           </SimpleGrid>
-          <Skeleton height={160} radius="md" />
+          <Skeleton height={160} radius="lg" />
         </Stack>
       ) : sorteoQuery.isError ? (
         <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
@@ -123,7 +124,7 @@ export default function SorteoPage() {
             />
           </SimpleGrid>
 
-          <Card withBorder mt="md" padding="lg" radius="md">
+          <PanelCard mt="md">
             <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
               <div>
                 <Text fw={600}>{sorteo.nombre}</Text>
@@ -156,7 +157,6 @@ export default function SorteoPage() {
             <div className="mt-4">
               {ejecutado ? (
                 <Paper
-                  withBorder
                   radius="md"
                   py="lg"
                   bg="var(--mantine-color-default-hover)"
@@ -196,22 +196,22 @@ export default function SorteoPage() {
                 </Group>
               )}
             </div>
-          </Card>
+          </PanelCard>
 
-          <Card withBorder mt="md" padding={0} radius="md">
-            <div className="px-6 pt-5">
+          <PanelCard mt="md">
+            <div>
               <Text fw={600}>Participantes</Text>
               <Text size="sm" c="dimmed">
                 Quienes están dentro del sorteo y cuántos tickets tienen
               </Text>
             </div>
             <Table.ScrollContainer minWidth={360}>
-              <Table verticalSpacing="sm" mt="sm">
+              <Table verticalSpacing="sm" mt="md">
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th className="pl-6">Cliente</Table.Th>
+                    <Table.Th>Cliente</Table.Th>
                     <Table.Th className="text-right">Tickets</Table.Th>
-                    <Table.Th className="pr-6 text-right">
+                    <Table.Th className="text-right">
                       Última participación
                     </Table.Th>
                   </Table.Tr>
@@ -230,13 +230,11 @@ export default function SorteoPage() {
                   ) : (
                     sorteo.participantes.map((p) => (
                       <Table.Tr key={p.email}>
-                        <Table.Td className="pl-6" c="dimmed">
-                          {p.email}
-                        </Table.Td>
+                        <Table.Td c="dimmed">{p.email}</Table.Td>
                         <Table.Td className="text-right tabular-nums" c="dimmed">
                           {num(p.tickets)}
                         </Table.Td>
-                        <Table.Td className="whitespace-nowrap pr-6 text-right" c="dimmed">
+                        <Table.Td className="whitespace-nowrap text-right" c="dimmed">
                           {fechaHora(p.ultimaInscripcion)}
                         </Table.Td>
                       </Table.Tr>
@@ -245,7 +243,7 @@ export default function SorteoPage() {
                 </Table.Tbody>
               </Table>
             </Table.ScrollContainer>
-          </Card>
+          </PanelCard>
         </>
       )}
     </AdminLayout>

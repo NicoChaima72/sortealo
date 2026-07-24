@@ -3,7 +3,6 @@ import {
   Avatar,
   Badge,
   Button,
-  Card,
   FileInput,
   Group,
   Modal,
@@ -30,6 +29,7 @@ import { useEffect, useState } from "react";
 
 import { AdminLayout } from "~/components/admin/admin-layout";
 import { VistaPreviaAsset } from "~/components/admin/asset-uploader";
+import { PanelCard } from "~/components/admin/panel-card";
 import {
   ACCEPT_IMAGEN,
   useSubirImagenMarca,
@@ -419,7 +419,7 @@ export default function ProductosPage() {
         </Button>
       }
     >
-      <Card withBorder padding={0} radius="md">
+      <PanelCard padding={0}>
         <Table.ScrollContainer minWidth={520}>
           <Table verticalSpacing="sm">
             <Table.Thead>
@@ -536,7 +536,7 @@ export default function ProductosPage() {
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-      </Card>
+      </PanelCard>
 
       <ProductoFormModal
         open={formOpen}

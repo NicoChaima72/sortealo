@@ -76,9 +76,9 @@ describe("domain/panel/getSerieVentasDiaria (fake db, tenant-scoped)", () => {
     // Orden ascendente: primer día = hoy - 13 = 2026-07-05; último = hoy = 2026-07-18.
     expect(serie[0]).toMatchObject({ ventas: 1, ingresos: "1000" });
     expect(serie[13]).toMatchObject({ ventas: 2, ingresos: "8000" });
-    const jul10 = serie.find((d) => d.fecha.toISOString().slice(0, 10) === "2026-07-10");
+    const jul10 = serie.find((d) => d.fecha.toISOString().startsWith("2026-07-10"));
     expect(jul10).toMatchObject({ ventas: 1, ingresos: "2000" });
-    const jul11 = serie.find((d) => d.fecha.toISOString().slice(0, 10) === "2026-07-11");
+    const jul11 = serie.find((d) => d.fecha.toISOString().startsWith("2026-07-11"));
     expect(jul11).toMatchObject({ ventas: 0, ingresos: "0" });
     // Los ingresos SIEMPRE son string (nunca number en el server).
     for (const d of serie) expect(typeof d.ingresos).toBe("string");

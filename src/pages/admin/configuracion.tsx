@@ -1,7 +1,6 @@
 import {
   Badge,
   Button,
-  Card,
   Group,
   Paper,
   Select,
@@ -30,6 +29,7 @@ import { type ComponentType, type ReactNode, useEffect } from "react";
 
 import { AdminLayout } from "~/components/admin/admin-layout";
 import { AssetUploader } from "~/components/admin/asset-uploader";
+import { PanelCard } from "~/components/admin/panel-card";
 import { fechaHora } from "~/lib/formato";
 import { requireSession } from "~/server/auth";
 import { api } from "~/utils/api";
@@ -54,7 +54,7 @@ function SettingCard({
   children: ReactNode;
 }) {
   return (
-    <Card withBorder padding="lg" radius="md">
+    <PanelCard>
       <Group gap="xs" mb={4}>
         <Icon className="size-[18px]" stroke={1.75} />
         <Text fw={600}>{title}</Text>
@@ -63,7 +63,7 @@ function SettingCard({
         {description}
       </Text>
       {children}
-    </Card>
+    </PanelCard>
   );
 }
 
@@ -112,7 +112,7 @@ function CredencialFlowCard() {
     >
       <form onSubmit={submit}>
         <Stack gap="md">
-          <Paper withBorder p="sm" radius="md">
+          <Paper p="sm" radius="md" bg="var(--mantine-color-default-hover)">
             <Group justify="space-between" gap="sm">
               <Text size="sm" c="dimmed">
                 Estado

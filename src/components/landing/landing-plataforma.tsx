@@ -32,7 +32,6 @@ import {
 } from "./copy";
 import { Etiqueta } from "./etiqueta";
 import s from "./landing.module.css";
-import { Perforacion } from "./perforacion";
 import { Plumon } from "./plumon";
 import { RevelarAlScroll } from "./revelar-al-scroll";
 import { TalonarioVivo } from "./talonario-vivo";
@@ -88,16 +87,18 @@ export function LandingPlataforma() {
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
 
-      {/* Header (blanca) */}
+      {/* Header + Hero = una sola región AZUL, con curva inferior derecha (scoop) */}
+      {/* Header (azul, integrado al hero, sticky) */}
       <Banda
-        tono="blanca"
+        tono="azul"
+        className="sticky top-0 z-50"
         contenedorClassName="flex items-center justify-between py-5"
       >
-        <Wordmark size={24} />
+        <Wordmark size={24} invertido />
         <Button
           component={Link}
           href="/login"
-          color="sorteatelo"
+          color="amarillo"
           radius="md"
           visibleFrom="xs"
         >
@@ -105,11 +106,10 @@ export function LandingPlataforma() {
         </Button>
       </Banda>
 
-      <Perforacion />
-
-      {/* Hero (azul) */}
+      {/* Hero (azul, cierra la región con la curva inferior derecha) */}
       <Banda
         tono="azul"
+        curvaInferior
         contenedorClassName="grid items-center gap-12 py-14 lg:grid-cols-[7fr_5fr] lg:gap-16 lg:py-20"
       >
         <div>
@@ -300,7 +300,7 @@ export function LandingPlataforma() {
         tono="tinta"
         contenedorClassName="flex flex-wrap items-center justify-between gap-3 py-8"
       >
-        <Wordmark size={17} c="white" />
+        <Wordmark size={17} invertido />
         <Etiqueta style={{ textTransform: "none", letterSpacing: "0.02em" }}>
           {FOOTER}
         </Etiqueta>

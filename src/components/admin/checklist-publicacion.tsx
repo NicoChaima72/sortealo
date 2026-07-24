@@ -19,14 +19,16 @@ import {
   IconArrowRight,
   IconCircleCheck,
   IconCircleDashed,
+  IconCopy,
   IconExternalLink,
   IconRosetteDiscountCheck,
+  IconWorld,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { type ReactNode } from "react";
 
-import { EstadoTiendaBadge } from "~/components/admin/estado-tienda-badge";
-import { abrirTienda } from "~/components/admin/url-tienda";
+import { PanelCard } from "~/components/admin/panel-card";
+import { abrirTienda, urlDeTienda } from "~/components/admin/url-tienda";
 import { api } from "~/utils/api";
 
 /**
@@ -253,42 +255,81 @@ export function ChecklistPublicacion() {
 
   const { estado: estadoTienda, requisitos, puedePublicar } = estado.data;
 
-  // Tienda publicada: banner + ver storefront + despublicar.
+  // Tienda publicada: tira COMPACTA (sin badge — el estado ya está en el PageHeader) que aprovecha
+  // el ancho mostrando el LINK PÚBLICO copiable (lo primero que un Organizador quiere compartir) +
+  // acciones a la derecha. Gramática del panel: `PanelCard` sin borde (§4), no `Card withBorder`.
   if (estadoTienda === "PUBLICADA") {
+    const url = urlDeTienda(estado.data.slug);
+    const display = url ? url.replace(/^https?:\/\//, "") : estado.data.slug;
+    const copiarLink = async () => {
+      if (!url) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        notifications.show({ message: "Link copiado.", color: "green" });
+      } catch {
+        notifications.show({
+          message: "No pudimos copiar el link.",
+          color: "red",
+        });
+      }
+    };
+
     return (
-      <Card withBorder padding="lg" radius="md">
-        <Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
-          <Group wrap="nowrap" gap="sm" align="flex-start">
+      <PanelCard>
+        <Group justify="space-between" align="center" wrap="wrap" gap="md">
+          <Group wrap="nowrap" gap="sm" align="center" className="min-w-0">
             <ThemeIcon variant="light" color="exito" radius="xl" size="lg">
               <IconCircleCheck className="size-5" stroke={1.75} />
             </ThemeIcon>
-            <div>
+            <div className="min-w-0">
               <Text fw={600}>Tu tienda está publicada</Text>
-              <Text size="sm" c="dimmed">
-                Está disponible en su dirección pública y puede vender.
-              </Text>
+              <Group gap={6} wrap="nowrap" className="min-w-0">
+                <IconWorld
+                  className="size-3.5 shrink-0"
+                  stroke={1.75}
+                  color="var(--mantine-color-dimmed)"
+                />
+                <Text
+                  size="sm"
+                  c="dimmed"
+                  ff="monospace"
+                  truncate
+                  className="tabular-nums"
+                >
+                  {display}
+                </Text>
+              </Group>
             </div>
           </Group>
-          <EstadoTiendaBadge estado="PUBLICADA" />
+          <Group gap="sm" wrap="nowrap">
+            <Button
+              variant="light"
+              size="xs"
+              leftSection={<IconCopy className="size-3.5" />}
+              onClick={copiarLink}
+            >
+              Copiar link
+            </Button>
+            <Button
+              variant="default"
+              size="xs"
+              leftSection={<IconExternalLink className="size-3.5" />}
+              onClick={verTienda}
+            >
+              Ver mi tienda
+            </Button>
+            <Button
+              variant="subtle"
+              size="xs"
+              color="red"
+              loading={despublicar.isPending}
+              onClick={confirmarDespublicar}
+            >
+              Despublicar
+            </Button>
+          </Group>
         </Group>
-        <Group mt="md" gap="sm">
-          <Button
-            variant="default"
-            leftSection={<IconExternalLink className="size-4" />}
-            onClick={verTienda}
-          >
-            Ver mi tienda
-          </Button>
-          <Button
-            variant="subtle"
-            color="red"
-            loading={despublicar.isPending}
-            onClick={confirmarDespublicar}
-          >
-            Despublicar
-          </Button>
-        </Group>
-      </Card>
+      </PanelCard>
     );
   }
 

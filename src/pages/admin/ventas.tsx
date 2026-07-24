@@ -1,4 +1,4 @@
-import { Button, Card, Group, Skeleton, Table, Text } from "@mantine/core";
+import { Button, Group, Skeleton, Table, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconMailForward, IconShoppingCart } from "@tabler/icons-react";
 import { type GetServerSideProps } from "next";
@@ -6,6 +6,7 @@ import { type GetServerSideProps } from "next";
 import { AdminLayout } from "~/components/admin/admin-layout";
 import { EmptyState } from "~/components/admin/empty-state";
 import { EstadoBadge } from "~/components/admin/estado-badge";
+import { PanelCard } from "~/components/admin/panel-card";
 import { clp, fechaHora } from "~/lib/formato";
 import { requireSession } from "~/server/auth";
 import { api } from "~/utils/api";
@@ -76,7 +77,7 @@ export default function VentasPage() {
       title="Ventas"
       description="Todas las compras de tu tienda, con su estado y lo que te queda."
     >
-      <Card withBorder padding={0} radius="md">
+      <PanelCard padding={0}>
         <Table.ScrollContainer minWidth={640}>
           <Table verticalSpacing="sm">
             <Table.Thead>
@@ -172,7 +173,7 @@ export default function VentasPage() {
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-      </Card>
+      </PanelCard>
 
       {ventas.hasNextPage && (
         <Group justify="center" mt="md">

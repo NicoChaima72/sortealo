@@ -20,9 +20,10 @@ import { createTheme, type MantineColor } from "@mantine/core";
 /** Texto de sistema: Instrument Sans + fallbacks. */
 const FUENTE_TEXTO =
   'var(--font-instrument), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-/** Display / headings: Bricolage Grotesque (peso 800) sobre el fallback de texto. */
-const FUENTE_DISPLAY =
-  'var(--font-display), var(--font-instrument), ui-sans-serif, system-ui, sans-serif';
+/** Headings del theme: Fraunces (serif cálida, decisión 2026-07-24 — reemplaza a Bricolage). El
+ * WORDMARK NO usa esto: sigue en Bricolage vía `--font-display` (lo consume directo el componente
+ * `Wordmark`). Fallback serif por si `--font-heading` no cargó. */
+const FUENTE_HEADING = 'var(--font-heading), Georgia, "Times New Roman", serif';
 /** Números / montos / etiquetas: IBM Plex Mono (tabular). */
 const FUENTE_MONO =
   'var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';
@@ -30,7 +31,7 @@ const FUENTE_MONO =
 export const theme = createTheme({
   fontFamily: FUENTE_TEXTO,
   fontFamilyMonospace: FUENTE_MONO,
-  headings: { fontFamily: FUENTE_DISPLAY },
+  headings: { fontFamily: FUENTE_HEADING },
 
   // Cobalto de plataforma (#2b3fbf) — el azul-tinta del talonario, separa "plataforma" de
   // "tienda" (seam D13). Base en el índice 6 = `primaryShade` (D4, alineado con tenantTheme),
